@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright © 2008 ESRI
+//
+// All rights reserved under the copyright laws of the United States.
+// You may freely redistribute and use this software, with or
+// without modification, provided you include the original copyright
+// and use restrictions.  See use restrictions in the file:
+// <install location>/FlexViewer/License.txt
+//
+////////////////////////////////////////////////////////////////////////////////
+-->
+<configuration>
+  <gpERGChemical>http://your_server/arcgis/rest/services/EMModels/GPServer/ERG%20By%20Chemical</gpERGChemical>
+  <gpERGPlacard>http://your_server/arcgis/rest/services/EMModels/GPServer/ERG%20By%20Placard</gpERGPlacard>
+  <ergGuideURL>http://wwwapps.tc.gc.ca/saf-sec-sur/3/erg-gmu/erg/guidepage.aspx?guide=</ergGuideURL>
+  <demographicLayer>http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Demographics/ESRI_Census_USA/MapServer/1</demographicLayer>
+  <demoFields>POP2000,MALES,FEMALES,AGE_UNDER5,AGE_5_17,AGE_18_21,AGE_22_29,AGE_30_39,AGE_40_49,AGE_50_64,AGE_65_UP</demoFields>
+  <summaryfield>POP2000</summaryfield>
+  <info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+ <findclosestWS>http://your_server/ArcGIS/rest/services/FindNearestWS/GPServer/FindNearestWS</findclosestWS>
+  <chart>
+    <series>AGE_UNDER5,AGE_5_17,AGE_18_21,AGE_22_29,AGE_30_39,AGE_40_49,AGE_50_64,AGE_65_UP</series>
+    <seriesAlias>Age Under 5,Age 5-17,Age 18-21,Age 22-29,Age 30-39,Age 40-49,Age 50-64,Age 65-Up</seriesAlias>
+    <series>MALES,FEMALES</series>
+    <seriesAlias>Males,Females</seriesAlias>
+  </chart>
+  <WeatherStationLayer>http://your_server/ArcGIS/rest/services/EmergencyOperations/MapServer/11</WeatherStationLayer>
+   <!--  USER DEFINED FIELD-->
+  <WindDirectionField>StationName,WindDirection,UTC_DateTime</WindDirectionField>
+  <winddirectiondisplayfields>
+  	<stationname>StationName</stationname>
+  	<winddirect>WindDirection</winddirect>
+  	<utcdatetime>UTC_DateTime</utcdatetime>
+  </winddirectiondisplayfields>
+
+<!-- chemical GP parameter names-->
+<chemicalGPParameters>Incident_Point,Material_Type,Wind_Bearing__direction_blowing_to__0_-_360_,Day_or_Night_incident,Large_or_Small_spill</chemicalGPParameters>
+
+<!-- Placard GP parameter names-->
+<placardGPParameters>Incident_Point,Placard_ID,Wind_Bearing__direction_blowing_to__0_-_360_,Day_or_Night_incident,Large_or_Small_spill</placardGPParameters>
+
+<!-- infrastructure layer-->
+  <InfrastructureLayer>http://your_server/ArcGIS/rest/services/EmergencyOperations/MapServer/0</InfrastructureLayer>
+  <Infrastructurefields>NAME,FEATURECODE,FULLADDR</Infrastructurefields>
+  <Infrastructuresummaryfield>FEATURECODE</Infrastructuresummaryfield>
+
+  <labels>
+    <descriptionlabel>Draw a spill location:</descriptionlabel>
+    <chemicalOrPlacardLabel>Calculate by:</chemicalOrPlacardLabel>
+    <chemicalOrPlacardTypeLabel>Material:</chemicalOrPlacardTypeLabel>
+    <spillSizeLabel>Spill Size:</spillSizeLabel>
+    <timeOfSpillLabel>Time of Spill:</timeOfSpillLabel>
+    <windDirectionLabel>Wind Direction (blowing to):</windDirectionLabel>
+    <loadinglabel>Loading...</loadinglabel>
+    <chartlabelDemographics>Total Population</chartlabelDemographics>
+    <chartlabelinfra>Infrastructure By Type</chartlabelinfra>
+    <TimeZoneDescription>EST</TimeZoneDescription>
+  </labels>
+
+  <alertmessages>
+		<queryFeatures alertheader="Error"
+			alertmessage="An Unexpected error occurred while attempting to find Features "/>
+		<queryInfrastructure alertheader="Error"
+			alertmessage="An Unexpected error occurred while attempting to find Infrastructure "/>
+		<noResultError alertheader="Error"
+			alertmessage="No results. Try to click on the map again..." />
+
+  </alertmessages>
+</configuration>

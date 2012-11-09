@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright © 2008 - 2009 ESRI
+//
+// All rights reserved under the copyright laws of the United States.
+// You may freely redistribute and use this software, with or
+// without modification, provided you include the original copyright
+// and use restrictions.  See use restrictions in the file:
+// <install location>/FlexViewer/License.txt
+// 
+//
+//
+//	National Stream Gauges(shows a link to the gauge and Bing & StreetView and GoogleSearch):
+//		http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/PublicSafety/PublicSafetyFeedSample/MapServer/1
+//		fields: LOCATION,WATERBODY,URL	titlefield=LOCATION    linkfield=URL
+//
+//	Hazardous Sites(Louisville, KY):
+//  	http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/PublicSafety/PublicSafetyBasemap/MapServer/2
+//
+//
+//		<gpInputParamNameLayer> = "Layer_To_Find"
+//
+//		<gpInputParamNameFeatureSet> = "Selecting_Feature_Set"
+//
+//		<gpInputParamNameRadius> = "Search_Distance"
+//
+//		<gpLayerName> = "USA_Schools" 
+//
+//		Sample JSON REST Input from point:  { "features"  : [{    "geometry" : {"x" : -90.205, "y" : 32.300}}]}
+//
+//
+//	   
+//
+////////////////////////////////////////////////////////////////////////////////
+-->
+<configuration>
+  <layer>http://publicsafetytemplates.esri.com/ArcGIS/rest/services/EMCOP/RBELayers/MapServer/0</layer>
+  <info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+  <query/>
+  <fields>CALLTYPE,CFSDESC,AGENCY,CALLPRIOR</fields>
+  <titlefield>CALLTYPE</titlefield>
+  <filterfield>
+    <name/>
+    <alias/>
+  </filterfield>
+  <linkfield></linkfield>
+  <refreshrate/>
+  <zoomscale>35000</zoomscale>
+  <geometryserviceurl>http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer</geometryserviceurl>
+  <reportByExceptionLayers>
+    <reportByExceptionLayer>
+      <rbeRESTURL>http://publicsafetytemplates.esri.com/ArcGIS/rest/services/EMCOP/RBELayers/MapServer/11</rbeRESTURL>
+      <rbeLayerName>Schools</rbeLayerName>
+      <rbeIcon>widgets/LivelayerByException/assets/images/school-24x24.png</rbeIcon>
+      <rbeTitleField>NAME</rbeTitleField>
+      <rbeLinkField>test</rbeLinkField>
+      <rbeFields>NAME, TYPE, SITEADDR, PHONE</rbeFields>
+    </reportByExceptionLayer>
+    <reportByExceptionLayer>
+      <rbeRESTURL>http://publicsafetytemplates.esri.com/ArcGIS/rest/services/EMCOP/RBELayers/MapServer/6</rbeRESTURL>
+      <rbeLayerName>Hospitals</rbeLayerName>
+      <rbeIcon>widgets/LivelayerByException/assets/images/hospital.png</rbeIcon>
+      <rbeTitleField>NAME</rbeTitleField>
+      <rbeLinkField>test</rbeLinkField>
+      <rbeFields>NAME, TYPEDESC, BEDS, EMPLOYEES</rbeFields>
+    </reportByExceptionLayer>
+    <reportByExceptionLayer>
+      <rbeRESTURL>http://publicsafetytemplates.esri.com/ArcGIS/rest/services/EMCOP/RBELayers/MapServer/9</rbeRESTURL>
+      <rbeLayerName>Police Stations</rbeLayerName>
+      <rbeIcon>widgets/LivelayerByException/assets/images/i_policestation.png</rbeIcon>
+      <rbeTitleField>DESCRIP</rbeTitleField>
+      <rbeLinkField>URL</rbeLinkField>
+      <rbeFields>DESCRIP</rbeFields>
+    </reportByExceptionLayer>
+  </reportByExceptionLayers>
+  <rbeSearchRadiusMiles>2</rbeSearchRadiusMiles>
+  <rbeSearchRadiusMinutes>2</rbeSearchRadiusMinutes>
+  <rbeDriveTimeGPService>http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Network/ESRI_DriveTime_US/GPServer/CreateDriveTimePolygons</rbeDriveTimeGPService>
+  <showPopulationCount>true</showPopulationCount>
+  <rbeDynamicallyAddedLayerInfoContents>DECRIP</rbeDynamicallyAddedLayerInfoContents>
+  <rbedefaultDynamicLinkField>URL</rbedefaultDynamicLinkField>
+  <rbedefaultRESTURL>http://publicsafetytemplates.esri.com/ArcGIS/rest/services/EMCOP/RBELayers/MapServer/12</rbedefaultRESTURL>
+  <rbedefaultRESTLayerName>Traffic Cameras</rbedefaultRESTLayerName>
+  
+  
+  <alertmessages>
+		<queryFeatures alertheader="Error" 
+			alertmessage="An Unexpected error occurred while attempting to find Features "/>
+		<noMapPointError alertheader="Error" 
+			alertmessage="No Map Point is specified." />	
+		<driveTimeError alertheader="Error" 
+			alertmessage="A problem occured while attempting drive Time." />
+			<invalidDriveTimeError alertheader="Error" 
+			alertmessage="Not a Valid Value. Please Enter Valid Drive time." />
+		<calcPopulationStatisticsError alertheader="Error" 
+			alertmessage="Could Not Calculate Population tatistics" />
+		<invalidSimpleBufferError alertheader="Error" 
+			alertmessage="Not a Valid Value. Please Enter Valid Simple Buffer distance ." />
+				
+  </alertmessages>
+</configuration>

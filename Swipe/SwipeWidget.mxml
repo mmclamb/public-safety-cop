@@ -1,0 +1,226 @@
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*"
+				   xmlns:tools="com.esri.viewer.*"
+				   layout="horizontal" widgetConfigLoaded="basewidget1_widgetConfigLoadedHandler(event)"
+				   creationComplete="init()" xmlns:swipe="com.esri.viewer.components.swipe.*">
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.layers.Layer;
+			import com.esri.ags.tools.NavigationTool;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.ViewerContainer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.*;
+			import mx.events.CloseEvent;
+			
+			private var layArr:Array;
+			
+			[Embed(source="assets/images/i_swipe.png")]
+			private var expClass:Class;
+			
+			private var currStatus:String;
+			private var oplList:Array;
+			[Bindable]private var activelabel:String;
+			
+			private function init():void 
+			{
+				/* layArr = [];
+				for(var i:int=0; i<map.layerIds.length; i++)
+				{
+				layArr.push(map.layerIds[i]);
+				}
+				activeLayer.dataProvider = layArr; */
+				
+				AppEvent.dispatch(AppEvent.DATA_OPT_LAYERS, null, getOplayers);
+			}
+			
+			private function getOplayers(event:AppEvent):void
+			{
+				oplList = event.data as Array;
+				layArr = [];
+				for each (var opsLayer:Object in oplList)
+				{
+					
+					layArr.push(opsLayer.label);
+				}
+				
+			/* 	for(var i:int=0; i<map.layerIds.length; i++)
+				{
+					layArr.push(map.layerIds[i]);
+				} */
+				activeLayer.dataProvider = layArr;
+			}
+			
+			
+			private function onToggleSwipeTool( activate:Boolean ):void
+			{
+				if(activate && activeLayer.text != activelabel)
+				{
+					setMapNavigation("none", "");
+					map.panEnabled = false;
+					map.mapNavigationEnabled = false;
+					map.rubberbandZoomEnabled = false;
+					setMapAction(null, "Swipe Layer", null, null);
+					AppEvent.setStatus("Swipe Layer");
+					spotlight.deactivate();
+					spotlightButton.selected = false;
+					swipeButton.selected = true;
+					swipe.layer = map.getLayer(activeLayer.text);
+					swipe.map = map;
+					swipe.activate();
+				} else {
+					if(swipeButton.selected==true)
+						Alert.show("Please select Active Layer","Error");
+					swipeButton.selected=false;
+					spotlightButton.selected = false;
+					swipe.map = null;
+					swipe.deactivate();
+					map.panEnabled = true;
+					setMapNavigation("pan", null);
+				}
+			}
+			
+			private function onToggleSpotlightTool( activate:Boolean ):void
+			{
+				if(activate && activeLayer.text != activelabel)
+				{
+					setMapNavigation("none", "");
+					map.panEnabled = false;
+					map.mapNavigationEnabled = false;
+					map.rubberbandZoomEnabled = false;
+					setMapAction(null, "Spotlight Layer", null, null);
+					AppEvent.setStatus("Spotlight Layer");
+					swipe.deactivate();
+					swipeButton.selected = false;
+					spotlightButton.selected = true;
+					spotlight.layer = map.getLayer(activeLayer.text);
+					spotlight.map = map;
+					spotlight.activate();
+				} else {
+					if(spotlightButton.selected==true)
+						Alert.show("Please select Active Layer","Error");
+					swipeButton.selected = false;
+					spotlightButton.selected = false
+					spotlight.map = null;
+					spotlight.deactivate();
+					map.panEnabled = true;
+					setMapNavigation("pan", null);
+				}
+			}
+			
+			private function layerChanged():void
+			{
+				if(swipeButton.selected){
+					swipe.layer = map.getLayer(activeLayer.text);
+				} else if(spotlightButton.selected) {
+					spotlight.layer = map.getLayer(activeLayer.text);
+				}
+				 /* if(map.getLayer(activeLayer.text).visible == false)
+				{
+				Alert.show("The layer you have choosen is not visible." +
+				"Do you want to make it visible?", "Warning", Alert.YES|Alert.NO, null, 
+				alertClickHandler, expClass, Alert.YES);
+				}  */
+			}
+			
+			private function alertClickHandler(event:CloseEvent):void
+			{
+				if (event.detail==Alert.YES){
+					map.getLayer(activeLayer.text).visible = true;
+					if(swipeButton.selected){
+						swipe.layer = map.getLayer(activeLayer.text);
+					} else if(spotlightButton.selected) {
+						spotlight.layer = map.getLayer(activeLayer.text);
+					}
+				}
+			}
+			
+			private function widgetClosedHandler(event:Event):void
+			{
+				spotlight.deactivate()
+				swipe.deactivate();
+				map.panEnabled = true;
+				setMapNavigation("pan", null);
+				if(spotlightButton.selected==false)
+					spotlightButton.selected=false;
+			}
+			
+			protected function wTemplate_minimizedHandler(event:Event):void
+			{
+				/* spotlight.deactivate() */
+				/* swipe.deactivate(); */
+				map.panEnabled = true;
+				setMapNavigation("pan", null);
+				swipe.map = null;
+				spotlight.map = null;
+				/* swipeButton.selected = false;
+				spotlightButton.selected=false; */
+			}
+			
+			protected function wTemplate_openHandler(event:Event):void
+			{
+				if(swipeButton.selected==true)
+					onToggleSwipeTool(true);
+				else if(spotlightButton.selected==true)
+					onToggleSpotlightTool(true)
+				else{
+					 swipeButton.selected = false;
+					spotlightButton.selected=false; 
+				}
+			}
+			
+			protected function basewidget1_widgetConfigLoadedHandler(event:Event):void
+			{
+				if(configXML)
+				{
+					activelabel = configXML.active.toString();
+					activeLayer.prompt=activelabel;
+				}
+				else
+				{
+					Alert.show('Config not found');
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<swipe:SwipeTool id="swipe"/>
+		<swipe:SpotlightTool id="spotlight" radius="{spotlightRadius.value}"/>
+	</fx:Declarations>
+	
+	<viewer:WidgetTemplate id="wTemplate" width="300" minHeight="180" minWidth="300"  height="200"
+						   closed="widgetClosedHandler(event)" open="wTemplate_openHandler(event)" minimized="wTemplate_minimizedHandler(event)" >
+		<viewer:layout>
+			<s:VerticalLayout gap="12" horizontalAlign="center" verticalAlign="middle"/>
+		</viewer:layout>
+		<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="center" >
+			<s:Label text="Active Layer:" />
+			<!--<s:Label text="{activelabel}"/>-->
+			<mx:ComboBox id="activeLayer" width="150" rowCount="4" prompt=" "  selectedIndex="-1"
+						 change="layerChanged()">
+				<mx:itemRenderer>
+					<fx:Component>
+						<mx:Label  text="{data}" toolTip="{data}"/>
+					</fx:Component>
+				</mx:itemRenderer>
+			</mx:ComboBox>
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="center" >
+			<s:Label text="Active Tool:" />
+			<s:ToggleButton id="swipeButton" label="Swipe" selected="false" click="onToggleSwipeTool(event.target.selected)" />
+			<s:ToggleButton id="spotlightButton" selected="false" label="Spotlight" click="onToggleSpotlightTool(event.target.selected)"/>
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="center" >
+			<s:Label text="Spotlight Radius:" />
+			<s:Label text="{spotlightRadius.value}" width="30" />
+			<s:HSlider id="spotlightRadius" minimum="25" maximum="200" value="75" snapInterval="25" liveDragging="true" showDataTip="false"/>
+		</s:HGroup>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

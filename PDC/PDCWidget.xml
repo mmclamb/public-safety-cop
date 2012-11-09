@@ -1,0 +1,252 @@
+<?xml version="1.0" ?>
+<configuration>
+	<!-- 
+		<mapservice>tag define the map server url for all pdc active hazard layers
+		<metadata>tag define the metadata url which consist the individual hazard information
+		<geometryservice>tag define  the geometry service url
+	
+	 -->
+	<mapservice  mode="dynamic">http://ags.pdc.org/ArcGIS/rest/services/global/pdc_active_hazards/MapServer/</mapservice>
+	<metadata url="http://www.pdc.org/atlas/metadata_abstracts/metadata_summary_ims_mde.jsp?metadata=" />
+	<geometryservice url="http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer"/>
+	<!-- 
+	<layers> tag define all pdc active hazard layer 
+		<layer>tag defines details about each pdc layer like id,title,fields to be shown in infopopup,metadata Id
+		<id>tag defines id value of the layer
+		<title> tag defines title of the layer
+		<visible>tag defines true and false if true than layer data will be loaded on map and check box for this layer will be checked by default and set as false doesn't load any legend and data on map .
+		<fields>tag define the out fields names.this fields uses while querying the data once layer has been loaded.
+		<legend>tag specify the details of pdc layer to be shown in legend area.
+			<description>specify the description of pdc layer
+			<meatadataId>specify the metadata layer id which help see the detailed layer information in new window  
+			<items>specify layers symbol names
+			
+		<infopopup>tag specify the info popup details of pdc layer
+			<titlefield>tag specify the title to display in info popup window
+			<fields> tag specify the list of fields to be display in info popup
+				<fieldname>	specify the field name from the layer to be shown in info popup
+					@label specify the label to be display in infopopup
+					@displaytype specify the field type .if field is url than display will be hyperlink
+			
+	 -->
+	
+	<layers>
+		<layer>
+			<id>0</id>
+			<title>PDC Integrated Hazards</title>
+			<visible>true</visible>
+			<fields>HAZARD_NAME,TYPE,STATUS,SEVERITY,CATEGORY,SNC_URL,CHARTER_URL</fields>
+			<legend>
+				<description><![CDATA[Current incidents which have been designated<br>potentially hazardous to people, property, or assets]]></description>
+				<metadataID>125</metadataID>
+				<items><![CDATA[Tsunami,High Surf,Storm,High Wind,Wildfire,Flood,Drought,Earthquake,Volcano,Marine,Cyclone]]></items>
+			</legend>
+			<Infopopup>
+				<titlefield>PDC Integrated Hazards</titlefield>
+				<fields>
+					<fieldname label='Hazard Name' displaytype='string'>HAZARD_NAME</fieldname>
+					<fieldname label='Type' displaytype='string'>TYPE</fieldname>
+					<fieldname label='Status' displaytype='string'>STATUS</fieldname>
+					<fieldname label='SNC URL' displaytype='hyperlink'>SNC_URL</fieldname>
+					<fieldname label='CHARTER URL' displaytype='hyperlink'>CHARTER_UR</fieldname>
+				</fields>
+			</Infopopup>
+		</layer>
+		<layer>
+			<id>4</id>
+			<title>Recent Earthquakes</title>
+			<visible>false</visible>
+			<fields>DATE_TIME,MAGNITUDE,DEPTH,REGION</fields>
+			<legend>
+				<description><![CDATA[Earthquakes from the past 48 hours]]></description>
+				<metadataID>1</metadataID>
+				<items><![CDATA[Less than 4.0,4.0 - 4.5,4.5 - 5.0,5.0 and greater]]></items>
+			</legend>
+			<Infopopup>
+				<titlefield>Recent Earthquakes</titlefield>
+				<fields>
+					<fieldname label='Magnitude' displaytype='string'>MAGNITUDE </fieldname>
+					<fieldname label='Depth' displaytype='string'>DEPTH </fieldname>
+					<fieldname label='Region' displaytype='string'>REGION </fieldname>
+					<fieldname label='DATE TIME' displaytype='date' dateFormat='MM/DD/YYYY'>DATE_TIME</fieldname>
+					<fieldname label='Link' displaytype='hyperlink'>LINK</fieldname>
+					
+				</fields>
+			</Infopopup>
+		</layer>
+		 <layer>
+			<id>3</id>
+			<title>Active Volcanoes</title>
+			<visible>false</visible>
+			<fields>NAME,REGION,ACTIVITY</fields>
+			<legend>
+				<description><![CDATA[Active volcanoes from the<br>Smithsonian's Global Volcanism Program (GVP)<br>and USGS' Volcano Hazards Program]]></description>
+				<metadataID>2</metadataID>
+				<items><![CDATA[Ongoing Activity,New Activity]]></items>
+			</legend>
+			<Infopopup>
+				<titlefield>Active Volcanoes</titlefield>
+				<fields>
+					<fieldname label='Region' displaytype='string'>REGION</fieldname>
+					<fieldname label='Activity' displaytype='string'>ACTIVITY</fieldname>
+					<fieldname label='Primary Observatory' displaytype='string'>PRIMARY_OBSERVATORY</fieldname>
+					<fieldname label='More Information' displaytype='hyperlink'>MORE_INFORMATION</fieldname>
+					<fieldname label= 'Last Updated' displaytype='string'> LAST_UPDATED</fieldname>			
+				</fields>
+			</Infopopup>
+		</layer>
+		
+		<layer>
+			<id>5</id>
+			<title>Recent Hotspots</title>
+			<visible>false</visible>
+			<fields>description,date_of_first_obs,date_of_last_obs</fields>
+			<legend>
+				<description><![CDATA[Wildfires for the past week (MODIS)]]></description>
+				<metadataID>3</metadataID>
+				<items><![CDATA[Potential oil/gas field,Potential volcanic activity,Large fire/High intensity,Large fire/Medium intensity,Large fire/Low intensity,Medium fire/High intensity,Medium fire/Medium intensity,Medium fire/Low intensity,Small fire/High intensity,Small fire/Medium intensity]]></items>
+			</legend>
+			<Infopopup>
+				<titlefield>RECENT HOTSPOTS</titlefield>
+				<fields>
+					<fieldname label='Description' displaytype='string'>description</fieldname>
+					<fieldname label='First Observed On' displaytype='string'>date_of_first_obs</fieldname>
+					<fieldname label='Last Observed On' displaytype='string'>date_of_last_obs</fieldname>
+				</fields>
+			</Infopopup>
+			
+		</layer>
+	 	<layer>
+			<id>2</id>
+			<title>GLIDE Events</title>
+			<visible>false</visible>
+			<fields>EVENT_DATE,EVENT_TYPE,GLIDE_NUMBER,COUNTRY,HYPERLINK</fields>
+			<legend>
+				<description><![CDATA[Globally common Unique ID code for disasters]]></description>
+				<metadataID>127</metadataID>
+				<items><![CDATA[GLIDE Events ]]></items>
+			</legend>
+			<Infopopup>
+				<titlefield>GLIDE EVENTS</titlefield>
+				<fields>
+					<fieldname label='Event Type' displaytype='string'>EVENT_TYPE</fieldname>
+					<fieldname label='Glide Number' displaytype='string'>GLIDE_NUMBER</fieldname>
+					<fieldname label='Country' displaytype='string'>COUNTRY</fieldname>
+					<fieldname label='URL' displaytype='hyperlink'>HYPERLINK </fieldname>
+				</fields>
+			</Infopopup>
+			
+		</layer>
+	<layer>
+			<id>1</id>
+			<title>International Charter</title>
+			<visible>false</visible>
+			<fields>EVENT_NAME,HAZARD_TYPE,ACTIVATION_DATE</fields>
+			<legend>
+				<description><![CDATA[International Charter Activations]]></description>
+				<metadataID>126</metadataID>
+				<items><![CDATA[Int'l Charter]]></items>
+			</legend>
+			<Infopopup>
+				<titlefield>International Charter</titlefield>
+				<fields>
+					<fieldname label='Event Name' displaytype='string'>EVENT_NAME</fieldname>
+					<fieldname label='Hazard Type' displaytype='string'>HAZARD_TYPE</fieldname>
+					<fieldname label='ACTIVATION_DATE' displaytype='string'>ACTIVATION_DATE</fieldname>
+					
+				</fields>
+			</Infopopup>
+		</layer>
+		<layer>
+			<id>7</id>
+			<title>Storm Positions</title>
+			<visible>false</visible>
+			<fields>HAZARD_NAME,STORM_NAME,ADVISORY_TIME,ADVISORY_DATE,SYMBOL_CODE</fields>
+			<legend>
+				<description><![CDATA[Real-time tropical cyclone forecasts, showing<br>the previous, current, and forecast locations]]></description>
+				<metadataID>4</metadataID>
+				<items><![CDATA[Forecast Hurricane/Typhoon > 150 mph,Forecast Hurricane/Typhoon > 74 mph,Forecast Tropical Storm,Forecast Tropical Depression,Current Hurricane/Typhoon > 150 mph,Current Hurricane/Typhoon > 74 mph,Current Tropical Storm,Current Tropical Depression,Previous Hurricane/Typhoon > 150 mph,Previous Hurricane/Typhoon > 74 mph,Previous Tropical Storm,Previous Tropical Depression]]></items>
+			</legend>
+					
+			<Infopopup>
+				<titlefield>STORM POSITIONS</titlefield>
+				<fields>
+					<fieldname label='Hazard Name' displaytype='string'>HAZARD_NAME</fieldname>
+					<fieldname label='Storm Name' displaytype='string'>STORM_NAME</fieldname>
+					<fieldname label='Advisory Time' displaytype='string'>ADVISORY_TIME</fieldname>
+					<fieldname label='Advisory Date' displaytype='string'>ADVISORY_DATE </fieldname>
+				</fields>
+			</Infopopup>
+			
+		</layer>
+		<layer>
+		 <id>8</id>
+			<title>Storm Segments</title>
+			<visible>false</visible>
+			<fields>HAZARD_ID,ADVISORY,WIND_KT,SYMBOL_CODE</fields>
+			<legend>
+				<description><![CDATA[Storm Segments Layer Description]]></description>
+				<metadataID>6</metadataID>
+				<items><![CDATA[Segments - Forecast Hurricane/Super Typhoon,Segments - Forecast Hurricane/Typhoon,Segments - Forecast Tropical Storm,Segments - Forecast Tropical Depression,Segments - Previous Hurricane/Super Typhoon,Segments - Previous Hurricane/Typhoon,Segments - Previous Tropical Storm,Segments - Previous Tropical Depression]]></items>
+			</legend>
+			<maptip>
+				<title>STORM SEGMENTS</title>
+				<fields>
+					<titles>Hazard ID,Advisory,Wind Kit</titles>
+					<values>HAZARD_ID,ADVISORY,WIND_KT</values>
+				</fields>
+			</maptip>
+			<Infopopup>
+				<titlefield>STORM SEGMENTS</titlefield>
+				<fields>
+					<fieldname label='Hazard ID' displaytype='string'>HAZARD_ID</fieldname>
+					<fieldname label='Advisory' displaytype='string'>ADVISORY</fieldname>
+					<fieldname label='Wind Kit' displaytype='string'>WIND_KT</fieldname>
+				</fields>
+			</Infopopup>
+			
+		</layer>
+		
+		<layer>
+			<id>9</id>
+			<title>Storm Winds</title>
+			<visible>false</visible>
+			<fields>HAZARD_NAME,STORM_NAME,ADVISORY_DATE,SYMBOL_CODE</fields>
+			<legend>
+				<description><![CDATA[Storm Winds Layer Description]]></description>
+				<metadataID>4</metadataID>
+				<items><![CDATA[Hurricane/Typhoon,Tropical Storm,Tropical Depression]]></items>
+			</legend>
+	
+			<Infopopup>
+				<titlefield>STORM WINDS</titlefield>
+				<fields>
+					<fieldname label='Hazard ID' displaytype='string'>Storm Name</fieldname>
+					<fieldname label='Advisory Date' displaytype='string'>ADVISORY_DATE</fieldname>
+								
+				</fields>
+			</Infopopup>
+		</layer>
+		<layer>
+			<id>10</id>
+			<title>Potential Track Area</title>
+			<visible>false</visible>
+			<fields>HAZARD_NAME,STORM_NAME,ADVISORY_NUMBER,SEVERITY,HAZARD_ID</fields>
+			<legend>
+				<description><![CDATA[An area representing the potential track<br>of a tropical cyclone]]></description>
+				<metadataID>6</metadataID>
+				<items><![CDATA[Potential Track Area]]></items>
+			</legend>
+			<Infopopup>
+				<titlefield>Potential Track Area</titlefield>
+				<fields>
+					<fieldname label='Advisory Number' displaytype='string'>ADVISORY_NUMBER</fieldname>
+					<fieldname label='Hazard Id' displaytype='string'>HAZARD_ID</fieldname>
+					<fieldname label='Hazard Name' displaytype='string'>HAZARD_NAME</fieldname>
+					<fieldname label='Storm Name' displaytype='string'>STORM_NAME</fieldname>		
+				</fields>
+			</Infopopup>
+		</layer>
+		
+	</layers>
+</configuration>

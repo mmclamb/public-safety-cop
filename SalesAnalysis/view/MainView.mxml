@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) 2008-2011 Esri
+//
+// All rights reserved under the copyright laws of the United States
+// and applicable international laws, treaties, and conventions.
+//
+// You may freely redistribute and use this software, with or
+// without modification, provided you include the original copyright
+// and use restrictions.  See use restrictions in the file:
+// License.txt and/or use_restrictions.txt.
+//
+////////////////////////////////////////////////////////////////////////////////
+-->
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:esri_stl="com.esri.stl.components.*"
+		 xmlns:screens="widgets.SalesAnalysis.view.screens.*"
+		 width="100%" height="100%"
+		 preinitialize="preinitializeHandler(event)"
+		 currentState="{_presenter.currentState}"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.esri.stl.AssetManager;
+
+			import spark.effects.WipeDirection;
+		]]>
+	</fx:Script>
+	<!-- STATES -->
+	<s:states>
+		<s:State name="helpState"/>
+		<s:State name="loadingState"/>
+		<s:State name="searchState"/>
+		<s:State name="resultsState"/>
+		<s:State name="chartState"/>
+	</s:states>
+	<!-- TRANSITIONS -->
+	<s:transitions>
+		<s:Transition fromState="*" toState="searchState" autoReverse="true">
+			<s:Sequence >
+				<s:AddAction target="{searchView}" startDelay="50" />
+				<s:SetAction target="{searchView}" property="alpha" value="0" />
+				<s:Fade target="{searchView}" alphaFrom="0" alphaTo="1" duration="375" />
+			</s:Sequence>
+		</s:Transition>
+		<s:Transition fromState="*" toState="resultsState" autoReverse="true">
+			<s:Sequence >
+				<s:AddAction target="{resultsView}" startDelay="50" />
+				<s:SetAction target="{resultsView}" property="alpha" value="0" />
+				<s:Fade target="{resultsView}" alphaFrom="0" alphaTo="1" duration="375" />
+			</s:Sequence>
+		</s:Transition>
+		<s:Transition fromState="*" toState="chartState" autoReverse="true">
+			<s:Sequence >
+				<s:AddAction target="{chartView}" startDelay="50" />
+				<s:SetAction target="{chartView}" property="alpha" value="0" />
+				<s:Fade target="{chartView}" alphaFrom="0" alphaTo="1" duration="375" />
+			</s:Sequence>
+		</s:Transition>
+		<s:Transition fromState="*" toState="loadingState" autoReverse="true">
+			<s:Sequence >
+				<s:AddAction target="{loadingView}" startDelay="50" />
+				<s:SetAction target="{loadingView}" property="alpha" value="0" />
+				<s:Fade target="{loadingView}" alphaFrom="0" alphaTo="1" duration="375" />
+			</s:Sequence>
+		</s:Transition>
+		<s:Transition fromState="*" toState="helpState" autoReverse="true">
+			<s:Sequence >
+				<s:AddAction target="{helpView}" startDelay="50" />
+				<s:SetAction target="{helpView}" property="alpha" value="0" />
+				<s:Fade target="{helpView}" alphaFrom="0" alphaTo="1" duration="375" />
+			</s:Sequence>
+		</s:Transition>
+
+	</s:transitions>
+
+
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+
+			import widgets.SalesAnalysis.model.AppModel;
+			import widgets.SalesAnalysis.presenter.MainPresenter;
+
+
+			[Bindable]
+			private var _presenter:MainPresenter;
+
+			protected function preinitializeHandler(event:FlexEvent):void
+			{
+				_presenter = AppModel.getInstance().mainPresenter;
+
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+
+	<s:HGroup horizontalAlign="right" width="100%" top="5">
+		<esri_stl:IconButton label="Help" source="{AssetManager.I_HELP_20w20h}" click="_presenter.goHelp()"
+							 skinClass="com.esri.stl.skins.IconOnlyButtonSkin"/>
+	</s:HGroup>
+	<screens:HelpView id="helpView" includeIn="helpState" top="30" left="0" right="0" bottom="10"/>
+	<screens:LoadingView id="loadingView" includeIn="loadingState" top="30" left="0" right="0" bottom="10"/>
+	<screens:SearchView id="searchView" includeIn="searchState" top="30" left="0" right="0" bottom="10"/>
+	<screens:ResultsView id="resultsView" includeIn="resultsState" top="30" left="0" right="0" bottom="10"/>
+	<screens:ChartView id="chartView" includeIn="chartState" top="30" left="0" right="0" bottom="10"/>
+</s:Group>

@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" left="10">
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+
+
+	</fx:Style>
+
+	<fx:Script>
+		<![CDATA[
+			import flash.desktop.Clipboard;
+
+			import mx.binding.utils.BindingUtils;
+			protected function imgLatitude_clickHandler(event:MouseEvent):void
+			{
+
+				System.setClipboard(maplat.text);
+
+			}
+
+			protected function imgLongitude_clickHandler(event:MouseEvent):void
+			{
+				System.setClipboard(maplng.text);
+
+			}
+
+			protected function imgLatDD_clickHandler(event:MouseEvent):void
+			{
+				System.setClipboard(maplatdeg.text);
+			}
+
+			protected function imgLonDD_clickHandler(event:MouseEvent):void
+			{
+				System.setClipboard(maplngdeg.text);
+			}
+
+			protected function imgNorthing_clickHandler(event:MouseEvent):void
+			{
+
+				System.setClipboard(txtnorth.text);
+
+			}
+
+			protected function imgEasting_clickHandler(event:MouseEvent):void
+			{
+				System.setClipboard(txteast.text);
+
+			}
+
+			protected function imgMgrs_clickHandler(event:MouseEvent):void
+			{
+				System.setClipboard(txtmgrs.text);
+
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import widgets.NationalGrid.NationalGridWidget;
+
+			[Bindable] public var mapLat:String;
+			[Bindable] public var mapLng:String;
+			[Bindable] public var mapLatDeg:String;
+			[Bindable] public var mapLngDeg:String;
+			[Bindable] public var north:String;
+			[Bindable] public var east:String;
+			[Bindable] public var mgrs:String;
+			[Bindable] public var nsng:String;
+
+			[Bindable] public var _title:String;
+		]]>
+	</fx:Script>
+
+	<s:layout>
+		<s:HorizontalLayout verticalAlign="middle"  horizontalAlign="center" gap="2"/>
+	</s:layout>
+	<s:VGroup width="100%" height="100%">
+
+
+
+		<s:Label text="Coordinates "  fontWeight="bold" textAlign="left" width="100%" />
+
+		<mx:HRule width="100%" height="1" />
+		<s:Spacer height="5" />
+		<mx:Grid width="100%" height='100%'  >
+			<mx:GridRow paddingBottom="5">
+				<mx:GridItem width="100%" height="100%" >
+					<s:Label text="Latitude(DMS)" textAlign="left"  />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label text=":" textAlign="end" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label id="maplat" text="{mapLat}" textAlign="left" width="100%" />
+				</mx:GridItem>
+				<mx:GridItem>
+					<mx:Image id="imgLatitude" width="15" height="15" source="widgets/NationalGrid/assets/images/Clipboard2.png"
+							 toolTip="Click to copy the Latitude(DMS) value" click="imgLatitude_clickHandler(event)"/>
+				</mx:GridItem>
+			</mx:GridRow>
+
+
+			<mx:GridRow paddingBottom="5">
+				<mx:GridItem >
+					<s:Label text="Longitude(DMS)" textAlign="left"   />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label text=":" textAlign="center" />
+				</mx:GridItem>
+				<mx:GridItem  >
+					<s:Label id="maplng" text="{mapLng}" textAlign="left"  width="100%" />
+				</mx:GridItem>
+				<mx:GridItem>
+					<mx:Image id="imgLongitude" width="15" height="15" source="widgets/NationalGrid/assets/images/Clipboard2.png"
+							 toolTip="Click to copy the Longitude(DMS) value" click="imgLongitude_clickHandler(event)"/>
+				</mx:GridItem>
+			</mx:GridRow>
+
+			<mx:GridRow paddingBottom="5">
+				<mx:GridItem >
+					<s:Label text="Latitude(DD)" textAlign="left"  width="100%" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label text=":" textAlign="center" />
+				</mx:GridItem>
+				<mx:GridItem  >
+					<s:Label id="maplatdeg"  text="{mapLatDeg}" textAlign="left"  width="100%" />
+				</mx:GridItem>
+				<mx:GridItem>
+					<mx:Image id="imgLatDD" width="15" height="15" source="widgets/NationalGrid/assets/images/Clipboard2.png"
+							 toolTip="Click to copy the Latitude(DD) value" click="imgLatDD_clickHandler(event)"/>
+				</mx:GridItem>
+			</mx:GridRow>
+
+			<mx:GridRow paddingBottom="5">
+				<mx:GridItem >
+					<s:Label text="Longitude(DD)" textAlign="left"  width="100%" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label text=":" textAlign="center" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label id="maplngdeg"  text="{mapLngDeg}"  textAlign="left" width="100%" />
+				</mx:GridItem>
+				<mx:GridItem>
+					<mx:Image id="ImgLonDD" width="15" height="15" source="widgets/NationalGrid/assets/images/Clipboard2.png"
+							 toolTip="Click to copy the Longitude(DD) value" click="imgLonDD_clickHandler(event)"/>
+				</mx:GridItem>
+			</mx:GridRow>
+
+
+			<mx:GridRow paddingBottom="5" >
+				<mx:GridItem >
+					<s:Label text="Northing" textAlign="left"  width="100%" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label text=":" textAlign="center" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label id="txtnorth" text="{north}" width="100%" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<mx:Image   id="imgNorthing" width="15" height="15" source="widgets/NationalGrid/assets/images/Clipboard2.png"
+							   toolTip="Click to copy the Northing value" click="imgNorthing_clickHandler(event)"/>
+				</mx:GridItem>
+			</mx:GridRow>
+
+			<mx:GridRow paddingBottom="5">
+				<mx:GridItem >
+					<s:Label text="Easting" textAlign="left"  width="100%" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label text=":" textAlign="center" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label id="txteast" text="{east}" width="100%" />
+				</mx:GridItem>
+				<mx:GridItem>
+					<mx:Image id="imgEasting" width="15" height="15" source="widgets/NationalGrid/assets/images/Clipboard2.png"
+							 toolTip="Click to copy the Easting value" click="imgEasting_clickHandler(event)"/>
+				</mx:GridItem>
+			</mx:GridRow>
+
+			<mx:GridRow paddingBottom="5">
+				<mx:GridItem>
+					<s:Label text="USNG / MGRS" textAlign="left" width="100%" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label text=":" textAlign="center" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label id="txtmgrs" text="{mgrs}" width="100%" />
+				</mx:GridItem>
+				<mx:GridItem>
+					<mx:Image id="imgMgrs" width="15" height="15" source="widgets/NationalGrid/assets/images/Clipboard2.png"
+							 toolTip="Click to copy the USNG / MGRS value" click="imgMgrs_clickHandler(event)"/>
+				</mx:GridItem>
+			</mx:GridRow>
+
+		</mx:Grid>
+
+	</s:VGroup>
+
+</s:Group>

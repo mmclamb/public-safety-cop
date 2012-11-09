@@ -1,0 +1,113 @@
+<?xml version="1.0" ?>
+<configuration >
+<!-- 
+	<title> define the title of the bomb threat widget.
+	<bombThreats> defines the list of bomb type and its icon,preferred and mandatory evacuation distance, distance unit.
+		<type> specify the each bomb threat details
+			@name specify the name of bomb to be display in bomb threat widget
+			@icon specify the image of bomb to be display in bomb threat widget
+			@unit specify the buffer distance unit
+			@mandatoryEvacuationDistance specify the buffer distance selected bomb type.
+			@preferredEvacuationDistance specify the buffer distance selected bomb type.
+			following buffer distance help to draw the two different type buffer which help to analysis the effected area .
+	
+ -->
+ <title>Select threat type and click on map</title>
+    <bombThreats>
+    	<type name='Pipe Bomb' icon='PipeBomb.png' unit='meter' mandatoryEvacuationDistance='21' preferredEvacuationDistance='363' >
+    		<inforpopup>
+    				<mandatiorydescription>
+    					<![CDATA[All personnel in this area should seek shelter immediately inside a building away from windows and exterior walls. Avoid having anyone outside—including those evacuating—in this area.]]>
+    				</mandatiorydescription>
+    				<preferreddecription>
+    					<![CDATA[Preferred area (beyond this line) for evacuation of people<br> in buildings and mandatory for people outdoors.]]>
+    				</preferreddecription>
+    		</inforpopup>
+    	</type>
+    	
+    	<type name='Suicide Vest' icon='vest-back-trans.png' unit='meter' mandatoryEvacuationDistance='34' preferredEvacuationDistance='518' >
+    	<inforpopup>
+    				
+    				<mandatiorydescription>
+    					<![CDATA[All personnel in this area should seek shelter immediately inside a building away from windows and exterior walls.Avoid having anyone outside—including those evacuating—in this area.]]>
+    				</mandatiorydescription>
+    				<preferreddecription>
+    					<![CDATA[Preferred area (beyond this line) for evacuation of people<br> in buildings and mandatory for people outdoors.]]>
+    				</preferreddecription>
+    		
+    		</inforpopup>
+    	</type>
+    	<type name='Briefcase / Suitcase Bomb' icon='BriefCase.png' unit='meter' mandatoryEvacuationDistance='46' preferredEvacuationDistance='564' >
+    		<inforpopup>
+    				
+    				<mandatiorydescription>
+    					<![CDATA[All personnel in this area should seek shelter immediately inside a building away from windows and exterior walls.Avoid having anyone outside—including those evacuating—in this area.]]>
+    				</mandatiorydescription>
+    				<preferreddecription>
+    					<![CDATA[Preferred area (beyond this line) for evacuation of people<br> in buildings and mandatory for people outdoors.]]>
+    				</preferreddecription>
+    	
+    		</inforpopup>
+    	</type>
+    	<type name='Sedan' icon='CompactSedan.png' unit='meter' mandatoryEvacuationDistance='98' preferredEvacuationDistance='580' >
+    	<inforpopup>
+    				
+    				<mandatiorydescription>
+    					<![CDATA[All personnel in this area should seek shelter immediately inside a building away from windows and exterior walls.Avoid having anyone outside—including those evacuating—in this area.]]>
+    				</mandatiorydescription>
+    				<preferreddecription>
+    					<![CDATA[Preferred area (beyond this line) for evacuation of people<br> in buildings and mandatory for people outdoors.]]>
+    				</preferreddecription>
+    		
+    		</inforpopup>
+    	</type>
+    	<type name='SUV / Van' icon='CargoVan.png' unit='meter'  mandatoryEvacuationDistance='122' preferredEvacuationDistance='732' >
+    		<inforpopup>
+    					<mandatiorydescription>
+    					<![CDATA[All personnel in this area should seek shelter immediately inside a building away from windows and exterior walls.Avoid having anyone outside—including those evacuating—in this area.]]>
+    				</mandatiorydescription>
+    				<preferreddecription>
+    					<![CDATA[Preferred area (beyond this line) for evacuation of people<br> in buildings and mandatory for people outdoors.]]>
+    				</preferreddecription>
+    		</inforpopup>
+    	</type>
+    	<type name='Small Delivery Truck' icon='SmallMovingVan.png' unit='meter' mandatoryEvacuationDistance='195' preferredEvacuationDistance='1159' >
+    	<inforpopup>
+    				
+    				<mandatiorydescription>
+    					<![CDATA[All personnel in this area should seek shelter immediately inside a building away from windows and exterior walls.Avoid having anyone outside—including those evacuating—in this area.]]>
+    				</mandatiorydescription>
+    				<preferreddecription>
+    					<![CDATA[Preferred area (beyond this line) for evacuation of people<br> in buildings and mandatory for people outdoors.]]>
+    				</preferreddecription>
+    		
+    		</inforpopup>
+    	</type>
+    	<type name='Semi-Trailer' icon='SemiTrailer.png' unit='meter' mandatoryEvacuationDistance='263' preferredEvacuationDistance='1555' >
+    		<inforpopup>
+    				
+    				<mandatiorydescription>
+    					<![CDATA[All personnel in this area should seek shelter immediately inside a building away from windows and exterior walls.Avoid having anyone outside—including those evacuating—in this area.]]>
+    				</mandatiorydescription>
+    				<preferreddecription>
+    					<![CDATA[Preferred area (beyond this line) for evacuation of people<br> in buildings and mandatory for people outdoors.]]>
+    				</preferreddecription>
+    		
+    		</inforpopup>
+    	</type>
+    	<type name='Container / Water Truck' icon='MovingVan.png' unit='meter'  mandatoryEvacuationDistance='479' preferredEvacuationDistance='2835' >
+    		<inforpopup>
+    					<mandatiorydescription>
+    					<![CDATA[All personnel in this area should seek shelter immediately inside a building away from windows and exterior walls.Avoid having anyone outside—including those evacuating—in this area.]]>
+    				</mandatiorydescription>
+    				<preferreddecription>
+    					<![CDATA[Preferred area (beyond this line) for evacuation of people<br> in buildings and mandatory for people outdoors.]]>
+    				</preferreddecription>
+    		</inforpopup>
+    	</type>
+    	
+    </bombThreats>
+    <mandatorybuffercolor>FF0000</mandatorybuffercolor>
+    <prefferedbuffercolor>0000FF</prefferedbuffercolor>
+ </configuration>
+

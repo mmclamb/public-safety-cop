@@ -1,0 +1,1060 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     ////////////////////////////////////////////////////////////////////////////////
+     //
+     // Copyright (c) 2011 ESRI
+     //
+     // All rights reserved under the copyright laws of the United States.
+     // You may freely redistribute and use this software, with or
+     // without modification, provided you include the original copyright
+     // and use restrictions.  See use restrictions in the file:
+     // <install location>/License.txt
+     //
+     ////////////////////////////////////////////////////////////////////////////////
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+                   xmlns:s="library://ns.adobe.com/flex/spark"
+                   xmlns:mx="library://ns.adobe.com/flex/mx"
+                   xmlns:esri="http://www.esri.com/2008/ags"
+				   xmlns:viewer="com.esri.viewer.*"
+                   widgetConfigLoaded="init()">
+
+    <fx:Script>
+    <![CDATA[
+		import com.esri.ags.FeatureSet;
+		import com.esri.ags.SpatialReference;
+		import com.esri.ags.TimeExtent;
+		import com.esri.ags.events.GraphicEvent;
+		import com.esri.ags.events.MapEvent;
+		import com.esri.ags.geometry.Extent;
+		import com.esri.ags.geometry.MapPoint;
+		import com.esri.ags.layers.FeatureLayer;
+		import com.esri.ags.layers.supportClasses.LOD;
+		import com.esri.ags.renderers.SimpleRenderer;
+		import com.esri.ags.renderers.TemporalRenderer;
+		import com.esri.ags.renderers.supportClasses.ColorRange;
+		import com.esri.ags.renderers.supportClasses.TimeRampAger;
+		import com.esri.ags.symbols.PictureMarkerSymbol;
+		import com.esri.ags.symbols.SimpleMarkerSymbol;
+		import com.esri.ags.symbols.Symbol;
+		import com.esri.ags.tasks.supportClasses.Query;
+		import com.esri.ags.utils.JSONUtil;
+		import com.esri.filteredTracking.FilteredTrackingLayer;
+		import com.esri.tracking.components.LoginPrompt;
+		import com.esri.tracking.connection.TrackingServerConnection;
+		import com.esri.tracking.events.TrackEvent;
+		import com.esri.tracking.events.TrackingLayerEvent;
+		import com.esri.tracking.events.TrackingServerConnectionEvent;
+		import com.esri.tracking.purgers.MaxObservationsPerTrackPurger;
+		import com.esri.tracking.renderers.LabeledObservationRenderer;
+		import com.esri.tracking.symbols.SymbolType;
+		import com.esri.tracking.track.ObservationGraphic;
+		import com.esri.tracking.track.TrackDataSet;
+
+		import flash.utils.Dictionary;
+
+		import mx.collections.ArrayCollection;
+		import mx.collections.Sort;
+		import mx.controls.Alert;
+		import mx.core.FlexGlobals;
+		import mx.events.CloseEvent;
+		import mx.events.FlexEvent;
+		import mx.formatters.DateFormatter;
+		import mx.rpc.AsyncResponder;
+		import mx.utils.StringUtil;
+
+		import spark.components.TextArea;
+		import spark.events.IndexChangeEvent;
+
+		//====================================================================================================================//
+		// Init all
+
+		[Bindable] protected var _verbose:Boolean = false;
+
+		protected function init():void
+        {
+			if (configXML.verbose.toString() != "")
+			{
+				_verbose = "true" == (configXML.verbose.toString().toLowerCase());
+			}
+
+			setupObservationsDisplay();
+			setupObservationsFromTrackingServer();
+			setupObservationSymbology();
+			setupEquipmentList();
+			setupEquipmentLabelingAndPopup();
+        }
+
+		//====================================================================================================================//
+		// Widget
+
+		protected function widgetClosedHandler(event:Event):void
+		{
+			if(null != _trackingLayer) _trackingLayer.visible = false;
+		}
+
+		protected function widgetOpenedHandler(event:Event):void
+		{
+			if(null != _trackingLayer) _trackingLayer.visible = true;
+		}
+
+		//====================================================================================================================//
+		// Observations display
+
+		protected var _observationWindowInMinutes:Number = 5;
+		protected var _zoomToEquipmentBuffer:Number = 0;
+
+		protected var _mapRefreshTimeExtentTimer:Timer;
+		protected var _clearActivityIndicatorTimer:Timer;
+
+		[Bindable] protected var _observationActivityIndicatorOn:Boolean = false;
+		[Bindable] protected var _equipmentListUpdateActivityIndicatorOK:Boolean = false;
+
+		protected function setupObservationsDisplay():void
+		{
+			setupMapRefreshTimer();
+			setupClearActivityIndicatorTimer();
+
+			// Do we zoom when a name is typed into the equipment search box, and, if so, how far?
+			if (configXML.zoomToEquipmentBuffer.toString() != "")
+			{
+				_zoomToEquipmentBuffer = configXML.zoomToEquipmentBuffer.toString();
+			}
+		}
+
+		protected function setupMapRefreshTimer():void
+		{
+			// What range (in time) of observations will be visible?
+			if (configXML.observationWindowInMinutes.toString() != "")
+			{
+				_observationWindowInMinutes = configXML.observationWindowInMinutes.toString();
+			}
+
+			// Regularly change the map time extent so that we can age out older observations.
+			// The fading of the breadcrumbs, e.g., requires that the map has a time extent, so
+			// we'll call the time extent refresh handler right away as well as start the timer
+			// for subsequent time extent refreshes.
+			mapRefreshTimeExtentHandler(null);
+			_mapRefreshTimeExtentTimer = new Timer(15000);
+			_mapRefreshTimeExtentTimer.addEventListener("timer", mapRefreshTimeExtentHandler);
+			_mapRefreshTimeExtentTimer.start();
+		}
+
+		protected function mapRefreshTimeExtentHandler(event:TimerEvent):void
+		{
+			// Reset the visible observation times window
+			const millisecondsPerMinute:Number = 60000;
+			var date:Date = new Date();
+			date.setTime(date.getTime() - _observationWindowInMinutes * millisecondsPerMinute);
+			map.timeExtent = new TimeExtent(date, new Date());
+		}
+
+		protected function setupClearActivityIndicatorTimer():void
+		{
+			// Set up a timer to reset the activity indicators to "off";
+			// fresh activities--observations or equipment updates--turn the appropriate indicator back on
+			_clearActivityIndicatorTimer = new Timer(1000);
+			_clearActivityIndicatorTimer.addEventListener("timer", clearActivityIndicatorTimerHandler);
+			_clearActivityIndicatorTimer.start();
+		}
+
+		protected function clearActivityIndicatorTimerHandler(event:TimerEvent):void
+		{
+			// Reset the activity indicator
+			_observationActivityIndicatorOn = false;
+		}
+
+		//==============================================================================================================//
+		// Observations from tracking server
+
+		protected var _trackingServiceName:String;
+		protected var _connectAttemptsPerButtonClick:int = 2;
+		protected var _secondsBetweenReconnectRetries:int = 15;
+		protected var _maxObservationsPerVehicle:Number = 1;
+		protected var _observationIndexField:String = "";
+
+		protected var _connection:TrackingServerConnection;
+		[Bindable] protected var _trackingConnectionStatus:int = 0;
+		protected var _connectionRecoveryTimer:Timer;
+		protected var _connectionRecoveryAttempts:int = 0;
+
+		protected var _trackingLayer:FilteredTrackingLayer = null;
+		protected var _dataset:TrackDataSet;
+
+		protected function setupObservationsFromTrackingServer():void
+		{
+			setupTrackingServerConnection();
+
+			// Will the widget retry multiple times to reconnect when the reconnect button is clicked?
+			if (configXML.connectAttemptsPerButtonClick.toString() != "")
+			{
+				var newConnectAttemptsPerButtonClick:int = configXML.connectAttemptsPerButtonClick.toString();
+				if(_connectAttemptsPerButtonClick < newConnectAttemptsPerButtonClick)
+					_connectAttemptsPerButtonClick = newConnectAttemptsPerButtonClick;
+			}
+			if (configXML.secondsBetweenReconnectRetries.toString() != "")
+			{
+				var newSecondsBetweenReconnectRetries:int = configXML.secondsBetweenReconnectRetries.toString();
+				if(_secondsBetweenReconnectRetries < newSecondsBetweenReconnectRetries)
+					_secondsBetweenReconnectRetries = newSecondsBetweenReconnectRetries;
+			}
+
+			// Set up a timer that we can use when we're trying to reconnect; it can help if we're trying to
+			// recover when a connection disconnected behind the scenes
+			var delay:Number = (_secondsBetweenReconnectRetries + Math.random()) * 1000;
+			_connectionRecoveryTimer = new Timer(delay);
+			_connectionRecoveryTimer.addEventListener("timer", connectionRecoveryTimerHandler);
+
+			// Get restrictions on number of observations
+			if (configXML.maxObservationsPerVehicle.toString() != "")
+			{
+				_maxObservationsPerVehicle = configXML.maxObservationsPerVehicle.toString();
+				_maxObservationsPerVehicle = Math.max(1, Math.min(10,_maxObservationsPerVehicle));
+			}
+
+			// Get observations index field so that we can match it to equipment list
+			if (configXML.observationIndexField.toString() != "")
+			{
+				_observationIndexField = configXML.observationIndexField.toString();
+			}
+
+			// Connect to the tracking server
+			_trackingConnectionStatus = 1;
+			reconnect();
+		}
+
+		protected function setupTrackingServerConnection():void
+		{
+			connection = new TrackingServerConnection();
+
+			// Get the tracking server connection information
+			if (configXML.trackingServerUrl.toString() != "")
+			{
+				_connection.servername = configXML.trackingServerUrl.toString();
+			}
+			if (configXML.trackingServerPort.toString() != "")
+			{
+				_connection.port = configXML.trackingServerPort.toString();
+			}
+			if (configXML.trackingUser.toString() != "")
+			{
+				_connection.username = configXML.trackingUser.toString();
+			}
+			else
+			{
+				_connection.username = "";
+			}
+			if (configXML.trackingPass.toString() != "")
+			{
+				_connection.password = configXML.trackingPass.toString();
+			}
+			else
+			{
+				_connection.password = "";
+			}
+
+			if (configXML.trackingServiceName.toString() != "")
+			{
+				_trackingServiceName = configXML.trackingServiceName.toString();
+			}
+		}
+
+		[Bindable]
+		protected function get connection():TrackingServerConnection
+		{
+			return _connection;
+		}
+
+		protected function set connection(connection:TrackingServerConnection):void
+		{
+			if (connection != null)
+			{
+				_connection = connection;
+
+				_connection.addEventListener(TrackingServerConnectionEvent.INITIALIZATION_SUCCEEDED,
+					function (event:TrackingServerConnectionEvent):void
+					{
+						_connectionRecoveryTimer.stop();
+						_trackingConnectionStatus = 2;
+						btnReconnect.enabled = true;
+						_reconnectProgress.visible = false;
+
+						connection.subscribeToService(_trackingServiceName);
+					}
+				);
+
+				_connection.addEventListener(TrackingServerConnectionEvent.SUBSCRIBE_RESPONSE_SUCCEEDED,
+					function (event:TrackingServerConnectionEvent):void
+					{
+						// Discard current tracking layer if one somehow manages to still be here
+						if (_trackingLayer != null)
+						{
+							map.removeLayer(_trackingLayer);
+							_trackingLayer = null;
+						}
+
+						// Add the new service as a tracking layer; we supply the name rather than having it
+						// generated automatically so that we can filter it out of the layer list
+						var layerID:String = event.getMessageProperty("serviceNames")[0];
+						var len:int = !layerID ? 0 : layerID.length;
+						var idx:int = map.layerIds.indexOf(layerID);
+						if ((len > 0) && (idx == -1))
+						{
+							var dataset:TrackDataSet = new TrackDataSet(connection, layerID);
+							(dataset.purger as MaxObservationsPerTrackPurger).maxObservationsPerTrack =
+							_maxObservationsPerVehicle;
+
+							_trackingLayer = new FilteredTrackingLayer(
+								dataset, filterObservation,
+								_latestObservationSymbolHeadingField, getOverrideSymbol, clickHandler);
+							_trackingLayer.name = "SnowplowTrackingWidgetTrackLayer";
+							map.addLayer(_trackingLayer);
+							initTrackingLayerColors(SymbolType.PICTURE);
+
+							_trackingConnectionStatus = 2;
+						}
+					}
+				);
+
+				_connection.addEventListener(TrackingServerConnectionEvent.UNSUBSCRIBE_RESPONSE_SUCCEEDED,
+					function (event:TrackingServerConnectionEvent):void
+					{
+						if(_verbose) _trackingConnectionStatus = 0;
+
+						if (_trackingLayer != null)
+						{
+							map.removeLayer(_trackingLayer);
+							_observations = new Dictionary();
+						}
+
+						// Automatically disconnect, which will trigger a reconnect
+						connection.disconnect();
+					}
+				);
+
+				_connection.addEventListener(TrackingServerConnectionEvent.DISCONNECT_SUCCEEDED,
+					function (event:TrackingServerConnectionEvent):void
+					{
+						// Automatically reconnect
+						_trackingConnectionStatus = 1;
+						connection.initialize();
+					}
+				);
+
+				// Catch errors so that we can retry to connect
+				_connection.addEventListener(TrackingServerConnectionEvent.AUTHENTICATION_FAILED, error);
+				_connection.addEventListener(TrackingServerConnectionEvent.CONNECTION_FAILED, error);
+				_connection.addEventListener(TrackingServerConnectionEvent.DISCONNECT_FAILED, error);
+				_connection.addEventListener(TrackingServerConnectionEvent.ERROR, error);
+				_connection.addEventListener(TrackingServerConnectionEvent.GENERAL_ERROR, error);
+				_connection.addEventListener(TrackingServerConnectionEvent.INITIALIZATION_FAILED, error);
+				_connection.addEventListener(TrackingServerConnectionEvent.SUBSCRIBE_RESPONSE_FAILED, error);
+				_connection.addEventListener(TrackingServerConnectionEvent.UNSUBSCRIBE_RESPONSE_FAILED, error);
+				_connection.addEventListener(ErrorEvent.ERROR, error);
+			}
+		}
+
+		protected function error(event:TrackingServerConnectionEvent):void
+		{
+			event.stopImmediatePropagation();
+		}
+
+		protected function btnReconnect_clickHandler():void
+		{
+			reconnect();
+		}
+
+		protected function reconnect():void
+		{
+			btnReconnect.enabled = false;
+			_reconnectProgress.visible = true;
+			if(connection.isConnected)
+			{
+				// Restart the connection
+				_connectionRecoveryAttempts = 0;
+				_reconnectProgress.setProgress(0, _connectAttemptsPerButtonClick+2);
+				_connectionRecoveryTimer.start();
+				_trackingConnectionStatus = 2 == _trackingConnectionStatus ? -1 : 1;
+				connection.unsubscribeFromService(_trackingServiceName);
+			}
+			else
+			{
+				// Start the connection
+				_connectionRecoveryAttempts = 1;
+				_reconnectProgress.setProgress(1, _connectAttemptsPerButtonClick+2);
+				_connectionRecoveryTimer.start();
+				_trackingConnectionStatus = 1;
+				connection.initialize();
+			}
+		}
+
+		protected function connectionRecoveryTimerHandler(event:TimerEvent):void
+		{
+			if(1 >= _trackingConnectionStatus)
+			{
+				// We try a specified number of times to reconnect
+				if(_connectionRecoveryAttempts <= _connectAttemptsPerButtonClick)
+				{
+					++_connectionRecoveryAttempts;
+					_reconnectProgress.setProgress(_connectionRecoveryAttempts, _connectAttemptsPerButtonClick+2);
+					_trackingConnectionStatus = 1;
+
+					// The connection server connector still thinks that it is connected despite an attempt to unsubscribe.
+					// We'll try a disconnect first, then a complete reset of the connector.
+					if(connection.isConnected && 1 == _connectionRecoveryAttempts)
+					{
+						// First reconnect attempt involves unsubscribing, but it failed,
+						// so try to disconnect to reset the connection
+						connection.disconnect();
+					}
+					else
+					{
+						// Disconnect failed: reset the tracking server completely
+						setupTrackingServerConnection();
+						connection.initialize();
+					}
+				}
+					// No success with series of reconnects
+				else
+				{
+					// Unknown connection problem--so give opportunity to manually reconnect
+					_connectionRecoveryTimer.stop();
+					_trackingConnectionStatus = 0;
+					btnReconnect.enabled = true;
+					_reconnectProgress.visible = false;
+					Alert.show("Unable to connect to live tracking.");
+				}
+			}
+
+				// We're connected--stop the reconnect timer
+			else
+			{
+				_connectionRecoveryTimer.stop();
+				btnReconnect.enabled = true;
+				_reconnectProgress.visible = false;
+			}
+		}
+
+		protected function filterObservation(infoPoint:MapPoint, observationAttributes:Object):Boolean
+		{
+			_observationActivityIndicatorOn = true;
+
+			// If this observation has an index, we'll create an observation description for it
+			var itemIndex:String = observationAttributes[_observationIndexField];
+			if(itemIndex != null)
+			{
+				var itemDictionaryIndex:String = generateIndex(itemIndex);
+
+				var observationDesc:Object = new Object();
+				observationDesc["index"] = itemIndex;
+				observationDesc["observation"] = observationAttributes;
+				observationDesc["infoPoint"] = infoPoint;
+				_observations[itemDictionaryIndex] = observationDesc;
+
+				// Add/upate this item  in our list of observed equipment, which shows equipment
+				// actually observed, as opposed to the potential equipment from the equipment list
+				var testExists:Object = _observedEquipment[itemDictionaryIndex];
+				if(!testExists)
+				{
+					// New equipment name; add to names list
+					_observedEquipmentNames.addItem(itemDictionaryIndex);
+				}
+				// Add/update equipment observation
+				_observedEquipment[itemDictionaryIndex] = observationDesc;
+			}
+
+			return true;
+		}
+
+		//====================================================================================================================//
+		// Observation symbology
+
+		protected var _latestObservationLabelingField:String = null;
+		[Bindable] protected var _showLabelingField:Boolean = false;
+		protected var _latestObservationSymbol:PictureMarkerSymbol = null;
+		protected var _latestObservationSymbolHeadingField:String = null;
+		protected var _latestObservationDefaultColor:uint = 0x006600;
+		protected var _latestObservationDefaultSize:Number = 10;
+		protected var _nextOldestObservationDefaultColor:uint = 0x0000ff;
+		protected var _nextOldestObservationDefaultSize:Number = 6;
+		protected var _nextOldestObservationDefaultAlpha:Number = 1;
+		protected var _oldestObservationDefaultColor:uint = 0x000000;
+		protected var _oldestObservationDefaultSize:Number = 1;
+		protected var _oldestObservationDefaultAlpha:Number = 0.25;
+
+		protected function setupObservationSymbology():void
+		{
+			// Which field is used for the simple label shown for the latest observation?
+			if (configXML.latestObservationLabelingField.toString() != "")
+			{
+				_latestObservationLabelingField = configXML.latestObservationLabelingField.toString();
+				_showLabelingField = true;
+			}
+
+			// Get the custom observation icon
+			if ( configXML.latestObservationSymbol.toString() != "")
+			{
+				var pathToImages:String = this.config.substring(0, this.config.lastIndexOf("/")) + "/assets/images/";
+				_latestObservationSymbol = new PictureMarkerSymbol(
+					pathToImages + configXML.latestObservationSymbol.toString(), 30, 30);
+			}
+
+			// Will the symbol show the track heading?
+			if (configXML.latestObservationSymbolHeadingField.toString() != "")
+			{
+				_latestObservationSymbolHeadingField = configXML.latestObservationSymbolHeadingField.toString();
+			}
+
+			// Get coloration for older observations
+			if (configXML.latestObservationDefaultColor.toString() != "")
+			{
+				_latestObservationDefaultColor = configXML.latestObservationDefaultColor.toString();
+			}
+			if (configXML.latestObservationDefaultSize.toString() != "")
+			{
+				_latestObservationDefaultSize = configXML.latestObservationDefaultSize.toString();
+			}
+			if (configXML.nextOldestObservationDefaultColor.toString() != "")
+			{
+				_nextOldestObservationDefaultColor = configXML.nextOldestObservationDefaultColor.toString();
+			}
+			if (configXML.nextOldestObservationDefaultSize.toString() != "")
+			{
+				_nextOldestObservationDefaultSize = configXML.nextOldestObservationDefaultSize.toString();
+			}
+			if (configXML.nextOldestObservationDefaultAlpha.toString() != "")
+			{
+				_nextOldestObservationDefaultAlpha = configXML.nextOldestObservationDefaultAlpha.toString();
+			}
+			if (configXML.oldestObservationDefaultColor.toString() != "")
+			{
+				_oldestObservationDefaultColor = configXML.oldestObservationDefaultColor.toString();
+			}
+			if (configXML.oldestObservationDefaultSize.toString() != "")
+			{
+				_oldestObservationDefaultSize = configXML.oldestObservationDefaultSize.toString();
+			}
+			if (configXML.oldestObservationDefaultAlpha.toString() != "")
+			{
+				_oldestObservationDefaultAlpha = configXML.oldestObservationDefaultAlpha.toString();
+			}
+		}
+
+		protected function getOverrideSymbol(observationAttributes:Object):Symbol
+		{
+			return _latestObservationSymbol;
+		}
+
+		protected function initTrackingLayerColors(symbolType:String):void
+		{
+			trackingLayerLatestObservationRenderer.symbolType = symbolType;
+			trackingLayerLatestObservationRenderer.labelSymbol.textAttribute =
+				chkLabel.selected ? _latestObservationLabelingField : null;
+			if(symbolType == SymbolType.SIMPLE)
+			{
+				(trackingLayerLatestObservationRenderer.symbol as SimpleMarkerSymbol).color = _latestObservationDefaultColor;
+				(trackingLayerLatestObservationRenderer.symbol as SimpleMarkerSymbol).size = _latestObservationDefaultSize;
+			}
+
+			trackingLayerObservationAger.colorRange.toColor = _nextOldestObservationDefaultColor;
+			trackingLayerObservationAger.sizeRange.toSize = _nextOldestObservationDefaultSize;
+			trackingLayerObservationAger.alphaRange.toAlpha = _nextOldestObservationDefaultAlpha;
+			trackingLayerObservationAger.colorRange.fromColor = _oldestObservationDefaultColor;
+			trackingLayerObservationAger.sizeRange.fromSize = _oldestObservationDefaultSize;
+			trackingLayerObservationAger.alphaRange.fromAlpha = _oldestObservationDefaultAlpha;
+
+			_trackingLayer.refresh();
+		}
+
+		protected function get trackingLayerRenderer():TemporalRenderer
+		{
+			var layer:FilteredTrackingLayer = this._trackingLayer;
+			return ((layer != null) && (layer.renderer is TemporalRenderer)) ? layer.renderer as TemporalRenderer : null;
+		}
+
+		protected function get trackingLayerLatestObservationRenderer():LabeledObservationRenderer
+		{
+			var renderer:TemporalRenderer = this.trackingLayerRenderer;
+			return ((renderer != null) && (renderer.latestObservationRenderer is LabeledObservationRenderer)) ?
+				renderer.latestObservationRenderer as LabeledObservationRenderer : null;
+		}
+
+		protected function get trackingLayerObservationRenderer():LabeledObservationRenderer
+		{
+			var renderer:TemporalRenderer = this.trackingLayerRenderer;
+			return ((renderer != null) && (renderer.observationRenderer is LabeledObservationRenderer)) ?
+				renderer.observationRenderer as LabeledObservationRenderer : null;
+		}
+
+		protected function get trackingLayerTrackRenderer():SimpleRenderer
+		{
+			var renderer:TemporalRenderer = this.trackingLayerRenderer;
+			return ((renderer != null) && (renderer.trackRenderer is SimpleRenderer)) ?
+				renderer.trackRenderer as SimpleRenderer : null;
+		}
+
+		protected function get trackingLayerObservationAger():TimeRampAger
+		{
+			var renderer:TemporalRenderer = this.trackingLayerRenderer;
+			return (renderer != null) ? renderer.observationAger as TimeRampAger : null;
+		}
+
+		protected function chkLabelPlows_changeHandler(event:Event):void
+		{
+			if(null != _trackingLayer)
+			{
+				trackingLayerLatestObservationRenderer.labelSymbol.textAttribute =
+					((event.currentTarget as CheckBox).selected) ? _latestObservationLabelingField : null;
+				_trackingLayer.refresh();
+			}
+		}
+
+		//====================================================================================================================//
+		// Equipment list
+
+		protected var _equipmentListUrl:String;
+		protected var _equipmentListIndexField:String = "";
+
+		protected var _equipmentList:Dictionary = new Dictionary();
+		protected var _equipmentListRefreshTimer:Timer;
+
+		protected function setupEquipmentList():void
+		{
+			// Get the equipment list server connection information
+			if (configXML.equipmentListUrl.toString() != "")
+			{
+				_equipmentListUrl = configXML.equipmentListUrl.toString();
+				var whitespace:RegExp = /[\r\n\t ]/g;
+				_equipmentListUrl = _equipmentListUrl.replace(whitespace, "");
+			}
+
+			if (configXML.secondsBetweenEquipmentListRefreshes.toString() != "")
+			{
+				// Set up the equipment refresh timer, but don't start it since we're just handling
+				// configuration parameters
+				var secondsBetweenEquipmentListRefreshes:Number =
+					parseInt(configXML.secondsBetweenEquipmentListRefreshes.toString());
+				if(isNaN(secondsBetweenEquipmentListRefreshes)) secondsBetweenEquipmentListRefreshes = 60;
+				if(10 > secondsBetweenEquipmentListRefreshes) secondsBetweenEquipmentListRefreshes = 10;
+
+				_equipmentListRefreshTimer = new Timer(secondsBetweenEquipmentListRefreshes * 1000, 1);
+				_equipmentListRefreshTimer.addEventListener("timer", equipmentListRefreshTimerHandler);
+			}
+
+			// Get equipment list index field so that we can match it to observations
+			if (configXML.equipmentListIndexField.toString() != "")
+			{
+				_equipmentListIndexField = configXML.equipmentListIndexField.toString();
+			}
+
+			// Get the equipment list
+			refreshEquipmentList();
+
+			// Apply a simple sort to the dropdown list of equipment names
+			_observedEquipmentNames.sort = new Sort;
+			_observedEquipmentNames.refresh()
+
+		}
+
+		protected function equipmentListRefreshTimerHandler(event:TimerEvent):void
+		{
+			refreshEquipmentList();
+		}
+
+		protected function refreshEquipmentList():void
+		{
+			// Launch the retrieval of the equipment list
+			fetchJSON(_equipmentListUrl, gotEquipmentList, unavailableEquipmentList);
+		}
+
+		protected function gotEquipmentList(event:Event):void
+		{
+			try
+			{
+				// Attempt to interpret the district's equipment list
+				var resultsAsJSON:String = (event.target as URLLoader).data;
+				var results:Object = JSONUtil.decode(resultsAsJSON);
+
+				if(null == results.features)
+				{
+					unavailableEquipmentList();
+					_equipmentListUpdateActivityIndicatorOK = false;
+					return;
+				}
+
+				// Load the equipment list into a working dictionary
+				var equipmentListUpdate:Dictionary = new Dictionary();
+				for each(var rec:* in results.features)
+				{
+					var equipmentListIndexField:String = rec.attributes[_equipmentListIndexField] as String;
+					equipmentListUpdate[generateIndex(equipmentListIndexField)] = rec.attributes;
+				}
+
+				// Update the equipment list if all went well with the fetch
+				_equipmentList = equipmentListUpdate;
+				_equipmentListUpdateActivityIndicatorOK = true;
+			}
+			catch(e:Error)
+			{
+				_equipmentListUpdateActivityIndicatorOK = false;
+			}
+
+			// Try again regardless of success interpreting equipment list
+			scheduleNextEquipmentListQuery();
+		}
+
+		protected function unavailableEquipmentList(event:Event=null):void
+		{
+			_equipmentListUpdateActivityIndicatorOK = false;
+
+			// Try again regardless of success interpreting equipment list
+			scheduleNextEquipmentListQuery();
+		}
+
+		protected function scheduleNextEquipmentListQuery():void
+		{
+			// Start the timer for the next refresh. We'll do it here so that we don't
+			// have overlapping refreshes
+			if(null != _equipmentListRefreshTimer) _equipmentListRefreshTimer.start();
+		}
+
+		protected function fetchJSON(url:String, resultHandler:Function, errorHandler:Function):void
+		{
+			var loader:URLLoader = new URLLoader();
+			loader.dataFormat = URLLoaderDataFormat.TEXT;
+			loader.addEventListener("complete", resultHandler);
+			loader.addEventListener(IOErrorEvent.IO_ERROR, errorHandler);
+
+			// Add uniqueness to url to prevent caching by IE
+			var url2:String = url + "&time=" + (new Date()).getTime();
+			loader.load(new URLRequest(url2));
+		}
+
+		//====================================================================================================================//
+		// Equipment labeling and popup
+
+		protected var _popupWidth:Number = 200;
+		protected var _popupHeight:Number = 110;
+		protected var _popupFormat:String = null;
+
+		protected var _observations:Dictionary = new Dictionary();
+		protected var _observedEquipment:Dictionary = new Dictionary();
+		[Bindable] protected var _observedEquipmentNames:ArrayCollection = new ArrayCollection();
+
+		protected function setupEquipmentLabelingAndPopup():void
+		{
+			// Get the popup format
+			if (configXML.equipmentPopup)
+			{
+				if (configXML.equipmentPopup.@width.toString() != "")
+				{
+					_popupWidth = configXML.equipmentPopup.@width.toString();
+				}
+				if (configXML.equipmentPopup.@height.toString() != "")
+				{
+					_popupHeight = configXML.equipmentPopup.@height.toString();
+				}
+				if (configXML.equipmentPopup.format.toString() != "")
+				{
+					_popupFormat = configXML.equipmentPopup.format.toString();
+				}
+			}
+		}
+
+		protected function clickHandler(event:MouseEvent):void
+		{
+			if (event.currentTarget is ObservationGraphic)
+			{
+				// Show the popup for the clicked-upon observation; without zooming
+				var observation:ObservationGraphic = event.currentTarget as ObservationGraphic;
+				var itemIndex:String = observation.attributes[_observationIndexField];
+				if(itemIndex != null)
+				{
+					var itemDictionaryIndex:String = generateIndex(itemIndex);
+					var observationDesc:Object = _observations[itemDictionaryIndex];
+					if(observationDesc != null)
+					{
+						showPopup(itemDictionaryIndex, observationDesc, false);
+					}
+				}
+			}
+		}
+
+		protected function _equipmentNamesList_changeHandler(event:IndexChangeEvent):void
+		{
+			// Show the popup for the clicked-upon entry in the list; zoom if so configured
+			_findInput.text = _observedEquipmentNames[event.newIndex];
+			_observedEquipmentNamesList.visible = false;
+			showPopup(_findInput.text);
+		}
+
+		protected function _findInput_keyUpHandler(event:KeyboardEvent):void
+		{
+			var cr:uint = 13;
+			if(event.charCode == 13)
+			{
+				// Got the Enter key in the type-in box, so show the popup corresponding to the typed id;
+				// zoom if so configured
+				_observedEquipmentNamesList.visible = false;
+				showPopup(generateIndex(_findInput.text));
+			}
+			else if(0 == _findInput.text.length)
+			{
+				// Hide the dropdown list of equipment names if there's nothing in the type-in box
+				_observedEquipmentNamesList.visible = false;
+			}
+			else
+			{
+				// Look up the contents of the type-in box in the dropdown list of equipment names
+				// and scroll the list to show the first possible match
+				_observedEquipmentNamesList.visible = true;
+
+				// Search list of equipment names
+				for(var i:Number = 0; i < _observedEquipmentNames.length; ++i)
+				{
+					var name:String = _observedEquipmentNames[i] as String;
+					if(name.substr(0, _findInput.text.length).toUpperCase() == _findInput.text.toUpperCase())
+					{
+						// Two "ensure"s here: the first to scroll to the desired item; the second to
+						// scroll to the item after it so that the desired item is in the upper position
+						// in the multiline window of the dropdown list
+						_observedEquipmentNamesList.ensureIndexIsVisible(i);
+						_observedEquipmentNamesList.ensureIndexIsVisible(
+							Math.min(i + 4, _observedEquipmentNames.length - 1));
+						break;
+					}
+				}
+			}
+		}
+
+		protected function showPopup(itemIndex:String, observationDesc:Object=null, doPanZoom:Boolean=true):void
+		{
+			// Get the observation description for this item if we haven't already retrieved it
+			if(!observationDesc) observationDesc = _observations[itemIndex];
+
+			if(null != observationDesc)
+			{
+				var observationAttr:Object = observationDesc["observation"];
+
+				// Construct report
+				var report:String = "";
+				var equipmentDesc:Object = _equipmentList[itemIndex];
+				if(equipmentDesc == null || _popupFormat == null)
+				{
+					// For missing equipment description or omission of popup configuration, just show
+					// observation's index
+					report += screenForNull(observationAttr[_observationIndexField]);
+				}
+				else
+				{
+					// Fill in the popup format configuration with values from the equipment description,
+					// falling back to the observation description.
+					var replaceAllBRs:RegExp = /<br>/gi;
+					var tagOpeners:Array = _popupFormat.replace(replaceAllBRs, "\n").split("{");
+					for each(var piece:String in tagOpeners)
+					{
+						var tag_filler:Array = piece.split("}");
+						if(2 > tag_filler.length)
+						{
+							report += tag_filler[0];
+						}
+						else
+						{
+							var tag:String = tag_filler[0];
+							var filler:String = tag_filler[1];
+							var tagLookup:String = screenForNull(equipmentDesc[tag]);
+							if("" == tagLookup)
+							{
+								if(null != observationAttr) tagLookup = screenForNull(observationAttr[tag]);
+							}
+							report += tagLookup + filler;
+						}
+					}
+				}
+
+				// Show it in a popup
+				map.infoWindow.content = new TextArea();
+				map.infoWindow.content.width = _popupWidth;
+				map.infoWindow.content.height = _popupHeight;
+				(map.infoWindow.content as TextArea).text = report;
+				var origin:MapPoint = observationDesc["infoPoint"] as MapPoint;
+				map.infoWindow.show(origin);
+
+				// Pan/zoom are optional--it's up to the calling routine to decide if the map motion
+				// is desirable or distracting
+				if(doPanZoom)
+				{
+					// If we have a zoom buffer distance, center and zoom around the equipment
+					if(0 < _zoomToEquipmentBuffer)
+					{
+						map.centerAt(origin);
+						setZoomScale(new Extent(
+							origin.x - _zoomToEquipmentBuffer, origin.y - _zoomToEquipmentBuffer,
+							origin.x + _zoomToEquipmentBuffer, origin.y + _zoomToEquipmentBuffer));
+					}
+					else
+					{
+						// Pan if item is offscreen
+						var screenOrigin:Point = map.toScreen(origin);
+						if(screenOrigin.x <= map.screen.left || screenOrigin.x >= map.screen.right ||
+							screenOrigin.y <= map.screen.top || screenOrigin.y >= map.screen.bottom)
+						{
+							map.centerAt(origin);
+						}
+					}
+				}
+			}
+		}
+
+		protected function setZoomScale(inExtent:Extent):void
+		{
+			// Choose the nearest map zoom level to match the desired extent
+			if (!inExtent) return;
+			map.extent = inExtent;
+			var nCurrent:Number = map.scale;
+			var nScale:Number = 0;
+			var ui:Number = map.lods.length;
+
+			var idx:Number;
+			idx = ui;
+			idx = idx - 1;
+			var sUI:String = ui.toString();
+
+			for (var i:int = 0; i<idx; i++)
+			{
+				nScale = (map.lods[idx - i] as LOD).scale;
+				if (nScale > nCurrent)
+				{
+					map.scale = nScale;
+					break;
+				}
+			}
+		}
+
+		protected function screenForNull(phrase:String):String
+		{
+			return !phrase ? "" : phrase;
+		}
+
+		protected function generateIndex(seed:String):String
+		{
+			return seed.toUpperCase();
+		}
+
+		//====================================================================================================================//
+	]]>
+    </fx:Script>
+
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace esri "http://www.esri.com/2008/ags";
+		@namespace components "com.esri.ags.components.*";
+
+		s|TextInput
+		{
+			fontFamily: Arial;
+			fontSize: 10;
+			fontWeight: normal;
+			color: #FFFFFF;
+			contentBackgroundColor: #444444;
+			textAlign: left;
+			paddingBottom: 3;
+			paddingLeft: 3;
+			paddingRight: 3;
+			paddingTop: 3;
+			borderColor: #A1A1A1;
+			contentBackgroundAlpha: 0.9;
+			chromeColor: #A1A1A1;
+		}
+
+		s|Label
+		{
+			fontFamily: Arial;
+			fontSize: 11;
+			fontWeight: normal;
+			color: #FFFFFF;
+			fontStyle: normal;
+			textAlign: left;
+		}
+
+		s|Button
+		{
+			chromeColor: #444444;
+			corner-radius: 3;
+			fontWeight: bold;
+			fontFamily: Arial;
+			fontSize: 10;
+			color: #222222;
+		}
+
+		s|CheckBox
+		{
+			fontFamily: Arial;
+			fontSize: 10;
+			fontWeight: normal;
+			color: #FFFFFF;
+			fontStyle: normal;
+		}
+	</fx:Style>
+
+	<viewer:WidgetTemplate id="Tracking"
+		width="220" height="154" minWidth="220" minHeight="154" maxWidth="220" maxHeight="154"
+		open="widgetOpenedHandler(event)" closed="widgetClosedHandler(event)" >
+		<s:VGroup width="180">
+			<s:BorderContainer id="options" width="180" height="57" backgroundColor="#222222" depth="1">
+				<s:Label x="3" y="2" width="40" height="29" text="Find my truck:" textAlign="right"
+					verticalAlign="middle" color="{0 != _observedEquipmentNames.length ? 0xffffff : 0xaaaaaa}" />
+				<s:TextInput id="_findInput" x="48" y="5" width="124" height="21"
+					keyUp="_findInput_keyUpHandler(event)" tabIndex="0"
+					enabled="{0 != _observedEquipmentNames.length}"
+					toolTip="Find a vehicle by its ID" />
+				<s:CheckBox id="chkLabel" visible="{_showLabelingField}" tabIndex="1" y="30" left="4" width="86"
+					height="24" label="Show labels" change="chkLabelPlows_changeHandler(event)"
+					toolTip="Turn vehicle labels on or off" selected="true" />
+				<s:List id="_observedEquipmentNamesList" visible="false" tabIndex="2" depth="2"
+					x="48" y="26" width="124" height="72"
+					dataProvider="{_observedEquipmentNames}" change="_equipmentNamesList_changeHandler(event)">
+					<s:itemRenderer>
+						<fx:Component>
+							<s:ItemRenderer>
+								<s:states>
+									<s:State name="normal" />
+									<s:State name="hovered" />
+								</s:states>
+								<s:Rect left="0" right="0" top="0" bottom="0">
+									<s:fill>
+										<s:SolidColor alpha="0.5" alpha.hovered="0.8"
+											color="#000000" color.hovered="#546377" />
+									</s:fill>
+								</s:Rect>
+								<s:Label text="{data}" height="14" verticalAlign="middle" />
+							</s:ItemRenderer>
+						</fx:Component>
+					</s:itemRenderer>
+				</s:List>
+				<s:Label x="111" y="30" width="56" height="29" text="Equipment:" textAlign="right"
+					verticalAlign="middle" color="{0 != _observedEquipmentNames.length ? 0xffffff : 0xaaaaaa}" />
+				<s:BorderContainer backgroundColor="{_equipmentListUpdateActivityIndicatorOK ? 0x00ff00 : 0xff0000}"
+					borderVisible="false" x="170" y="37" width="2" height="12" />
+			</s:BorderContainer>
+			<s:BorderContainer id="connectionStatus" width="180" height="35" backgroundColor="#222222" depth="0">
+				<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle">
+					<s:BorderContainer backgroundColor="{_observationActivityIndicatorOn ? 0x00ff00 : 0x333333}"
+						borderVisible="false" width="2" height="12" />
+					<s:Label id="lblStatus"
+						text="{0 == _trackingConnectionStatus ? 'Disconnected' :
+						(2 == _trackingConnectionStatus ? 'Connected' : 'Connecting...')}"
+						left="5" width="80" height="26" textAlign="center" verticalAlign="middle"
+						color="{2 == _trackingConnectionStatus ? 0x00ff00 :
+						(0 == _trackingConnectionStatus ? 0xff0000 : 0xaaaaaa)}"/>
+					<s:Button id="btnReconnect" y="40" width="80" height="24" label="Reconnect"
+						click="btnReconnect_clickHandler()" enabled="false" tabIndex="3"
+						toolTip="Connect or reconnect to the vehicle-tracking live feed" />
+				</s:HGroup>
+				<mx:ProgressBar id="_reconnectProgress" mode="manual" visible="false"
+					x="20" y="22" width="61" height="8" label=" " />
+			</s:BorderContainer>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) 2008-2011 Esri
+//
+// All rights reserved under the copyright laws of the United States
+// and applicable international laws, treaties, and conventions.
+//
+// You may freely redistribute and use this software, with or
+// without modification, provided you include the original copyright
+// and use restrictions.  See use restrictions in the file:
+// License.txt and/or use_restrictions.txt.
+//
+////////////////////////////////////////////////////////////////////////////////
+-->
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="100%" height="100%"
+		 preinitialize="preinitializeHandler(event)">
+	<!-- BINDING METADATA -->
+	<fx:Binding source="medianCanvas" destination="_pm.medianCanvas"/>
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" />
+	</s:layout>
+	<s:states>
+		<s:State name="chartState" />
+		<s:State name="legendState"/>
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import com.esri.stl.utils.FormatterUtil;
+
+			import mx.events.FlexEvent;
+
+			import widgets.SalesAnalysis.model.AppModel;
+			import widgets.SalesAnalysis.presenter.ChartPresenter;
+			[Bindable]
+			private var _pm:ChartPresenter;
+
+			// fix for embedded chart in 4.6
+			// by odejonge, http://forums.adobe.com/message/4143789
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+
+			protected function preinitializeHandler(event:FlexEvent):void
+			{
+				var styleObjects:Array = FlexGlobals.topLevelApplication.styleManager.selectors;
+				for each(var styleObj:String in styleObjects)  {
+					var style:CSSStyleDeclaration = FlexGlobals.topLevelApplication.styleManager.getStyleDeclaration(styleObj);
+					styleManager.setStyleDeclaration(styleObj, style, true);
+				}
+
+                // Add in call to original handler
+                original_preinitializeHandler(event);
+			}
+			// end fix
+
+			protected function original_preinitializeHandler(event:FlexEvent):void
+			{
+				_pm = AppModel.getInstance().chartPresenter;
+			}
+			protected function medianCanvasShowEffect(event:FlexEvent):void
+			{
+				fadeEffectIn.play();
+			}
+			protected function medianCanvasHideEffect(event:FlexEvent):void
+			{
+				fadeEffectOut.play();
+			}
+			protected function medianCanvasRollOverEffect(event:FlexEvent):void
+			{
+				medianCanvas.filters = [glowFilter];
+			}
+			protected function medianCanvasRollOutEffect(event:FlexEvent):void
+			{
+				medianCanvas.filters = [];
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<!-- CHART SHAPE OUTLINE COLOR -->
+		<mx:SolidColorStroke id="chartShapeOutlineColor" color="{gridStroke.color}" weight="1"/>
+		<!-- XAXIS, XTICK COLOR-->
+		<mx:SolidColorStroke id="xTickStroke" color="{gridStroke.color}" weight="1" caps="square"/>
+		<mx:SolidColorStroke id="xAxisStroke" color="{_pm.axisStrokeColor}" weight="8" caps="none"/>
+		<!-- YAXIS, YTICK COLOR -->
+		<mx:SolidColorStroke id="yTickStroke" color="{gridStroke.color}" weight="1" caps="square"/>
+		<mx:SolidColorStroke id="yAxisStroke" color="{_pm.axisStrokeColor}" weight="8" caps="none"/>
+		<!-- GRID COLOR -->
+		<mx:SolidColorStroke id="gridStroke" color="{_pm.gridStrokeColor}" weight="1" caps="none"/>
+
+		<s:Fade id="fadeEffectIn" targets="{[medianCanvas]}" alphaFrom="0.5" alphaTo="1.0" repeatCount="1" startDelay="5000"/>
+		<s:Fade id="fadeEffectOut" targets="{[medianCanvas]}" alphaFrom="1.0" alphaTo="0.5" repeatCount="1" />
+		<s:GlowFilter id="glowFilter" alpha="0.5" color="0xFFFFFF" blurX="5" blurY="5"/>
+	</fx:Declarations>
+	<s:VGroup id="chartNavigatorContent" includeIn="chartState" width="95%"
+			  height="90%" visible="false" visible.chartState="true">
+		<s:Label text="{_pm.dataProvider.length} properties" fontWeight="bold"/>
+		<s:Label text="Median {_pm.yAxisShapeLabel} {FormatterUtil.formatAsPercentage(String(_pm.salesRatioMedianValue),2)}"/>
+		<s:Label text="{_pm.xAxisTitle}: ({FormatterUtil.formatAsCurrency(String(_pm.xMinimumValue))} - {FormatterUtil.formatAsCurrency(String(_pm.xMaximumValue))})"/>
+		<mx:PlotChart id="plot" width="95%" height="95%"
+					  dataProvider="{_pm.dataProvider}"
+					  showDataTips="true"
+					  fontSize="{_pm.axisFontSize}"
+					  fontWeight="bold"
+					  dataTipFunction="{_pm.plotDataTipFunction}"
+					  itemClick="_pm.plot_itemClickHandler(event)"
+					  >
+			<!-- http://livedocs.adobe.com/flex/3/html/help.html?content=charts_types_10.html -->
+			<!-- BACKGROUND ELEMENTS -->
+			<mx:backgroundElements>
+				<mx:GridLines gridDirection="both" horizontalStroke="{gridStroke}" verticalStroke="{gridStroke}"/>
+				<mx:CartesianDataCanvas id="medianCanvas" showEffect="medianCanvasShowEffect(event)" hideEffect="medianCanvasHideEffect(event)"
+										rollOverEffect="medianCanvasRollOverEffect(event)" rollOutEffect="medianCanvasRollOutEffect(event)"
+										/>
+			</mx:backgroundElements>
+			<!-- HORIZONTAL AXIS RENDERER -->
+			<mx:horizontalAxisRenderers>
+				<mx:AxisRenderer axis="{xAxis}"
+								 minorTickPlacement="cross"
+								 minorTickStroke="{gridStroke}"
+								 tickStroke="{xTickStroke}"
+								 axisStroke="{xAxisStroke}"
+								 color="{_pm.axisFontColor}"
+								 />
+			</mx:horizontalAxisRenderers>
+			<!-- VERTICAL AXIS RENDERER -->
+			<mx:verticalAxisRenderers>
+				<mx:AxisRenderer axis="{yAxis}"
+								 minorTickStroke="{gridStroke}"
+								 tickStroke="{yTickStroke}"
+								 axisStroke="{yAxisStroke}"
+								 color="{_pm.axisFontColor}"
+								 />
+			</mx:verticalAxisRenderers>
+			<!-- VERTICAL AXIS -->
+			<mx:verticalAxis>
+				<mx:LinearAxis id="yAxis" title="{_pm.yAxisTitle}" labelFunction="{_pm.yLabelFunction}"
+							   minimum="{_pm.yMinimum}" maximum="{_pm.yMaximum}"/>
+			</mx:verticalAxis>
+			<!-- HORIZONTAL AXIS -->
+			<mx:horizontalAxis>
+				<mx:LinearAxis id="xAxis" title="{_pm.xAxisTitle}" labelFunction="{_pm.xLabelFunction}"
+							   minimum="{_pm.xMinimum}" maximum="{_pm.xMaximum}"/>
+			</mx:horizontalAxis>
+			<!-- CHART SERIES -->
+			<mx:series>
+				<mx:PlotSeries id="plotSeries"
+							   stroke="{chartShapeOutlineColor}"
+							   fillFunction="{_pm.plotFillFunction}"
+							   dataFunction="{_pm.chartGraphicDataFunction}"
+							   itemRenderer="mx.charts.renderers.BoxItemRenderer"
+							   />
+			</mx:series>
+		</mx:PlotChart>
+	</s:VGroup>
+	<s:VGroup id="legendNavigatorContent" includeIn="legendState" width="95%"
+			  height="90%" visible="false" visible.legendState="true" horizontalAlign="center" verticalAlign="top" gap="20">
+		<mx:Legend dataProvider="{plot}" color="0x323232"/>
+	</s:VGroup>
+	<!--<s:ToggleButton id="chartToggleButton" fontWeight="bold" label="{chartToggleButton.selected ? 'View Legend' : 'View Chart'}"
+	selected="true" change="chartToggleButton_changeHandler(event)" />-->
+	<s:Button id="backButton" label="Back to Results"
+			  chromeColor="{getStyle('btnPreviousColor')}"
+			  color="{getStyle('btnFontColor')}"
+			  click="_pm.goResults()" toolTip="Return to Results"/>
+</s:Group>

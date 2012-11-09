@@ -1,0 +1,1326 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget
+    xmlns:fx            ="http://ns.adobe.com/mxml/2009"
+    xmlns:s             ="library://ns.adobe.com/flex/spark"
+    xmlns:mx            ="library://ns.adobe.com/flex/mx"
+    xmlns:viewer        ="com.esri.viewer.*"
+    xmlns:esri          ="http://www.esri.com/2008/ags"
+    widgetConfigLoaded="init()">
+
+    <fx:Declarations>
+        <mx:HTTPService id="gpChemicalService"
+                        resultFormat="text"
+                        result="onJSONLoad(event)"/>
+        <mx:HTTPService id="gpPlacardService"
+                        resultFormat="text"
+                        result="onJSONLoadPlacard(event)"/>
+
+        <esri:Geoprocessor	id="findClosestWeatherStation" concurrency="last" useAMF="false"/>
+        <esri:GeometryService id="geometryService" url="http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer"
+                              projectComplete="projectCompleteHandler(event)" fault="faultHandler(event)"/>
+        <mx:SeriesSlide id="slideLeft" duration="1000" direction="left"/>
+        <mx:SeriesSlide id="slideRight" duration="1000" direction="right"/>
+        <mx:NumberFormatter	id="numFormatter" useThousandsSeparator="true" precision="0"/>
+
+        <esri:SimpleFillSymbol id="sfsZone1" color="#FFCCFF" style="solid" alpha="0.5"/>
+        <esri:SimpleFillSymbol id="sfsZone2" color="#FF0000" style="solid" alpha="0.5"/>
+        <esri:SimpleFillSymbol id="sfsZone3" style="null" alpha="0"/>
+        <esri:PictureMarkerSymbol id="spillSymbol" source="{ICON_URL}HAZMAT_Icon.png" height="30" width="30"/>
+        <esri:PictureMarkerSymbol id="facilitiesSymbol" source="{ICON_URL}i_facilities.png" height="30" width="30"/>
+    </fx:Declarations>
+
+    <viewer:states>
+        <s:State name="ergChemical"/>
+        <s:State name="ergDemographics"/>
+        <s:State name="ergInfrastructure"/>
+        <s:State name="ergWindDirection"/>
+        <s:State name="ergGuide"/>
+    </viewer:states>
+
+    <viewer:transitions>
+        <s:Transition autoReverse="true" toState="*">
+            <s:Fade targets="{[ergGuide, ergWindDirection, ergInfrastructure, ergDemographics, ergChemical]}"/>
+        </s:Transition>
+    </viewer:transitions>
+
+    <fx:Script>
+        <![CDATA[
+            import com.esri.ags.FeatureSet;
+            import com.esri.ags.Graphic;
+            import com.esri.ags.Map;
+            import com.esri.ags.SpatialReference;
+            import com.esri.ags.events.DrawEvent;
+            import com.esri.ags.events.GeometryServiceEvent;
+            import com.esri.ags.events.GeoprocessorEvent;
+            import com.esri.ags.events.QueryEvent;
+            import com.esri.ags.geometry.Extent;
+            import com.esri.ags.geometry.Geometry;
+            import com.esri.ags.geometry.MapPoint;
+            import com.esri.ags.geometry.Polygon;
+            import com.esri.ags.layers.GraphicsLayer;
+            import com.esri.ags.layers.Layer;
+            import com.esri.ags.symbols.PictureMarkerSymbol;
+            import com.esri.ags.tasks.GeometryService;
+            import com.esri.ags.tasks.Geoprocessor;
+            import com.esri.ags.tasks.QueryTask;
+            import com.esri.ags.tasks.supportClasses.ProjectParameters;
+            import com.esri.ags.tasks.supportClasses.Query;
+            import com.esri.ags.tools.DrawTool;
+            import com.esri.ags.tools.NavigationTool;
+            import com.esri.viewer.AppEvent;
+            import com.esri.viewer.IInfowindowTemplate;
+            import com.esri.viewer.ViewerContainer;
+            import com.esri.viewer.WidgetStates;
+            import com.esri.viewer.components.TitlebarButton;
+
+            import flash.net.navigateToURL;
+
+            import mx.collections.ArrayCollection;
+            import mx.collections.ArrayList;
+            import mx.collections.ItemResponder;
+            import mx.controls.Alert;
+            import mx.controls.List;
+            import mx.core.FlexGlobals;
+            import mx.core.UIComponent;
+            import mx.events.CloseEvent;
+            import mx.rpc.AsyncResponder;
+            import mx.rpc.Fault;
+            import mx.rpc.events.FaultEvent;
+            import mx.rpc.events.ResultEvent;
+
+            import spark.events.IndexChangeEvent;
+
+            private const ICON_URL:String = "widgets/ERGChemical/assets/images/";
+
+            //chemical names list to be pulled from the gp service
+            [Bindable] private var _materialTypesAC:ArrayCollection;
+            [Bindable] private var _placardIDAC:ArrayCollection;
+            private var _chemicalOrPlacardParams:Array;
+
+            //Widget labels
+            [Bindable] private var _descriptionLabel:String;
+            [Bindable] private var _chemicalOrPlacardLabel:String;
+            [Bindable] private var _chemicalOrPlacardType:String;
+            [Bindable] private var _spillSizeLabel:String;
+            [Bindable] private var _timeOfSpillLabel:String;
+            [Bindable] private var _windDirectionLabel:String;
+            private var _chartLabelDemo:String;
+            private var _chartLabelInfra:String;
+            private var loadingLabel:String;
+
+            [Bindable] private var _msgVisible:Boolean = false;
+            [Bindable] private var _msgVisibleInfra:Boolean = false;
+
+            //demographics query layers and fields
+            private var _demoQueryLayer:String;
+            private var _demoQueryFields:String;
+            private var _summaryField:String;
+            private var _summaryValue:Number = 0; //calculate statistics - total value of population
+
+            //demographics chart related variables
+            private var _chartSeries:Array = [];
+            private var _chartFields:Array = [];
+            private var _chartFieldsAlias:Array = [];
+            private var _currentChart:Number = 0;
+
+            //infrastructure query layer and fields
+            private var _queryInfrastructureLayer:String;
+            private var _queryInfrastructureFields:String;
+            private var _infrastructuresummaryField:String;
+
+            //infrastructure chart related variables
+            private var _infrastructurechartSeries:Array = [];
+
+            private var _guideURL:String;
+            private var _guideNum:Number;
+
+            //ERG Chemical and Placard GP service URL address holders
+            private var gp:Geoprocessor;
+            private var _gpERGChemical:String;
+            private var _gpERGPlacard:String;
+            //chemical GP service parameter names
+            private var _arrChemicalGPParameters:Array;
+            //placard GP service parameter names
+            private var _arrPlacardGPParameters:Array;
+
+            private var infoTemplate:IInfowindowTemplate;
+            private var _infoUrl:String;
+
+            //all for the wind direction calculation
+            private var queryWindDirection:QueryTask;
+            private var _queryWindDirectionFields:Array=[];
+            private var _timeZoneDecsription : String;
+            [Bindable] private var msgFromWeatherStation:String;
+            [Bindable] private var weatherStationName : String
+            [Bindable] private var wsUTCTime : String
+            [Bindable] private var distInMiles : String;
+            private var windDirectionTo :Number = -9999;
+
+            //graphics layers
+            private var graphicsLayer: GraphicsLayer;
+            private var glinfrastructure: GraphicsLayer;
+            private var spillLocationGLayer: GraphicsLayer;
+
+            //http://forums.adobe.com/message/4143789
+            //https://issues.apache.org/jira/browse/FLEX-33052
+            override public function get moduleFactory():IFlexModuleFactory
+            {
+                return FlexGlobals.topLevelApplication.moduleFactory;
+            }
+
+            //http://helpdev.arcgis.com/en/webapps/flexviewer/help/index.html
+            private function init():void
+            {
+                graphicsLayer = new GraphicsLayer();
+                glinfrastructure = new GraphicsLayer();
+                spillLocationGLayer = new GraphicsLayer();
+
+                if (configXML)
+                {
+                    _gpERGChemical = configXML.gpERGChemical;
+                    _gpERGPlacard = configXML.gpERGPlacard;
+
+                    //Call gpService to get chemical names
+                    gpChemicalService.url = _gpERGChemical + "?f=json";
+                    gpChemicalService.send();
+
+                    //Call gpservice to get placard IDs
+                    gpPlacardService.url = _gpERGPlacard + "?f=json";
+                    gpPlacardService.send();
+
+                    _guideURL = configXML.ergGuideURL;
+
+                    //Widget labels
+                    _infoUrl                          = configXML.info || "widgets/InfoTemplates/InfoPopupWidget.swf";
+                    _descriptionLabel                = configXML.labels.descriptionlabel || "Draw a spill location:";
+                    _chemicalOrPlacardLabel          = configXML.labels.chemicalOrPlacardLabel || "Calculate by:";
+                    _chemicalOrPlacardType           = configXML.labels.chemicalOrPlacardTypeLabel || "Material";
+                    _spillSizeLabel                  = configXML.labels.spillSizeLabel || "Spill Size:";
+                    _timeOfSpillLabel                = configXML.labels.timeOfSpillLabel || "Time of Spill:";
+                    _windDirectionLabel              = configXML.labels.windDirectionLabel || "Win Direction (blowing to):";
+
+                    loadingLabel                    = configXML.labels.loadinglabel || "Loading...";
+                    _chartLabelDemo                 = configXML.labels.chartlabel || "Total for selected area: ";
+                    _chartLabelInfra                 = configXML.labels.chartlabelinfra || "Total By Type: ";
+                    _timeZoneDecsription            = configXML.labels.TimeZoneDescription || "UTC";
+
+
+                    //chemical GP parameter names
+                    var strChemicalGPParameterNames:String    = configXML.chemicalGPParameters;
+                    _arrChemicalGPParameters = strChemicalGPParameterNames.split(",");
+
+                    //placard GP parameter names
+                    var strPlacardGPParameterNames:String = configXML.placardGPParameters;
+                    _arrPlacardGPParameters = strPlacardGPParameterNames.split(",");
+
+                    //query demographics
+                    _demoQueryLayer                  = configXML.demographicLayer;
+                    _demoQueryFields                 = configXML.demoFields;
+                    _summaryField                    = configXML.summaryfield;
+                    var chartList:XMLList           = configXML..series;
+                    for (var i:Number = 0; i < chartList.length(); i++)
+                    {
+                        _chartFields.push(chartList[i]);
+                    }
+
+                    var chartSeriesAliasList:XMLList = configXML..seriesAlias;
+                    for (var k:Number = 0; k < chartSeriesAliasList.length(); k++)
+                    {
+                        _chartFieldsAlias.push(chartSeriesAliasList[k]);
+                    }
+
+                    //query infrastructure
+                    _queryInfrastructureLayer        = configXML.InfrastructureLayer;
+                    _queryInfrastructureFields       = configXML.Infrastructurefields;
+                    _infrastructuresummaryField      = configXML.Infrastructuresummaryfield;
+
+                    //find the nearest weather station
+                    findClosestWeatherStation.url  = configXML.findclosestWS;
+                    findClosestWeatherStation.useAMF=false;
+
+                    //query wind direction from weather station service
+                    queryWindDirection              = new QueryTask();
+                    queryWindDirection.url          = configXML.WeatherStationLayer;
+                    queryWindDirection.useAMF       = true;
+                    var queryWindDirectionFieldsList:XMLList = configXML..WindDirectionField;
+                    var windFieldsArray:Array       =[];
+                    for (var l:Number = 0; l < queryWindDirectionFieldsList.length(); l++)
+                    {
+                        windFieldsArray.push(queryWindDirectionFieldsList[l]);
+                    }
+                    _queryWindDirectionFields = windFieldsArray[0].split(",");
+
+                    var data:Object = {
+                        id: String(this.widgetId),
+                        url: _infoUrl,
+                        config: null
+                    };
+                    //ViewerContainer.dispatchEvent(new AppEvent(AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady));
+                    AppEvent.dispatch(AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady);
+                }
+
+                //initialize chemical spill tool...
+                gp = new Geoprocessor(_gpERGChemical);
+                gp.outSpatialReference = map.spatialReference;
+                gp.useAMF = true;
+
+                //add widget title buttons...
+                wTemplate.addTitlebarButton(ICON_URL + "i_table.png","ERG", clickERG);
+                wTemplate.addTitlebarButton(ICON_URL + "i_demographics.png", "Demographics", clickDemographics);
+                wTemplate.addTitlebarButton(ICON_URL + "i_facilities.png", "Facilities", clickInfrastructure);
+                wTemplate.addTitlebarButton(ICON_URL + "i_flag.png", "Wind Direction", clickWindDirection);
+                wTemplate.addTitlebarButton(ICON_URL + "i_journal_MS.png", "Guide Book", clickGuideLink);
+
+                btnWindNo.visible = false;
+                btnWindYes.visible = false;
+                wsWindYesNo.visible = false;
+                weatherStationName = "Please select a spill location and click on 'Lookup wind' button";
+            }
+
+            //get chemical names from ERG Chemical gpService
+            private function onJSONLoad(event:ResultEvent):void
+            {
+                var rawData:String = String(event.result);
+                var data:Object = JSON.parse(rawData);
+                _chemicalOrPlacardParams = data.parameters as Array;
+
+                //populate the dropdown box with chemical names pulled from the gpservice
+                _materialTypesAC = new ArrayCollection();
+                var obj:String;
+                var type:Object;
+                for (var i:Number = 0; i < _chemicalOrPlacardParams.length; i++)
+                {
+                    if(_chemicalOrPlacardParams[i].name == "Material_Type")
+                    {
+                        if (_chemicalOrPlacardParams[i].choiceList)
+                        {
+                            for each(type in _chemicalOrPlacardParams[i].choiceList)
+                            {
+                                obj = type as String;
+                                _materialTypesAC.addItem(obj);
+                            }
+                        }
+                        else if (_chemicalOrPlacardParams[i].choicelist)
+                        {
+                            for each(type in _chemicalOrPlacardParams[i].choicelist)
+                            {
+                                obj = type as String;
+                                _materialTypesAC.addItem(obj);
+                            }
+                        }
+                    }
+                }
+                cboMaterial.dataProvider = _materialTypesAC;
+                cboMaterial.selectedIndex=0;
+            }
+
+            //get placard IDs from the ERG gpservice
+            private function onJSONLoadPlacard(event:ResultEvent):void
+            {
+                var rawData:String = String(event.result);
+                var data:Object = JSON.parse(rawData);
+                _chemicalOrPlacardParams = data.parameters as Array;
+                var obj:String;
+                var type:Object;
+
+                //populate the dropdown box with placard ids pulled from the gpservice
+                _placardIDAC = new ArrayCollection();
+                for (var i:Number = 0; i < _chemicalOrPlacardParams.length; i++)
+                {
+                    if(_chemicalOrPlacardParams[i].name == "Placard_ID")
+                    {
+                        if (_chemicalOrPlacardParams[i].choiceList)
+                        {
+                            for each(type in _chemicalOrPlacardParams[i].choiceList)
+                            {
+                                obj = type.toString();
+                                _placardIDAC.addItem(obj);
+                            }
+                        }
+                        else if (_chemicalOrPlacardParams[i].choicelist)
+                        {
+                            for each(type in _chemicalOrPlacardParams[i].choicelist)
+                            {
+                                obj = type.toString();
+                                _placardIDAC.addItem(obj);
+                            }
+                        }
+                    }
+                }
+            }
+
+            private function infoReady(event:AppEvent):void
+            {
+                var id:Number = Number(event.data.id);
+                if (id == this.widgetId)
+                {
+                    infoTemplate = event.data.infoWidget;
+                }
+            }
+
+            private function clickERG():void
+            {
+                this.currentState="ergChemical";
+            }
+
+            private function clickDemographics():void
+            {
+                this.currentState="ergDemographics";
+            }
+
+            private function clickInfrastructure():void
+            {
+                this.currentState="ergInfrastructure";
+            }
+
+            private function clickGuideLink():void
+            {
+                this.currentState = "ergGuide";
+            }
+
+            private function clickWindDirection():void
+            {
+                this.currentState="ergWindDirection";
+            }
+
+            private function drawSpillLocation():void
+            {
+                map.addLayer(graphicsLayer);
+                map.addLayer(glinfrastructure);
+                map.addLayer(spillLocationGLayer);
+                setMapAction(DrawTool.MAPPOINT, "Chemical Spill", spillSymbol, addSpillPoint);
+            }
+
+            private function addSpillPoint(event:DrawEvent):void
+            {
+                glinfrastructure.clear();
+                graphicsLayer.clear();
+                spillLocationGLayer.clear();
+
+                var geo:Geometry = event.graphic.geometry;
+                var gpPoint : MapPoint = geo as MapPoint;
+                gpPoint.spatialReference = map.spatialReference;
+                if (gpPoint.spatialReference.wkid == 3857)
+                    gpPoint.spatialReference.wkid = 102100;
+
+                //get wind direction from the nearest weather station...
+                var graphic:Graphic = new Graphic(gpPoint,null,null);
+                spillLocationGLayer.symbol = spillSymbol;
+                spillLocationGLayer.add(graphic);
+            }
+
+            private function lookupWindDirection():void
+            {
+                //get the spill point location that user created
+                if (spillLocationGLayer.numChildren > 0)
+                {
+                    this.cursorManager.setBusyCursor();
+                    var spillPointGraphic:Graphic =  spillLocationGLayer.getChildAt(0) as Graphic;
+
+                    var outSR:SpatialReference = new SpatialReference(4326);
+                    const projectParameters:ProjectParameters = new ProjectParameters;
+                    projectParameters.geometries = [spillPointGraphic.geometry];
+                    projectParameters.outSpatialReference = outSR;
+
+                    geometryService.project(projectParameters);
+                }
+                else
+                {
+                    Alert.show("Please select a spill location first");
+                }
+            }
+
+            private function projectCompleteHandler(event:GeometryServiceEvent):void
+            {
+                try
+                {
+                    // Note: As of version 2.0, GeometryService returns geometries (instead of graphics)
+                    var spillPoint:MapPoint = (event.result as Array)[0]as MapPoint;
+                    var spillPointGraphic:Graphic = new Graphic(spillPoint);
+
+                    //get wind direction from the nearest weather station...
+                    var featureSet:FeatureSet = new FeatureSet([spillPointGraphic]);
+                    var params:Object =
+                    {
+                        "Feature_Set": featureSet
+                    };
+
+                    btnWindNo.visible=true;
+                    btnWindYes.visible=true;
+                    wsWindYesNo.visible=true;
+
+                    findClosestWeatherStation.addEventListener(GeoprocessorEvent.EXECUTE_COMPLETE, findWSexecCompleteHandler);
+                    findClosestWeatherStation.addEventListener(FaultEvent.FAULT, faultHandler);
+                    findClosestWeatherStation.execute(params);
+                }
+                catch (error:Error)
+                {
+                    Alert.show(error.toString());
+                }
+            }
+
+
+            //locate the nearest weather station to the spill location
+            private function findWSexecCompleteHandler(event:GeoprocessorEvent):void
+            {
+                var weatherStation:MapPoint =
+                    event.executeResult.results[0].value.features[0].geometry as MapPoint;
+
+                //nearest weather station to the spill location
+                var weatherStationGraphic:Graphic = event.executeResult.results[0].value.features[0];
+
+                //ArcMap's measure distance tool uses 69.09 miles => in one degree...
+                //this constant should probably be smaller for North America...
+                var distMile : Number = weatherStationGraphic.attributes.NEAR_DIST * 69.09;
+                distInMiles = "Distance to weather station: " + distMile.toFixed(3).toString() + " miles";
+
+                //get the wind direction from the nearest weather station...
+                var fid: Number = weatherStationGraphic.attributes.NEAR_FID;
+                var windDirectionQuery:Query = new Query();
+                windDirectionQuery.outFields = _queryWindDirectionFields;
+                windDirectionQuery.where = "OBJECTID =" + fid;
+
+                //get the wind direction info from the weather station
+                queryWindDirection.execute(windDirectionQuery);
+                queryWindDirection.addEventListener(QueryEvent.EXECUTE_COMPLETE, onqueryWindDirectionComplete);
+                queryWindDirection.addEventListener(FaultEvent.FAULT, faultHandler);
+            }
+
+            private function faultHandler(f:FaultEvent):void
+            {
+                this.cursorManager.removeBusyCursor();
+                if (f.type == "fault"
+                    && f.fault.name == 'Error'
+                    && f.fault.faultCode == '500'
+                    && f.fault.faultString == 'Error Executing Task')
+                {
+                    Alert.show("Oops - no results. Try clickin on the map again...");
+                }
+                else
+                {
+                    Alert.show("Unexpected fault:\n" + f.fault.faultString, "ERROR");
+                }
+            }
+
+            private function onqueryWindDirectionComplete(event:QueryEvent):void
+            {
+                //get the wind direction( blowing from) from the result
+                var fset:FeatureSet = event.featureSet;
+
+                for (var j:Number = 0; j < _queryWindDirectionFields.length; j++)
+                {
+                    var label:String = _queryWindDirectionFields[j];
+
+                    if (label.toUpperCase().indexOf("WIND",0) != -1)
+                    {
+                        var windDirectionFrom:Number = fset.attributes[0] [label];
+                        //calculate wind blowing to from wind blowing from....
+                        windDirectionTo = windDirectionFrom + 180;
+                        if (windDirectionTo > 360)
+                            windDirectionTo = windDirectionTo - 360;
+                        msgFromWeatherStation = "Wind direction (blowing to): " + windDirectionTo.toString();
+                    }
+                    else if (label.toUpperCase().indexOf("STATION",0) != -1)
+                    {
+                        //wind direction info stack view
+                        weatherStationName = "Station Name: " + fset.attributes[0] [label];
+                    }
+                    else if (label.toUpperCase().indexOf("DATE",0) != -1)
+                    {
+                        var dateObject:Object = fset.attributes[0] [label];
+                        var dateValue:Date = new Date(dateObject);
+                        wsUTCTime = "Recorded on: " + dateValue.toString() + " " + _timeZoneDecsription;
+                    }
+
+                    this.currentState="ergWindDirection";
+                    wTemplate.selectedTitlebarButtonIndex = 3;
+                    this.cursorManager.removeBusyCursor();
+                }
+            }
+
+            private function setWindDirectionInfo (yesNo : String):void
+            {
+                if (yesNo == "YES")
+                    nsWindDir.value = windDirectionTo;
+                else if(yesNo =="NO")
+                {
+                    nsWindDir.value = 0;
+                    Alert.show("Please manually enter wind direction", "Define wind direction value");
+                }
+                this.currentState="ergChemical";
+                wTemplate.selectedTitlebarButtonIndex = 0;
+            }
+
+            private function runChemicalSpill():void
+            {
+                if (spillLocationGLayer.numChildren > 0)
+                {
+                    this.cursorManager.setBusyCursor();
+                    var spillPointGraphic:Graphic =  spillLocationGLayer.getChildAt(0) as Graphic;
+                    spillPointGraphic.geometry.spatialReference = map.spatialReference;
+                    if (spillPointGraphic.geometry.spatialReference.wkid == 3857)
+                        spillPointGraphic.geometry.spatialReference.wkid = 102100;
+
+                    var myFeatureSet:FeatureSet = new FeatureSet([{geometry:spillPointGraphic.geometry}]);
+                    var dir:Number = nsWindDir.value;
+                    var spilltime:String = cboSpillTime.selectedItem;
+                    var spillsize:String = cboSpillSize.selectedItem;
+                    var params:Object;
+
+                    if (cboChemicalOrPlacard.selectedItem=="Chemical")
+                    {
+                        gp = new Geoprocessor(_gpERGChemical);
+                        gp.outSpatialReference = map.spatialReference;
+                        gp.processSpatialReference = map.spatialReference;
+                        gp.useAMF = true;
+
+                        var chemical:String = cboMaterial.selectedItem;
+
+                        var incidentPoint:String;
+                        var materialType:String;
+                        var windBearing:String;
+                        var dayOrNite:String;
+                        var smallOrLarge:String;
+
+                        params = new Object();
+                        var paramName:String
+
+                        for (var i:int = 0; i < _arrChemicalGPParameters.length; i++)
+                        {
+                            paramName = _arrChemicalGPParameters[i];
+                            if (paramName.toUpperCase().indexOf("POINT") != -1 || paramName.toUpperCase().indexOf("LOCATION") != -1)
+                            {
+                                incidentPoint = _arrChemicalGPParameters[i];
+                                params[incidentPoint] = myFeatureSet;
+                            }
+                            else if (paramName.toUpperCase().indexOf("MATERIAL") != -1)
+                            {
+                                materialType =  _arrChemicalGPParameters[i];
+                                params[materialType] = chemical;
+                            }
+                            else if (paramName.toUpperCase().indexOf("WIND") != -1)
+                            {
+                                windBearing =  _arrChemicalGPParameters[i];
+                                params[windBearing] = dir;
+                            }
+                            else if (paramName.toUpperCase().indexOf("DAY") != -1)
+                            {
+                                dayOrNite = _arrChemicalGPParameters[i];
+                                params[dayOrNite] = spilltime;
+                            }
+                            else if (paramName.toUpperCase().indexOf("SPILL") != -1)
+                            {
+                                smallOrLarge = _arrChemicalGPParameters[i];
+                                params[smallOrLarge] = spillsize;
+                            }
+                        }
+
+                        /* params = {incidentPoint: myFeatureSet,
+                            "Material_Type": chemical,
+                            "Wind_Bearing__direction_blowing_to__0_-_360_": dir,
+                            "Day_or_Night_incident": spilltime,
+                            "Large_or_Small_spill": spillsize};  */
+                        gp.addEventListener(GeoprocessorEvent.JOB_COMPLETE,onChemicalSpillResult);
+                        gp.addEventListener(FaultEvent.FAULT, ergFaultHandler);
+                        gp.submitJob(params);
+                    }
+                    else if (cboChemicalOrPlacard.selectedItem =="Placard")
+                    {
+                        gp = new Geoprocessor(_gpERGPlacard);
+                        gp.outSpatialReference = map.spatialReference;
+                        gp.useAMF = true;
+
+                        var material:String = cboMaterial.selectedItem;
+
+                        var placardParams:Object = new Object();
+                        for (var l:int = 0; l < _arrPlacardGPParameters.length; l++)
+                        {
+                            paramName = _arrPlacardGPParameters[l];
+                            if (paramName.toUpperCase().indexOf("POINT") != -1 || paramName.toUpperCase().indexOf("LOCATION") != -1)
+                            {
+                                incidentPoint = _arrPlacardGPParameters[l];
+                                placardParams[incidentPoint] = myFeatureSet;
+                            }
+                            else if (paramName.toUpperCase().indexOf("PLACARD") != -1)
+                            {
+                                materialType = _arrPlacardGPParameters[l];
+                                placardParams[materialType] = material;
+                            }
+                            else if (paramName.toUpperCase().indexOf("WIND") != -1)
+                            {
+                                windBearing = _arrPlacardGPParameters[l];
+                                placardParams[windBearing] = dir;
+                            }
+                            else if (paramName.toUpperCase().indexOf("DAY") != -1)
+                            {
+                                dayOrNite = _arrPlacardGPParameters[l];
+                                placardParams[dayOrNite] = spilltime;
+                            }
+                            else if (paramName.toUpperCase().indexOf("SPILL") != -1)
+                            {
+                                smallOrLarge = _arrPlacardGPParameters[l];
+                                placardParams[smallOrLarge] = spillsize;
+                            }
+                        }
+
+                        /*
+                        params = {"Incident_Point": myFeatureSet,
+                            "Placard_ID": material,
+                            "Wind_Bearing__direction_blowing_to__0_-_360_": dir,
+                            "Day_or_Night_incident": spilltime,
+                            "Large_or_Small_spill": spillsize };  */
+
+                        gp.addEventListener(GeoprocessorEvent.JOB_COMPLETE,onPlacardSpillResult);
+                        gp.addEventListener(FaultEvent.FAULT, ergFaultHandler);
+                        gp.submitJob(params);
+                    }
+                    else
+                        return;
+                }
+                else
+                {
+                    Alert.show("Please select a spill location first!", "Choose a location");
+                }
+            }
+
+            private function ergFaultHandler(gpError:FaultEvent):void
+            {
+                this.cursorManager.removeBusyCursor();
+                Alert.show(gpError.fault.faultString);
+            }
+
+
+            private function guideLinkClick(event:MouseEvent):void
+            {
+                navigateToURL(new URLRequest(_guideURL + _guideNum.toString()));
+            }
+
+            private function onChemicalSpillResult(gpResult:GeoprocessorEvent,token:Object = null):void
+            {
+                gp.addEventListener(GeoprocessorEvent.GET_RESULT_DATA_COMPLETE,onGetChemicalResult);
+                gp.getResultData(gpResult.jobInfo.jobId,"outerg");
+            }
+
+            private function onGetChemicalResult(gpResult:GeoprocessorEvent,token:Object = null):void
+            {
+                glinfrastructure.clear();
+                graphicsLayer.clear();
+                showInfoWindow(null);
+                var sharedPolygon:Polygon;
+
+                chartStatistics.dataProvider = null;
+                chartStatisticsInfra.dataProvider = null;
+
+                var i:int = 0;
+                var extent:Extent;
+                var polygon:Polygon;
+
+                var array:Array;
+                for (var x:Number = 0; x < gpResult.parameterValue.value.features.length; x ++)
+                {
+                    var graphic:Graphic = gpResult.parameterValue.value.features[x];
+                    _guideNum = graphic.attributes["GuideNum"];
+                    switch (graphic.attributes["ERGZone"])
+                    {
+                        case 1:
+                            graphic.symbol = sfsZone1;
+                            break;
+                        case 2:
+                            graphic.symbol = sfsZone2;
+                            break;
+                        case 3:
+                            graphic.symbol = sfsZone3;
+                            sharedPolygon = graphic.geometry as Polygon;
+                            sharedPolygon.spatialReference.wkid=102100; // for backwards compatibility
+                            break;
+                    }
+                    graphicsLayer.add(graphic);
+                }
+
+                if (cbZoomTo.selected)
+                    map.extent = sharedPolygon.extent;
+
+                if (cbDemographics.selected)
+                {
+                    queryFeatures(sharedPolygon);
+                    this.currentState="ergDemographics";
+                    wTemplate.selectedTitlebarButtonIndex = 1;
+                }
+                if(cbInfrastructure.selected)
+                {
+                    queryInfrastructure(sharedPolygon);
+                    if (!cbDemographics.selected)
+                    {
+                        this.currentState="ergInfrastructure";
+                        wTemplate.selectedTitlebarButtonIndex = 2;
+                    }
+                }
+                this.cursorManager.removeBusyCursor();
+                setMapNavigation(NavigationTool.PAN,"Move Map");
+            }
+
+
+            private function onPlacardSpillResult(gpResult:GeoprocessorEvent,token:Object = null):void
+            {
+                gp.addEventListener(GeoprocessorEvent.GET_RESULT_DATA_COMPLETE,onGetPlacardResult);
+                gp.getResultData(gpResult.jobInfo.jobId,"outergPlacard");
+            }
+
+            private function onGetPlacardResult(gpResult:GeoprocessorEvent,token:Object = null):void
+            {
+                glinfrastructure.clear();
+                graphicsLayer.clear();
+                showInfoWindow(null);
+                var sharedPolygon:Polygon;
+
+                chartStatistics.dataProvider = null;
+                chartStatisticsInfra.dataProvider = null;
+
+                var i:int = 0;
+                var extent:Extent;
+                var polygon:Polygon;
+
+                var array:Array;
+                for (var x:Number = 0; x < gpResult.parameterValue.value.features.length; x ++)
+                {
+
+                    var graphic:Graphic = gpResult.parameterValue.value.features[x];
+                    _guideNum = graphic.attributes["GuideNum"];
+                    switch (graphic.attributes["ERGZone"])
+                    {
+                        case 1:
+                            graphic.symbol = sfsZone1;
+                            break;
+                        case 2:
+                            graphic.symbol = sfsZone2;
+                            break;
+                        case 3:
+                            graphic.symbol = sfsZone3;
+                            sharedPolygon = graphic.geometry as Polygon;
+                            sharedPolygon.spatialReference.wkid=102100; // for backwards compatibility
+                            break;
+                    }
+                    graphicsLayer.add(graphic);
+                }
+
+                if (cbDemographics.selected)
+                {
+                    queryFeatures(sharedPolygon);
+                    this.currentState="ergDemographics";
+                    wTemplate.selectedTitlebarButtonIndex = 1;
+                }
+                if(cbInfrastructure.selected)
+                {
+                    queryInfrastructure(sharedPolygon);
+                    if (!cbDemographics.selected)
+                    {
+                        this.currentState="ergInfrastructure";
+                        wTemplate.selectedTitlebarButtonIndex = 2;
+                    }
+                }
+
+                this.cursorManager.removeBusyCursor();
+
+                setMapNavigation(NavigationTool.PAN,"Move Map");
+            }
+
+            private function onFault(fe:Fault, token:Object = null):void
+            {
+                    this.cursorManager.removeBusyCursor();
+            }
+
+            private function clearResults():void
+            {
+                graphicsLayer.clear();
+                glinfrastructure.clear();
+                spillLocationGLayer.clear();
+                showInfoWindow(null);
+
+                //clear wind direction tab...
+                windDirectionTo = -9999;
+                msgFromWeatherStation="";
+                distInMiles="";
+                wsUTCTime="";
+                weatherStationName="Please select a spill location and click on 'Lookup wind' button";
+
+                btnWindNo.visible=false;
+                btnWindYes.visible=false;
+                wsWindYesNo.visible=false;
+
+                chartStatistics.dataProvider=null;
+                chartStatisticsInfra.dataProvider=null;
+            }
+
+            private function queryInfrastructure(geom:Geometry):void
+            {
+                _infrastructurechartSeries.length = 0;
+                _currentChart = 0;
+
+                var querySpatialRel:String = "esriSpatialRelIntersects";
+                var queryTask:QueryTask = new QueryTask(_queryInfrastructureLayer);
+                queryTask.useAMF=false;
+
+                var query:Query = new Query();
+                query.geometry = geom;
+                query.outFields = _queryInfrastructureFields.split(",");
+                query.returnGeometry = true;
+                query.spatialRelationship = querySpatialRel;
+                query.outSpatialReference = map.spatialReference;
+                if (query.outSpatialReference.wkid == 3857)
+                    query.outSpatialReference.wkid = 102100;
+
+                queryTask.execute(query, new AsyncResponder(onResultInfrastructure, onFault));
+                showMessageInfrastructure(loadingLabel, true);
+
+                // on result
+                function onResultInfrastructure(featureSet:FeatureSet, token:Object = null):void
+                {
+                    try
+                    {
+                        calculateStatisticsInfra(featureSet);
+                    }
+                    catch (error:Error)
+                    {
+                        Alert.show(error.message.toString());
+                    }
+                }
+                //on fault
+                function onFault(info:Object, token:Object = null) : void
+                {
+                    Alert.show(info.toString());
+                }
+            }
+
+            //query demographics features
+            private function queryFeatures(geom:Geometry):void
+            {
+                _chartSeries.length = 0;
+                _currentChart = 0;
+
+                var querySpatialRel:String = "esriSpatialRelIntersects";
+                var queryTask:QueryTask = new QueryTask(_demoQueryLayer);
+                queryTask.useAMF=false;
+
+                var query:Query = new Query();
+                query.geometry = geom;
+                query.outFields = _demoQueryFields.split(",");
+                query.returnGeometry = false;
+                query.spatialRelationship = querySpatialRel;
+                query.outSpatialReference = map.spatialReference;
+                if (query.outSpatialReference.wkid == 3857)
+                    query.outSpatialReference.wkid = 102100;
+                queryTask.execute(query, new AsyncResponder(onResult, onFault));
+                showMessage(loadingLabel, true);
+
+                // on result
+                function onResult(featureSet:FeatureSet, token:Object = null):void
+                {
+                    try
+                    {
+                        calculateStatistics(featureSet);
+                    }
+                    catch (error:Error)
+                    {
+                        Alert.show(error.message.toString());
+                    }
+                }
+                //on fault
+                function onFault(info:Object, token:Object = null) : void
+                {
+                    Alert.show(info.toString());
+                }
+            }
+
+            //calculate statistics
+            private function calculateStatistics(featureSet:FeatureSet):void
+            {
+                _summaryValue = 0;
+                for (var i:Number = 0; i < _chartFields.length; i++)
+                {
+                    var chartFieldArray:Array = _chartFields[i].split(",");
+                    var chartFieldAlias:Array = _chartFieldsAlias[i].split(",");
+                    var chartValueArray: Array = [];
+                    for (var j:Number = 0; j < chartFieldArray.length; j++)
+                    {
+                        var label:String = chartFieldArray[j];
+                        var value: Number = 0;
+                        for (var r:Number = 0; r < featureSet.features.length; r++)
+                        {
+                            value += Number(featureSet.attributes[r][label]);
+                        }
+                        var obj:Object = new Object();
+                        obj.label = chartFieldAlias[j];
+                        obj.value = value;
+                        chartValueArray.push(obj);
+                    }
+                    _chartSeries.push(chartValueArray);
+                }
+                //calculate total population of the affected area
+                for (var popValue:Number=0; popValue < featureSet.features.length; popValue++)
+                {
+                    _summaryValue += Number(featureSet.attributes[popValue][_summaryField]);
+                }
+
+                if (_chartSeries.length > 0)
+                    chartStatistics.dataProvider = _chartSeries[_currentChart];
+                var msg:String = _chartLabelDemo + " [" + featureSet.features.length + " features]: " + numFormatter.format(_summaryValue);
+                showMessage(msg, false);
+            }
+
+            //mouse over graphic
+            private function mouseOverGraphic(event:MouseEvent):void
+            {
+                var gra:Graphic = event.currentTarget as Graphic;
+                var infoData:Object = gra.attributes;
+                showHighlight(infoData);
+            }
+
+            private function showHighlight(infoData:Object):void
+            {
+                if (infoData)
+                {
+                    infoTemplate.data = infoData;
+                    map.infoWindow.content = infoTemplate as UIComponent;
+                    map.infoWindow.label = infoData.title || "no title";
+                    map.infoWindow.show(infoData.point);
+                }
+                else
+                {
+                    map.infoWindow.hide();
+                }
+            }
+
+
+            //calculate statistics
+            private function calculateStatisticsInfra(featureSet:FeatureSet):void
+            {
+                var arraycol:ArrayCollection = new ArrayCollection();
+
+                for each (var gra:Graphic in featureSet.features)
+                {
+                    var obj:Object = gra.attributes;
+                    var fld:String;
+                    var value:String;
+                    var title:String = "Infrastructure Assets";
+                    var content:String = "";
+                    var link:String = "";
+                    var point:MapPoint = gra.geometry as MapPoint;
+                    var fldAliases:Object = featureSet.fieldAliases;
+
+                    for (fld in obj)
+                    {
+                        if( obj[fld] == null)
+                            value = '';
+                        else
+                            value = obj[fld].toString();
+
+                        content += fldAliases[fld] + ": " + value + "\n";
+                        var bfound:Boolean = false;
+                        if(fld == _infrastructuresummaryField){
+                            var keyval:Object ={
+                                label:"",
+                                value:0
+                            }
+                            for (var i:int = 0; i < arraycol.length; i++)
+                            {
+                                var data:Object = arraycol.getItemAt(i);
+                                if(data.label == obj[fld]){
+                                    bfound = true;
+                                    data.value += 1;
+                                    break;
+                                }
+                            }
+                            if(bfound == false){
+                                keyval.label = obj[fld];
+                                keyval.value = 1;
+                                arraycol.addItem(keyval);
+                            }
+                        }
+                    }
+
+                    var infoData:Object =
+                        {
+                            icon: icon,
+                            title: title,
+                            content: content,
+                            link: link,
+                            point: point,
+                            geometry: gra.geometry
+                        };
+                    gra.attributes = infoData;
+                    gra.symbol= facilitiesSymbol;
+                    gra.addEventListener(MouseEvent.ROLL_OVER, mouseOverGraphic)
+                    glinfrastructure.add(gra);
+                }
+
+                _infrastructurechartSeries.push(arraycol.toArray());
+                if (_infrastructurechartSeries.length > 0)
+                    chartStatisticsInfra.dataProvider  = _infrastructurechartSeries[0];
+                var msg:String = _chartLabelInfra + " [" + featureSet.features.length + " features ]";
+                showMessageInfrastructure(msg, false);
+            }
+
+
+            private function chartClick(event:MouseEvent):void
+            {
+                if (_currentChart < _chartSeries.length -1)
+                    _currentChart += 1;
+                else
+                    _currentChart = 0;
+                chartStatistics.dataProvider  = _chartSeries[_currentChart];
+            }
+
+            private function clear():void
+            {
+                graphicsLayer.clear();
+                glinfrastructure.clear();
+                showInfoWindow(null);
+                _chartSeries.length = 0;
+                _currentChart = 0;
+                chartStatistics.dataProvider = null;
+                chartStatisticsInfra.dataProvider = null;
+                clearMessage();
+            }
+
+            private function showMessage(msg:String, swfVisible:Boolean):void
+            {
+                txtMessage.text = msg;
+                swfMessage.visible = swfVisible;
+                _msgVisible = true;
+            }
+
+            private function showMessageInfrastructure(msg:String, swfVisible:Boolean):void
+            {
+                txtMessageinfra.text = msg;
+                swfMessageinfra.visible = swfVisible;
+                _msgVisibleInfra = true;
+            }
+
+            private function clearMessage():void
+            {
+                _msgVisible = false;
+                _msgVisibleInfra = false;
+            }
+            private function widgetClosedHandler(event:Event):void
+            {
+                clearResults();
+                setMapNavigation(NavigationTool.PAN,"Move Map");
+                spillLocationGLayer
+                clickERG();
+                //glinfrastructure.clear();
+                //showInfoWindow(null);
+            }
+
+            private function widgetOpenedHandler(event:Event):void
+            {
+                if (graphicsLayer)
+                {
+                    graphicsLayer.visible = true;
+                    setMapNavigation(NavigationTool.PAN,"Move Map");
+                }
+            }
+
+            protected function cboChemicalOrPlacard_changeHandler(event:IndexChangeEvent):void
+            {
+                // TODO Auto-generated method stub
+                if (cboChemicalOrPlacard.selectedItem =="Chemical")
+                {
+                    cboMaterial.dataProvider = _materialTypesAC;
+                    cboMaterial.selectedIndex=0;
+                }
+                else
+                {
+                    cboMaterial.dataProvider = _placardIDAC;
+                    cboMaterial.selectedIndex=1;
+                }
+            }
+
+
+            protected function wTemplate_minimizedHandler(event:Event):void
+            {
+                // TODO Auto-generated method stub
+                graphicsLayer.visible = false;
+                glinfrastructure.visible=false;
+                spillLocationGLayer.visible=false;
+                showInfoWindow(null);
+                setMapNavigation(NavigationTool.PAN,"Move Map");
+            }
+
+        ]]>
+    </fx:Script>
+
+    <viewer:WidgetTemplate id="wTemplate"
+                           closed="widgetClosedHandler(event)"
+                           open="widgetOpenedHandler(event)"
+                           minimized="wTemplate_minimizedHandler(event)"
+                           height="285" width="400"
+                           minWidth="375" minHeight="270">
+
+        <s:Group id="ergChemical"
+                 height="100%"
+                 visible="false"
+                 visible.ergChemical="true"
+                 width="100%">
+            <s:layout>
+                <s:VerticalLayout gap="15" horizontalAlign="left" paddingLeft="5" paddingTop="10"/>
+            </s:layout>
+            <s:HGroup width="100%" gap="10" >
+                <s:Label text="{_descriptionLabel}"
+                         paddingTop="7" paddingLeft="0"/>
+                <mx:Image click="drawSpillLocation()" source="widgets/ERGChemical/assets/images/w_addstart.png"
+                          useHandCursor="true" buttonMode="true"
+                          toolTip="Select a spill location on the map"
+                          width="20" height="20"/>
+                <s:Label text="{_chemicalOrPlacardLabel}"
+                         paddingTop="7" paddingLeft="7"/>
+                <s:DropDownList id="cboChemicalOrPlacard" selectedIndex="0"
+                                height="25"
+                                width="30%"
+                                change="cboChemicalOrPlacard_changeHandler(event)">
+                    <s:ArrayList>
+                        <fx:String>Chemical</fx:String>
+                        <fx:String>Placard</fx:String>
+                    </s:ArrayList>
+                </s:DropDownList>
+            </s:HGroup>
+            <s:HGroup paddingTop="5" width="100%"
+                      gap="10" paddingRight="5">
+                <s:Label text="{_chemicalOrPlacardType}" paddingTop="7" paddingLeft="0"/>
+                <s:DropDownList id="cboMaterial" width="85%"
+                                height="25" />
+            </s:HGroup>
+            <!--Size of Spill and Time of Spill!-->
+            <s:HGroup paddingTop="5" width="100%"
+                      gap="10" paddingRight="5">
+                <s:Label text="{_spillSizeLabel}"
+                         paddingTop="7"
+                         paddingLeft="0"/>
+                <s:DropDownList id="cboSpillSize" selectedIndex="1"
+                                horizontalCenter=""
+                                height="25"
+                                width="30%">
+                    <s:ArrayList>
+                        <fx:String>Small</fx:String>
+                        <fx:String>Large</fx:String>
+                    </s:ArrayList>
+                </s:DropDownList>
+                <s:Label text="{_timeOfSpillLabel}" paddingTop="7"/>
+                <s:DropDownList id="cboSpillTime" selectedIndex="0"
+                                height="25"
+                                width="30%">
+                    <s:ArrayList>
+                        <fx:String>Day</fx:String>
+                        <fx:String>Night</fx:String>
+                    </s:ArrayList>
+                </s:DropDownList>
+            </s:HGroup>
+            <s:VGroup paddingTop="5" width="100%" gap="10" paddingRight="5">
+                <s:Group width="100%">
+                    <s:Label text="Wind Direction (blowing to):" paddingTop="7" left="0"/>
+                    <s:NumericStepper id="nsWindDir" minimum="0" maximum="360" value="45" width="50"
+                                      contentBackgroundColor="#CCCCCC" contentBackgroundAlpha="0.75"
+                                      color="#FFFFFF" unfocusedTextSelectionColor="#000000" horizontalCenter="15"/>
+                    <s:Button label="Lookup wind info" click="lookupWindDirection()" height="25" right="0"
+                              toolTip="Get wind direction from the nearest weather station"
+                              color="#FFFFFF"/>
+                </s:Group>
+                <s:Group width="100%">
+                    <s:CheckBox id="cbDemographics" selected="true"
+                                label="Run Demographics" left="0" />
+                    <s:CheckBox id="cbInfrastructure" selected="true"
+                                label="Run Facilities" horizontalCenter="10"/>
+                    <s:CheckBox id="cbZoomTo" label="Zoom To" selected="true" right="5"/>
+                </s:Group>
+                <s:Group width="100%" >
+                    <s:Button label="Run" click="runChemicalSpill()" left="5" />
+                    <s:Button label="Clear Results" click="clearResults()" right="5" />
+                </s:Group>
+            </s:VGroup>
+        </s:Group>
+
+        <!--Demographics Chart!-->
+        <s:Group id="ergDemographics"
+                 height="100%"
+                 visible="false"
+                 visible.ergDemographics="true"
+                 width="100%">
+            <s:layout>
+                <s:VerticalLayout gap="5" horizontalAlign="left" paddingTop="5"/>
+            </s:layout>
+            <s:HGroup id="boxMessage" width="100%" visible="{_msgVisible}"
+                      includeInLayout="{_msgVisible}" horizontalAlign="center">
+                <mx:SWFLoader id="swfMessage" source="widgets/ERGChemical/assets/images/loader.swf" visible="false" />
+                <mx:Text id="txtMessage" text="" horizontalCenter="0" width="90%"/>
+            </s:HGroup>
+            <mx:ColumnChart id="chartStatistics" height="90%" width="100%" showDataTips="true"
+                            click="chartClick(event)" color="#FFFFFF">
+                <mx:horizontalAxis>
+                    <mx:CategoryAxis categoryField="label"/>
+                </mx:horizontalAxis>
+                <mx:series>
+                    <mx:ColumnSeries id="barSeries" yField="value" xField="label" showDataEffect="slideLeft"
+                                     hideDataEffect="slideRight" fontSize="10" fontWeight="bold" fontFamily="Arial"/>
+                </mx:series>
+            </mx:ColumnChart>
+        </s:Group>
+
+        <!--Infrastructure Chart!-->
+        <s:Group id="ergInfrastructure"
+                 height="100%"
+                 visible="false"
+                 visible.ergInfrastructure="true"
+                 width="100%">
+            <s:layout>
+                <s:VerticalLayout gap="5" horizontalAlign="left" paddingTop="5"/>
+            </s:layout>
+            <s:HGroup id="boxMessageI" width="100%" visible="{_msgVisibleInfra}"
+                      includeInLayout="{_msgVisibleInfra}" horizontalAlign="center">
+                <mx:SWFLoader id="swfMessageinfra" source="widgets/ERGChemical/assets/images/loader.swf" visible="false" />
+                <mx:Text id="txtMessageinfra" text="" horizontalCenter="0" width="90%"/>
+            </s:HGroup>
+            <mx:ColumnChart id="chartStatisticsInfra" height="90%" width="90%" showDataTips="true" color="#FFFFFF">
+                <mx:horizontalAxis>
+                    <mx:CategoryAxis categoryField="label"/>
+                </mx:horizontalAxis>
+                <mx:series>
+                    <mx:ColumnSeries id="barSeriesI" yField="value" xField="label" showDataEffect="slideLeft" hideDataEffect="slideRight" fontSize="10" fontWeight="bold" fontFamily="Arial"/>
+                </mx:series>
+            </mx:ColumnChart>
+        </s:Group>
+
+        <!--Wind Directions!-->
+        <s:Group id="ergWindDirection"
+                 height="100%"
+                 visible="false"
+                 visible.ergWindDirection="true"
+                 width="100%">
+            <s:layout>
+                <s:VerticalLayout gap="10" horizontalAlign="left" paddingTop="10"/>
+            </s:layout>
+            <s:Label id ="wsStation" text="{weatherStationName}" color="white" />
+            <s:Label id ="wsDistance" text="{distInMiles}" color="white" />
+            <s:Label id ="windDirection" text="{msgFromWeatherStation}" color="white"/>
+            <s:Label id ="wsTime" text="{wsUTCTime}" color="white" />
+            <s:Label id ="wsWindYesNo" paddingTop="15" text="Do you want to use wind direction from the weather station?" color="white" />
+            <s:HGroup width="100%" paddingTop="10"  horizontalAlign="center">
+                <s:Button id="btnWindYes" label="Yes" click="setWindDirectionInfo('YES')" color="#FFFFFF"/>
+                <s:Button id="btnWindNo" label="No" click="setWindDirectionInfo('NO')" color="#FFFFFF"/>
+            </s:HGroup>
+        </s:Group>
+
+        <!--ERG Guide Link!-->
+        <s:Group  id="ergGuide"
+                  height="100%"
+                  visible="false"
+                  visible.ergGuide="true"
+                  width="100%">
+            <s:layout>
+                <s:VerticalLayout gap="5" horizontalAlign="left" paddingTop="5"/>
+            </s:layout>
+            <s:Label id="lnkERGGuide" text="Click to view Emeregency Guide Book"
+                     click="guideLinkClick(event)" verticalCenter="0" horizontalCenter="0"
+                     textDecoration="underline" color="#FDD017" width="100%" textAlign="center"
+                     useHandCursor="true" buttonMode="true"/>
+        </s:Group>
+    </viewer:WidgetTemplate>
+</viewer:BaseWidget>

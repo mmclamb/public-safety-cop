@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:fx="http://ns.adobe.com/mxml/2009" verticalGap="5" horizontalGap="5"
+		 xmlns:s="library://ns.adobe.com/flex/spark"  horizontalAlign="center" verticalAlign="middle"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"  height="30" width="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<mx:HBox width="50%" horizontalAlign="left">
+		<mx:Image source="{data.icon}" width="60"  height="20" />
+	</mx:HBox>
+		
+		
+		<s:Label text="{data.name}" width="100%"/>
+	
+</mx:HBox>

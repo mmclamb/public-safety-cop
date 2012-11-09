@@ -1,0 +1,647 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*" 
+				   layout="vertical" 
+				   widgetConfigLoaded="configLoaded()"
+				   creationComplete="basewidget1_creationCompleteHandler(event)"
+				   xmlns:esri="http://www.esri.com/2008/ags" 
+				   xmlns:extendPolylineEffect="polyline.extendPolylineEffect.*" 
+				   xmlns:line="line.*" xmlns:ClosestFacility="widgets.ClosestFacility.*" 
+				   >
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.ClosestFacilityEvent;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.ExtentEvent;
+			import com.esri.ags.events.LayerEvent;
+			import com.esri.ags.events.MapMouseEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.FeatureLayer;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.SimpleFillSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.symbols.SimpleMarkerSymbol;
+			import com.esri.ags.symbols.TextSymbol;
+			import com.esri.ags.tasks.ClosestFacilityTask;
+			import com.esri.ags.tasks.GeometryService;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.BufferParameters;
+			import com.esri.ags.tasks.supportClasses.ClosestFacilityParameters;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.ags.utils.GraphicUtil;
+			import com.esri.viewer.utils.Hashtable;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.controls.Image;
+			import mx.events.FlexEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.events.FaultEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			/********** VARS **********/
+			
+			[Bindable]
+			private var _configXML : XML;
+			
+			[Bindable(event="updateRouteSymbols")]
+			private var m_aryClosestFacilitySymbolInfos : Array;
+			
+			[Bindable]
+			private var m_nLoadOperationsInProcess : int = 1; // 1 because facilities automatically load
+			
+			/****************** Common Variables**********************/
+			[Bindable]
+			private var arrFacilityLayers:ArrayList= new ArrayList();
+			private var facilityServiceUrl:String='';
+			private var incidentServiceUrl:String='';
+			
+			private var aryClosestFacilitySymbolInfos:Array=[];
+			private var facilityLayerObj:Object=new Object();
+			
+			private var isOplayers:Boolean=false;
+			
+			private var facilityFeatureSet:FeatureSet=new FeatureSet();
+			/**************** Layers Declarition *******************/
+			private var lyrAllFacilities:FeatureLayer= new FeatureLayer();
+			private var graphicIncidentlayerEvent:GraphicsLayer= new GraphicsLayer();
+			private var graphiclyrBarrier:GraphicsLayer= new GraphicsLayer();
+			private var graphiclyrAllFacilities:GraphicsLayer= new GraphicsLayer();
+			private var textSymbolGraphiclayer:GraphicsLayer= new GraphicsLayer();
+			private var textSymbolGraphiclayer1:GraphicsLayer= new GraphicsLayer();
+			private var symbolLyrEvent:SimpleMarkerSymbol= new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,12,0x0000FF,0.5,0,0,0,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,0x000000,0.5,2));
+			private var symbolLyrBarrier:SimpleLineSymbol= new SimpleLineSymbol(SimpleLineSymbol.STYLE_DASH,0xFF0000,0.5,3);
+			private var simpleLabelSym:TextSymbol=new TextSymbol();
+			
+			/**==================== Tasks ====================*/
+			
+			
+			private var qtIncidents:QueryTask= new QueryTask();
+			private var query:Query = new Query();
+			private var closestFacility:ClosestFacilityTask;
+			private var isincidentdrawn:Boolean=false;
+			
+			private function  configLoaded():void
+			{
+				if(configXML)
+				{
+					var LayerXmlList:XMLList = configXML..layer
+					var obj:Object;
+					var hashTable:Hashtable= new Hashtable();
+					
+					obj=new Object();
+					obj.label = 'Select Layer';
+					obj.url ='';
+					arrFacilityLayers.addItem(obj);
+					m_nLoadOperationsInProcess--;
+					for each(var obj1:Object in configData.opLayers)
+					{
+						if(obj1.type=="feature")
+						{
+							obj=new Object();
+							obj.label = obj1.label;
+							obj.url =obj1.url;
+							arrFacilityLayers.addItem(obj);
+							hashTable.add(obj1.label,obj);
+						}
+					}
+					for each (var item:XML in LayerXmlList)
+					{
+						var str:String=item.@label[0];
+						var hoObject:Object= hashTable.find(str)
+						if(hoObject == null)
+						{
+							obj=new Object();
+							obj.label = item.@label[0];
+							obj.url =item.toString(); 
+							arrFacilityLayers.addItem(obj);
+						}
+					}	
+					incidentServiceUrl=configXML.incidents.url;
+					facilityServiceUrl=configXML.closestFacilitySvc.url;
+					
+					// Load route renderer infos array
+					simpleLabelSym.color=0x000000;
+					aryClosestFacilitySymbolInfos = new Array();
+					for each ( var xmlRoute:XML in configXML.symbology.routes.route ) {
+						var sym:SimpleLineSymbol = new SimpleLineSymbol(
+							xmlRoute.@style, xmlRoute.@color, xmlRoute.@alpha, xmlRoute.@width
+						);
+						aryClosestFacilitySymbolInfos.push(sym)
+						
+						/* aryClosestFacilitySymbolInfos.push( 
+						new UniqueValueInfo( sym, xmlRoute.@rank )
+						); */
+					}
+				}
+				else
+				{
+					Alert.show('Config not found');
+				}
+				/**************Add the graphic Layers*****************/
+				
+				graphicIncidentlayerEvent.id='graphicIncidentlayer';
+				graphiclyrBarrier.id='barrierGraphicLayer';
+				map.addLayer(graphicIncidentlayerEvent);
+				map.addLayer(graphiclyrBarrier);
+				map.addLayer(lyrResultRoutes );
+				map.addLayer(textSymbolGraphiclayer);
+				map.addLayer(textSymbolGraphiclayer1);
+				/***/
+				closestFacility= new ClosestFacilityTask()
+				closestFacility.url=facilityServiceUrl;
+				closestFacility.method=URLRequestMethod.POST;
+				closestFacility.requestTimeout=20;
+				closestFacility.addEventListener(ClosestFacilityEvent.SOLVE_COMPLETE,onSolveComplete);
+				closestFacility.addEventListener(FaultEvent.FAULT,onSolveFail);
+				
+				
+				/*********************************************************/
+			}
+			
+			
+			private  function cmdfacilityLayers_changeHandler(event:IndexChangeEvent):void
+			{
+				
+				
+				textSymbolGraphiclayer.clear()
+				textSymbolGraphiclayer1.clear()
+				graphicIncidentlayerEvent.clear();
+				lyrResultRoutes.clear();
+				graphiclyrBarrier.clear();
+				isincidentdrawn=false;
+				
+				if(event.newIndex>0)
+					
+				{
+					
+					cmdfacilityLayers.selectedIndex=event.newIndex;
+					/* if(event.oldIndex>0)
+					{	facilityLayerObj=arrFacilityLayers.getItemAt(event.oldIndex);
+					if(map.getLayer(facilityLayerObj.label)!=null)
+					{
+					var f:FeatureLayer= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
+					if(f.visible==true)
+					f.visible=false;
+					}
+					} */
+					
+					facilityLayerObj= cmdfacilityLayers.selectedItem;
+					m_nLoadOperationsInProcess=1;
+					if(map.getLayer(facilityLayerObj.label)!=null)
+					{
+						isOplayers=true;
+						var f1:FeatureLayer= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
+						if((map.getLayer(facilityLayerObj.label) as FeatureLayer).visible==false)
+							(map.getLayer(facilityLayerObj.label) as FeatureLayer).visible=true;
+						//lblFindingFeatures.text='Searching is Layer  already added.';
+						m_nLoadOperationsInProcess--;
+						//map.addEventListener(ExtentEvent.EXTENT_CHANGE,zoomToFacilities1)
+						//f.addEventListener(LayerEvent.UPDATE_END, zoomToFacilities1 );
+					}
+					else
+					{
+						/** Add Layers */
+						map.removeEventListener(ExtentEvent.EXTENT_CHANGE,zoomToFacilities1)
+						isOplayers=false;
+						var f:FeatureLayer=new FeatureLayer(facilityLayerObj.url);
+						f.id=facilityLayerObj.label;
+						f.name=facilityLayerObj.label;
+						f.definitionExpression='1=1';
+						f.mode= FeatureLayer.MODE_SNAPSHOT;
+						map.addLayer(f);
+						f.addEventListener(LayerEvent.UPDATE_END, zoomToFacilities );
+						f.addEventListener(LayerEvent.LOAD_ERROR, function( event:LayerEvent ):void {
+							m_nLoadOperationsInProcess--;
+							showError( "Error loading facilities:\n" + event.fault.message.toString() );				
+						} );
+					}
+				}
+			}
+			
+			
+			
+			
+			
+			
+			private function onQuerySuccess(result:Object,token:Object):void{
+				
+				facilityFeatureSet= new FeatureSet();
+				facilityFeatureSet= result as FeatureSet;
+				m_nLoadOperationsInProcess--;
+				
+			}
+			
+			private function onFault(e:FaultEvent,token:Object):void
+			{
+				m_nLoadOperationsInProcess--;
+				showError( "Error loading facilities:\n" + e.fault.message.toString() );	
+				
+			}
+			
+			/**Common Functionality */
+			private function zoomToFacilities( event:LayerEvent ):void {
+				var evtLyr:FeatureLayer = event.currentTarget as FeatureLayer;			
+				//map.extent = GraphicUtil.getGraphicsExtent( (evtLyr.graphicProvider as ArrayCollection).toArray() ).expand( 1.25 );
+				evtLyr.removeEventListener( LayerEvent.UPDATE_END, zoomToFacilities );
+				m_nLoadOperationsInProcess--;
+			}
+			
+			
+			
+			private function line_clickHandler(event:MouseEvent):void
+			{
+				setMapAction(DrawTool.POLYLINE, 'Add Barrier', symbolLyrBarrier, drawPolylineBarrier);
+				enableMapNav(false);
+				
+			}
+			
+			private function startButton1_clickHandler(event:MouseEvent):void
+			{
+				m_nLoadOperationsInProcess--;
+				if(cmdfacilityLayers.selectedIndex>0)
+				{
+					setMapAction(DrawTool.MAPPOINT, 'Add Event', symbolLyrEvent, drawEvent);
+					//lblFindingFeatures.text='Searching feature within the Buffer'
+					enableMapNav(false);
+				}
+				else
+				{
+					Alert.show('Please select a facility layer.','Error')
+				}
+			}
+			
+			
+			private function drawBuffer(geometry:Geometry):void
+			{
+				var geometryService:GeometryService= new GeometryService();
+				var bufferpara:BufferParameters= new BufferParameters();
+				geometryService.url= configData.geometryService.url;
+				bufferpara.distances=[5];
+				bufferpara.geometries= [geometry];
+				bufferpara.unit= GeometryService.UNIT_KILOMETER
+				bufferpara.bufferSpatialReference= map.spatialReference;
+				bufferpara.outSpatialReference= map.spatialReference;
+				geometryService.buffer(bufferpara,new AsyncResponder(onBufferComplete,onFault));
+				
+			}
+			
+			private function onBufferComplete(result:Object, token:Object = null):void
+			{
+				var symbol:SimpleFillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID,0xFF00000,0.5);
+				var g:Graphic=new Graphic(result[0]as Geometry,symbol);
+				//graphiclyrBarrier.add(g);
+				
+				zoomToFacilities1(result[0]as Geometry);
+				
+			}
+			
+			
+			private function zoomToFacilities1(geom:Geometry):void {
+				//var evtLyr:FeatureLayer = event.currentTarget as FeatureLayer;			
+				
+				//m_nLoadOperationsInProcess--;
+				
+				var query:Query= new Query();
+				query.geometry= geom as Geometry;
+				query.spatialRelationship=Query.SPATIAL_REL_CONTAINS;
+				query.returnGeometry=true;
+				var arr:Array= new Array();
+				arr.push('OBJECTID')
+				query.outFields=arr;
+				query.outSpatialReference=map.spatialReference;
+				var queryTask:QueryTask= new QueryTask(facilityLayerObj.url)
+				queryTask.useAMF=false;
+				queryTask.method ="Post"
+				queryTask.execute(query,new AsyncResponder(onQuerySuccess,onFault));
+				//evtLyr.queryFeatures(query,new AsyncResponder(onQuerySuccess,onFault));
+			}
+			private function drawEvent( event:DrawEvent ):void {			
+				isincidentdrawn=true;
+				graphicIncidentlayerEvent.add(event.graphic);
+				drawBuffer(event.graphic.geometry);
+				
+				
+			}
+			
+			private function drawPolylineBarrier( event:DrawEvent ):void {
+				graphiclyrBarrier.add(event.graphic);
+			}
+			
+			private function enableMapNav( bEnable : Boolean ) : void {
+				map.panEnabled = map.mapNavigationEnabled 
+					= map.rubberbandZoomEnabled = map.doubleClickZoomEnabled 
+					= bEnable;
+			}
+			private function xmlListToStringArray( xl:XMLList ):Array {
+				var ary:Array = new Array();
+				for each ( var o:Object in xl )
+				ary.push( o.toString() );
+				
+				return ary;
+			}
+			
+			/**CLosest facilty*/
+			
+			
+			private function onSolveComplete(e:ClosestFacilityEvent):void{
+				
+				lyrResultRoutes.clear();
+				
+				graphiclyrBarrier.clear();
+				textSymbolGraphiclayer.clear()
+				textSymbolGraphiclayer1.clear()
+				
+				var routes:Array = e.closestFacilitySolveResult.routes;
+				// Order so lowest-ranked results are added/drawn first
+				routes.sort(
+					function( g1:Graphic, g2:Graphic ):int {
+						var rank1:int = int(g1.attributes[configXML.symbology.routeZOrderAttrName.valueOf() ]);
+						var rank2:int = int(g2.attributes[configXML..symbology.routeZOrderAttrName.valueOf() ]);
+						if ( rank1 < rank2 ) return -1;
+						else if ( rank1 > rank2 ) return 1;
+						else return 0;
+					},
+					Array.DESCENDING
+				);
+				
+				// Results automatically added to graphics layer via binding
+				// Auto-zoom if user desires
+				if ( chkZoomToResults.selected ) {
+					map.extent = GraphicUtil.getGraphicsExtent( routes ).expand( 1.5 );
+				}
+				
+				//lyrResultRoutes.clear();
+				// Set all lines to not automatically come to top of Z-order upon mouse-hover
+				var indexCount:Number=0;
+				var textLblgra:Graphic;
+				var simplefilsSym:SimpleMarkerSymbol;
+				var textBgGra:Graphic;
+				for ( var i:int = 0; i < routes.length; i++ )
+				{
+					var o:Graphic = routes[ i ];
+					textLblgra= new Graphic();
+					textBgGra= new Graphic();
+					simpleLabelSym= new TextSymbol()
+					
+					simplefilsSym= new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_SQUARE,15,0x0000ff,1,0,0,0,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,0xffffff,1,2));
+					
+					/* Route gra */
+					indexCount=o.attributes['IncidentID'];
+					var routSymb:SimpleLineSymbol=new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,0,1,4) ;
+					routSymb.color= getRandomColor();
+					
+					o.symbol= routSymb;
+					lyrResultRoutes.add(o);
+					/* Label adding*/
+					
+					simpleLabelSym.color=0xFFFFFF;
+					simpleLabelSym.alpha=1;	
+					simpleLabelSym.text= o.attributes['FacilityRank'];
+					textLblgra.symbol=simpleLabelSym;
+					textBgGra.symbol=simplefilsSym;
+					var p:Polyline= new Polyline();
+					p.paths=(o.geometry as Object).paths;
+					// calc last point
+					var index:Number=Math.round(((p.paths[0]).length)/4)
+						
+					//	Alert.show(index.toString());
+					textLblgra.geometry= p.getPoint(0,((p.paths[0]).length)-index) as MapPoint;
+					
+					textBgGra.geometry= p.getPoint(0,((p.paths[0]).length)-index) as MapPoint;
+					
+					textSymbolGraphiclayer.add(textBgGra);
+					textSymbolGraphiclayer1.add(textLblgra);
+					
+				};	
+				cursorManager.removeBusyCursor();
+			}
+			
+			
+			
+			private function onSolveFail( event:FaultEvent ):void 
+			{
+				cursorManager.removeBusyCursor();
+				Alert.show("Cannot find closest facility.","Error")
+				//showError( "\n" + "Cannot find closest facility.","Error" );
+			}
+			
+			private function onSolve( event:MouseEvent ):void 
+			{
+				
+				if(cmdfacilityLayers.selectedIndex>0)
+				{
+					
+					
+					var facilityLayerObj:Object=facilityLayerObj= cmdfacilityLayers.selectedItem;
+					if(map.getLayer(facilityLayerObj.label)!=null)
+					{
+						var f:FeatureLayer= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
+						if(f.visible==false)
+							f.visible=true;
+					}
+					
+						
+						
+					if(isincidentdrawn == true)
+					{
+						closestFacilityParams.defaultTargetFacilityCount=numFacilities.value;
+						if(isOplayers==false)
+							closestFacilityParams.facilities = featureSetForGraphicLayer( map.getLayer(facilityLayerObj.label)as FeatureLayer );
+						else{
+							closestFacilityParams.facilities = facilityFeatureSet;
+							var f1:FeatureLayer= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
+							f1.removeEventListener( LayerEvent.UPDATE_END, zoomToFacilities );
+						}
+						
+						closestFacilityParams.incidents = featureSetForGraphicLayer(graphicIncidentlayerEvent );
+						closestFacilityParams.polylineBarriers = featureSetForGraphicLayer( graphiclyrBarrier );
+						
+						closestFacility.method = URLRequestMethod.POST;
+						closestFacility.solve(closestFacilityParams);
+						cursorManager.setBusyCursor()
+					}
+					else
+					{
+						Alert.show('Please define a location on the map first.','Location missing')
+					}
+				}
+				else
+				{
+					Alert.show('Please select a facility layer.','Error')
+				}
+			}
+			
+			
+			private function featureSetForGraphicLayer( gl:GraphicsLayer ):FeatureSet {
+				return new FeatureSet( (gl.graphicProvider as ArrayCollection).toArray() );
+			}
+			
+			private function clear_clickHandler(event:MouseEvent):void
+			{
+				lyrResultRoutes.clear();
+				graphicIncidentlayerEvent.clear();
+				graphiclyrBarrier.clear();
+				textSymbolGraphiclayer.clear()
+				textSymbolGraphiclayer1.clear()
+				isincidentdrawn=false;
+			}
+			
+			private function wTemplate_closedHandler(event:Event):void
+			{
+				setMapAction(null, null, null, null);
+				lyrResultRoutes.visible=false;
+				graphicIncidentlayerEvent.visible=false;
+				graphiclyrBarrier.visible=false;
+				textSymbolGraphiclayer.visible=false;
+				textSymbolGraphiclayer1.visible=false;
+				map.removeEventListener(ExtentEvent.EXTENT_CHANGE,zoomToFacilities1)
+			}
+			
+			protected function cmdfacilityLayers_creationCompleteHandler(event:FlexEvent):void
+			{
+				cmdfacilityLayers.textInput.editable=false;
+				
+			}
+			
+			protected function wTemplate_openHandler(event:Event):void
+			{
+				lyrResultRoutes.visible=true;
+				graphicIncidentlayerEvent.visible=true;
+				graphiclyrBarrier.visible=true;
+				textSymbolGraphiclayer.visible=true;
+				textSymbolGraphiclayer1.visible=true;
+				
+			}
+			
+			
+			private var redBias:Number = 0xFF;
+			private var greenBias:Number = 0xFF;
+			private var blueBias:Number = 0xFF;
+			
+			private function getRandomColor():uint{
+				var ct:ColorTransform = new ColorTransform(1,1,1,1,Math.random()*redBias, Math.random()*greenBias, Math.random()*blueBias);
+				var color:uint = ct.color;
+				return color;
+			}
+			
+		
+			protected function basewidget1_creationCompleteHandler(event:FlexEvent):void
+			{
+				lblFindingFeatures.visible=false;
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<viewer:WidgetTemplate id="wTemplate" color="0xFFFFFF" minWidth="390" minHeight="220"   closed="wTemplate_closedHandler(event)" open="wTemplate_openHandler(event)"
+						   width="390" height="220">
+		<viewer:layout>
+			<s:VerticalLayout horizontalAlign="left"  >
+				
+			</s:VerticalLayout>
+		</viewer:layout>
+		<mx:Grid>
+			
+			<mx:GridRow>
+				<mx:GridItem>
+					<s:HGroup>
+						<s:Spacer height="10" />
+					</s:HGroup>
+				</mx:GridItem>
+				<mx:GridItem>
+					
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow  >
+				<mx:GridItem verticalAlign="middle">
+						<s:Label  right="0"  fontWeight="normal" text="Select  Facility Layers" width="50%"/>
+				</mx:GridItem>
+				<mx:GridItem>
+					<s:ComboBox id='cmdfacilityLayers' width="150"  creationComplete="cmdfacilityLayers_creationCompleteHandler(event)"  requireSelection="true" labelField="label" dataProvider="{arrFacilityLayers}" change="cmdfacilityLayers_changeHandler(event)" />
+				</mx:GridItem>
+			</mx:GridRow>
+			
+			<mx:GridRow>
+				<mx:GridItem>
+					<mx:Label id="txtLocation" text="Navigation / Drawing Tools" width="80%"/>
+				</mx:GridItem>
+				<mx:GridItem>
+					
+					<mx:Image source="widgets/ClosestFacility/assets/images/w_addstart.png" 
+							  useHandCursor="true" buttonMode="true" width="20" height="20" click="startButton1_clickHandler(event)"
+							  toolTip="Use this tool to add the incidents to be allocated to nearby facilities">
+						
+					</mx:Image>
+					<mx:Image source="widgets/ClosestFacility/assets/images/i_draw_line.png" 
+							  useHandCursor="true" buttonMode="true" width="20" height="20" click="line_clickHandler(event)"
+							  toolTip="Draw a traffic barrier (one click per vertex, double-click to stop)">
+						
+					</mx:Image>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow>
+				<mx:GridItem>
+					<mx:Label text="# of facilities to find"/>
+				</mx:GridItem>
+				<mx:GridItem>
+					<ClosestFacility:UnEditableNumericStepper id="numFacilities"  width="50" minimum="1" maximum="5" stepSize="1" value="3"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			
+			<mx:GridRow>
+				<mx:GridItem>
+					<mx:Button label="Solve" toolTip="Solve and display the results" click="onSolve(event)" />
+					<mx:CheckBox id="chkZoomToResults"
+								 label="Zoom to Result"
+								 toolTip="After solving, zoom to results"/>
+				</mx:GridItem>
+				<mx:GridItem>
+					<mx:Button label="Clear"  toolTip="Clear all events, barriers, and results" click="clear_clickHandler(event)" width="50">
+						
+					</mx:Button>
+				</mx:GridItem>
+			</mx:GridRow>
+		</mx:Grid>
+		
+		<s:Spacer height="2" />
+		<s:Label textAlign="left" id="lblFindingFeatures" visible="{m_nLoadOperationsInProcess &gt; 0}" includeInLayout="{m_nLoadOperationsInProcess &gt; 0}" right="0" color="#FFFF00" fontWeight="normal" text="Loading data..."/>
+	
+	
+	</viewer:WidgetTemplate>
+	<fx:Declarations>
+		<!--==================== Graphics Layers and Symbology ====================-->
+		
+		
+		<esri:GraphicsLayer id="lyrResultRoutes" 
+							spatialReference="{map.spatialReference}">
+			<!--<esri:renderer>
+			<esri:UniqueValueRenderer id="rendRoutes" attribute="{configXML.symbology.routeRendererAttrName}" infos="{aryClosestFacilitySymbolInfos}"/>
+			</esri:renderer>-->		
+		</esri:GraphicsLayer>
+		
+		<!--==================== Tasks ====================-->
+		
+		
+		<esri:ClosestFacilityParameters id="closestFacilityParams"
+										defaultCutoff="3000"
+										
+										outSpatialReference="{map.spatialReference}"
+										outputLines="esriNAOutputLineTrueShape"
+										returnFacilities="true"
+										
+										/>
+		<!--	<extendPolylineEffect:ExtendPolylineEffect id="fxExtendLines" duration="{configXML.symbology.animateRoutesDuration}"/>-->
+	</fx:Declarations>
+	
+</viewer:BaseWidget>
