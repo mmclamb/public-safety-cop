@@ -26,7 +26,7 @@ Requirements
 
 * ArcGIS for Server 10.1 - [About](http://www.esri.com/software/arcgis/arcgisserver)
 
-* Adobe Flash Player Plug-in Available from the Adobe website
+* Adobe Flash Player Plug-in available from the [Adobe website](http://get.adobe.com/flashplayer/)
 
 License
 ------------
