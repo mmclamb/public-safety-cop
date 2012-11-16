@@ -9,13 +9,12 @@ Public Safety Common Operational Picture (COP) offers a standard overview of an 
 How To Use
 ----------
 
-This repository contains the collection of widgets that make up the application. Please see the [application description page](http://www.arcgis.com/home/item.html?id=4d5a8964c9c54b07af7317b9c9ac86fd) for an example of how these widgets might be used in an application.  The page also offers a link to a live try-it of the application.
+This repository contains the collection of widgets that make up the application.
+Additional [information and sample data](http://www.arcgis.com/home/item.html?id=4d5a8964c9c54b07af7317b9c9ac86fd) are available for the application.
 
 These widgets use the 3.0 version of [Esri's ArcGIS API for Flex](http://resources.arcgis.com/en/communities/flex-api/) and the 4.6 version of [Adobe's Flex SDK](http://www.adobe.com/devnet/flex/flex-sdk-download.html); see the site for concepts, samples, and a reference for using the API to create mapping web sites.
 
 [Detailed help](http://resources.arcgis.com/en/help/localgovernment/10.1/index.html#/What_is_Public_Safety_Common_Operational_Picture_COP/028s0000001w000000/) on the ArcGIS Resource Center can guide you in the setup and configuration of your app.
-
-[Esri's ArcGIS.com Help](http://resources.arcgis.com/en/help/arcgisonline/) site describes how to create web maps and web map applications in the ArcGIS.com ecosystem.
 
 Requirements
 ------------
