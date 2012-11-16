@@ -19,8 +19,6 @@ These widgets use the 3.0 version of [Esri's ArcGIS API for Flex](http://resourc
 Requirements
 ------------
 
-* Download the sample data - [Data](http://www.esri.com/)
-
 * ArcGIS for Desktop 10.1 - [About](http://www.esri.com/software/arcgis/arcgis-for-desktop)
 
 * ArcGIS for Server 10.1 - [About](http://www.esri.com/software/arcgis/arcgisserver)
