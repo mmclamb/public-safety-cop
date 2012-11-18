@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<project default="main">
+    <target name="main">
+        <fb.exportReleaseBuild project="__ArcGISViewerForFlex-flexviewer-3.0-src" />
+    </target>
+</project>

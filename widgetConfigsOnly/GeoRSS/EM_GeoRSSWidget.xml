@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<configuration>
+    <source>http://localgovtemplates.esri.com/GeoRSS/NapervillePlannedEvents.xml</source>
+    <fields>
+        <field name="description" alias="Event"/>
+    </fields>
+    <titlefield>title</titlefield>
+    <linkfield>link</linkfield>
+    <refreshrate></refreshrate>
+    <zoomscale>15000</zoomscale>
+</configuration>
+
+<!--
+    See GeoRSS widget documentation at
+    http://links.esri.com/georsswidget
+-->

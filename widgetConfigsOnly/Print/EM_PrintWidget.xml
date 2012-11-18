@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<configuration>
+    <!-- <title>Map from a Flex Viewer application</title>  -->
+    <!-- <subtitle>Powered by ArcGIS</subtitle> -->
+  <title>Common Operational Picture</title>
+  <subtitle>Emergency Operations Center</subtitle>
+</configuration>
+
+<!--
+    See Print widget documentation at
+    http://links.esri.com/printwidget
+-->

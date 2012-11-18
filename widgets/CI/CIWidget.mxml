@@ -1,0 +1,841 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Copyright 2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<viewer:BaseWidget xmlns:esri="http://www.esri.com/2008/ags"
+				   xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+                   preinitialize="preinitializeHandler(event)"
+				   x="600" y="300"  widgetConfigLoaded="init()"
+				   >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.Map;
+			import com.esri.ags.SpatialReference;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.GeometryServiceEvent;
+			import com.esri.ags.events.LayerEvent;
+			import com.esri.ags.geometry.*;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.layers.FeatureLayer;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.SimpleFillSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.symbols.SimpleMarkerSymbol;
+			import com.esri.ags.symbols.Symbol;
+			import com.esri.ags.tasks.GeometryService;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.BufferParameters;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.viewer.ViewerContainer;
+
+			import flashx.textLayout.tlf_internal;
+
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.ColumnSeries;
+			import mx.collections.*;
+			import mx.controls.Alert;
+			import mx.events.ModuleEvent;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.messaging.channels.StreamingAMFChannel;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.xml.SimpleXMLDecoder;
+
+
+			//labels
+			[Bindable]
+			private var descriptionLabel:String;
+
+			[Bindable]
+			private var pointLabel:String;
+
+			[Bindable]
+			private var polygonLabel:String;
+
+			[Bindable]
+			private var ellipseLabel:String;
+
+
+
+			[Bindable]
+			private var freehandPolygonLabel:String;
+
+			[Bindable]
+			private var rectangleLabel:String;
+
+			[Bindable]
+			private var circleLabel:String;
+
+			[Bindable]
+			private var lineLabel:String;
+
+			[Bindable]
+			private var freehandLineLabel:String;
+
+			[Bindable]
+			private var definesearchdistanceLabel:String;
+
+			private var entitiesLabel:String;
+
+			[Bindable]
+			private var clearLabel:String;
+
+			[Bindable]
+			private var loadingLabel:String;
+
+			private var chartLabel:String;
+
+			private var queryLayer:String;
+
+			private var queryFields:String;
+
+			private var summaryField:String;
+
+			private var FeatureSelectionColor:String;
+
+			private var FeatureOverColor:String;
+
+			private var Xcolumnfield:String;
+
+			private var summaryValue:Number = 0;
+
+			private var chartFields:Array = [];
+
+			private var chartFieldsLabel:Array = [];
+
+			private var chartSeries:Array = [];
+
+			private var chartSeriesColors:Array = [];
+
+			private var currentChart:Number = 0;
+
+			private var geometryserviceURL:String;
+
+			private var selectedDrawingIcon:Image;
+
+			private var obj:Object;
+
+			private var types:Array ;
+
+
+			private var arr:ArrayCollection= new ArrayCollection();
+
+			[Bindable]
+			private var ColumnDataProvider:ArrayCollection;
+
+			[Bindable]
+			private var mySolidColor:SolidColor;
+
+			[Bindable]
+			private var ColumnSelectedIndex:int=-1;
+
+
+			private var graphicsLayer:GraphicsLayer;
+
+			private var lineSymFeatures:SimpleLineSymbol;
+			private var polySymFeatures:SimpleFillSymbol;
+			private var pointSymFeatures:SimpleMarkerSymbol;
+
+			private var geom_service:GeometryService;
+
+			[Bindable]
+			private var msgVisible:Boolean = false;
+
+			private const ICON_URL:String = "widgets/Chart/assets/images/";
+
+			private var drawSymbol:Symbol;
+
+			private var chartLabels:Object;
+
+			// fix for embedded chart in 4.6
+			// by odejonge, http://forums.adobe.com/message/4143789
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+
+			protected function preinitializeHandler(event:FlexEvent):void
+			{
+				var styleObjects:Array = FlexGlobals.topLevelApplication.styleManager.selectors;
+				for each(var styleObj:String in styleObjects)  {
+					var style:CSSStyleDeclaration = FlexGlobals.topLevelApplication.styleManager.getStyleDeclaration(styleObj);
+					styleManager.setStyleDeclaration(styleObj, style, true);
+				}
+			}
+			// end fix
+
+			private function init():void
+			{
+				if (configXML)
+				{
+					//labels
+					descriptionLabel = configXML.labels.descriptionlabel || "Use a tool to define an area on the map";
+					pointLabel = configXML.labels.pointlabel || getDefaultString("drawPointLabel");
+					lineLabel = configXML.labels.linelabel || getDefaultString("drawLineLabel");
+					freehandLineLabel = configXML.labels.freehandlinelabel || getDefaultString("drawFreehandLineLabel");
+					rectangleLabel = configXML.labels.rectanglelabel || getDefaultString("drawRectangleLabel");
+					circleLabel = configXML.labels.circlelabel || getDefaultString("drawCircleLabel");
+					polygonLabel = configXML.labels.polygonlabel || getDefaultString("drawPolygonLabel");
+					ellipseLabel = configXML.labels.ellipseLabel || getDefaultString("drawellipseLabel");
+					freehandPolygonLabel = configXML.labels.freehandpolygonlabel || getDefaultString("drawFreehandPolygonLabel");
+					//clearLabel = configXML.labels.clearlabel || getDefaultString("clearLabel");
+					loadingLabel = configXML.labels.loadinglabel || "Loading...";
+					chartLabel = configXML.labels.chartlabel || "Total for selected area";
+					definesearchdistanceLabel  = configXML.labels.definesearchdistancelabel || "Define search distance: ";
+					entitiesLabel = configXML.labels.entitieslabel || "features";
+
+					//parameters for this application
+					geometryserviceURL=configXML.geometryservice;
+					queryLayer = configXML.layer;
+					var f:FeatureLayer = new FeatureLayer(queryLayer);
+					f.addEventListener(LayerEvent.LOAD, onend);
+
+					function onend(gg:Object, token:Object = null):void
+					{
+						var types:Array=f.layerDetails.types;
+						for each(var o:Object in types)
+						{
+							obj= new Object();
+							obj.id=o.id;
+							obj.name=o.name;
+							arr.addItem(obj);
+						}
+
+					}
+					queryFields = configXML.fields;
+					summaryField = configXML.summaryfield;
+					Xcolumnfield = configXML.Xcolumnfield;
+					FeatureSelectionColor = configXML.featureselectioncolor;
+					FeatureOverColor = configXML.featureovercolor;
+					geometryserviceURL = configXML.geometryserviceURL;
+
+					lineSymFeatures = new SimpleLineSymbol("solid", uint("0x" + FeatureSelectionColor), 0.9, 2);
+					polySymFeatures = new SimpleFillSymbol("solid", uint("0x" + FeatureSelectionColor), 0.5, lineSymFeatures);
+					pointSymFeatures = new SimpleMarkerSymbol("circle",12, uint("0x" + FeatureSelectionColor), 0.9);
+
+					var strchartSeriesColors:String = configXML..seriescolors;
+					chartSeriesColors = strchartSeriesColors.split(",");
+
+					var xmlAlert:XML = (configXML.chartlabels[0]);
+					var xmlDoc:XMLDocument = new XMLDocument(xmlAlert.toString());
+					var decoder:SimpleXMLDecoder = new SimpleXMLDecoder(true);
+					var resultObj:Object = decoder.decodeXML(xmlDoc);
+					chartLabels = resultObj.chartlabels;
+
+					ellipseLabel=chartLabels.ellipsetooltip.label.toString();
+					clearLabel=chartLabels.thrashtooltip.label.toString();
+					var chartList:XMLList = configXML..series;
+					for (var i:Number = 0; i < chartList.length(); i++)
+					{
+						chartFields.push(chartList[i]);
+					}
+
+					var chartLabelList:XMLList = configXML..serieslabels;
+					for (var j:Number = 0; j < chartLabelList.length(); j++)
+					{
+						chartFieldsLabel.push(chartLabelList[j]);
+					}
+
+				}
+				var ICON_URL:String = "widgets/Chart/assets/images/";
+
+				//wTemplate.addTitlebarButton(ICON_URL + "i_selectfeatures.png",configXML.labels.selectfeaturelabel , showStateSelectFeature);
+				//wTemplate.addTitlebarButton(ICON_URL + "i_displaystatistics.png", configXML.labels.displaystatisticslabel ,showStateDisplayStatistics );
+
+				graphicsLayer = new GraphicsLayer();
+				map.addLayer(graphicsLayer);
+				//Label_units.text=map.units.toString().replace("esri","");
+				geom_service = new GeometryService(geometryserviceURL);
+
+			}
+
+			private function iconRollOverHandler(event:MouseEvent):void
+			{
+				clearSelectionFilter();
+				event.target.filters = [ glowFilter ];
+			}
+
+			private function iconRollOutHandler(event:MouseEvent):void
+			{
+				clearSelectionFilter();
+			}
+
+			private function activateDrawTool(event:MouseEvent):void
+			{
+				addSharedData("Deactivate_DrawTool", null); // to be able to deactivate drawTool on other widgets
+
+				// apply glow
+				selectedDrawingIcon = Image(event.currentTarget);
+				clearSelectionFilter();
+				selectedDrawingIcon.filters = [ glowFilter ];
+
+				var status:String;
+				var value:String = selectedDrawingIcon.name;
+				switch (value)
+				{
+					case DrawTool.MAPPOINT:
+					{
+						status = pointLabel;
+						drawSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, 15, 0x3FAFDC, 1);
+						break;
+					}
+					case DrawTool.FREEHAND_POLYLINE:
+					case DrawTool.POLYLINE:
+					{
+						status = lineLabel;
+						drawSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, 0x3FAFDC, 1, 1);
+						break;
+					}
+					case DrawTool.EXTENT:
+					{
+						status = rectangleLabel;
+						drawSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, 0x3FAFDC, 0.5, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, 0x3FAFDC, 1, 1));
+						break;
+					}
+					case DrawTool.FREEHAND_POLYGON:
+					case DrawTool.POLYGON:
+					{
+						status = polygonLabel;
+						drawSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, 0x3FAFDC, 0.5, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, 0x3FAFDC, 1, 1));
+						break;
+					}
+					case DrawTool.CIRCLE:
+					{
+						status = circleLabel;
+						drawSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, 0x3FAFDC, 0.5, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, 0x3FAFDC, 1, 1));
+						break;
+					}
+					case DrawTool.ELLIPSE:
+					{
+						status = ellipseLabel;
+						drawSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, 0x3FAFDC, 0.5, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, 0x3FAFDC, 1, 1));
+						break;
+					}
+				}
+				setMapAction(value, status, drawSymbol, searchDrawEnd);
+			}
+
+			private function searchDrawEnd(event:DrawEvent):void
+			{
+				selectedDrawingIcon = null;
+				clearSelectionFilter();
+
+				event.target.deactivate();
+
+				CV_Loading.visible=true;
+				SWF_Loading.visible=true;
+				loading_Label.visible=true;
+				loading_Label.text=loadingLabel;
+				var geom:Geometry = event.graphic.geometry;
+				queryFeatures(geom);
+
+
+			}
+			private function clearSelectionFilter():void
+			{
+				for (var i:int = 0; i < imageGroup.numChildren; i++)
+				{
+					if (imageGroup.getChildAt(i).filters && imageGroup.getChildAt(i).filters.length > 0)
+					{
+						if (!(selectedDrawingIcon && imageGroup.getChildAt(i) === selectedDrawingIcon))
+						{
+							imageGroup.getChildAt(i).filters = [];
+						}
+					}
+				}
+			}
+			private function queryBuffer(geomArr:Array):void
+			{
+				var bufferParameters:BufferParameters = new BufferParameters();
+				bufferParameters.geometries = geomArr;
+				//bufferParameters.distances =
+				bufferParameters.unit = Number.NaN;
+				bufferParameters.bufferSpatialReference = map.spatialReference;
+				geom_service.addEventListener(GeometryServiceEvent.BUFFER_COMPLETE, bufferCompleteHandler);
+				geom_service.buffer( bufferParameters );
+			}
+
+			private function bufferCompleteHandler(event:GeometryServiceEvent):void
+			{
+				geom_service.removeEventListener(GeometryServiceEvent.BUFFER_COMPLETE, bufferCompleteHandler);
+				for each (var geom:Geometry in event.result)
+				{
+					queryFeatures(geom);
+				}
+			}
+
+			//query features
+			private function queryFeatures(geom:Geometry):void
+			{
+				chartSeries.length = 0;
+				currentChart = 0;
+				var querySpatialRel:String = "esriSpatialRelIntersects";
+				var queryTask:QueryTask = new QueryTask(queryLayer);
+				queryTask.useAMF = false;
+				var query:Query = new Query();
+				query.geometry = geom;
+				query.outFields = queryFields.split(",");
+				query.returnGeometry = true;
+				query.spatialRelationship = querySpatialRel;
+				query.outSpatialReference = map.spatialReference;
+				queryTask.execute(query, new AsyncResponder(onResult, onFault));
+				showMessage(loadingLabel, true);
+
+				// on result
+				function onResult(featureSet:FeatureSet, token:Object = null):void
+				{
+					try
+					{
+						graphicsLayer.clear();
+						if(featureSet.features.length>0)
+						{
+							var graphicsGeometryType:String = featureSet.geometryType.toString();
+							var ext:Extent;
+							for each (var myGraphic:Graphic in featureSet.features)
+							{
+								if (myGraphic.geometry.type=="esriGeometryPolygon") {
+									myGraphic.symbol=polySymFeatures;
+									var myPolygon:Polygon = Polygon(myGraphic.geometry);
+									if (ext == null) {
+										ext=myPolygon.extent;
+									}else{
+										ext=ext.union(myPolygon.extent);
+									}
+								}
+								else if (myGraphic.geometry.type=="esriGeometryPolyline"){
+									myGraphic.symbol=lineSymFeatures;
+
+									var myPolyline:Polyline = Polyline(myGraphic.geometry);
+									if (ext == null) {
+										ext=myPolyline.extent;
+									}else{
+										ext=ext.union(myPolyline.extent);
+									}
+								}
+								else if (myGraphic.geometry.type=="esriGeometryPoint") {
+									myGraphic.symbol=pointSymFeatures;
+
+									var myPoint:MapPoint = MapPoint(myGraphic.geometry);
+									if (ext == null) {
+										ext= new Extent(myPoint.x,myPoint.y,myPoint.x,myPoint.y);
+									}else{
+										if (myPoint.x > ext.xmax) {ext.xmax=myPoint.x;}
+										if (myPoint.y > ext.ymax) {ext.ymax=myPoint.y;}
+										if (myPoint.x < ext.xmin) {ext.xmin=myPoint.x;}
+										if (myPoint.y < ext.ymin) {ext.ymin=myPoint.y;}
+									}
+								}
+								graphicsLayer.add(myGraphic);
+							}
+							CV_Loading.visible=false;
+							map.extent=ext.expand(2);
+							/* currentState = "DisplayStatistics"
+							wTemplate.selectedTitlebarButtonIndex = 1; */
+							ColumnSelectedIndex=-1;
+
+							calculateStatistics(featureSet);
+
+						}
+						else
+						{
+							PieChartStatistics.visible=false;
+							PieChartStatistics.dataProvider  = null;
+							CV_Loading.visible=true;
+							loading_Label.visible=true;
+							SWF_Loading.visible=false;
+							loading_Label.text=chartLabels.nofeatures.label.toString();
+
+
+						}
+					}
+					catch (error:Error)
+					{
+						showMessage(error.message, false);
+					}
+				}
+
+				//on fault
+				function onFault(info:Object, token:Object = null) : void
+				{
+					showMessage(info.toString(), false);
+				}
+			}
+
+			//calculate statistics
+			private function calculateStatistics(featureSet:FeatureSet):void
+			{
+				summaryValue = 0;
+
+				var chartValueArray: Array = [];
+				for (var j:Number = 0; j < arr.length; j++)
+				{
+					var id:String = arr[j].id;
+					var label1:String= arr[j].name;
+					var value: Number = 0;
+					for (var r:Number = 0; r < featureSet.features.length; r++)
+					{
+						if(id==featureSet.attributes[r]["SUBTYPEFIELD"])
+						{
+							value =value+1;
+							label=label1;
+						}
+						summaryValue += Number(featureSet.attributes[r]["SUBTYPEFIELD"]);
+					}
+					var obj:Object = new Object();
+					obj.label = label ;
+					obj.value = value;
+					chartValueArray.push(obj);
+				}
+				chartSeries.push(chartValueArray);
+
+				summaryValue = summaryValue/arr.length;
+				ColumnChartStatistics.visible=false;
+				PieChartStatistics.visible=true;
+				PieChartStatistics.dataProvider  = chartSeries[0];
+
+				//var msg:String = chartLabel + " [" + featureSet.features.length + " " + entitiesLabel + "]: " + numFormatter.format(summaryValue);
+				//showMessage(msg, false);
+			}
+
+			private function chartItemClick(event:ChartItemEvent):void
+			{
+				var myChartItem:ChartItem = event.hitData.chartItem;
+				var myItemIndex:int = myChartItem.index;
+				mySolidColor = new SolidColor(uint("0x" + chartSeriesColors[myItemIndex]),0.9);
+				if (currentChart == 0)
+				{
+					ColumnDataProvider = new ArrayCollection();
+					var ValueFields:Array=chartFields.toString().split(",");
+					var ValueFieldName:String=ValueFields[myItemIndex];
+					var i:int = 0;
+					for each (var myGraphic:Graphic in graphicsLayer.graphicProvider)
+					{
+						var Yval:Number;
+						if (myGraphic.attributes[ValueFieldName] == ""){
+							Yval=0;
+						}else{
+							Yval=myGraphic.attributes[ValueFieldName];
+						}
+						ColumnDataProvider.addItem({YValue:Number(myGraphic.attributes[ValueFieldName]), XValue:myGraphic.attributes[Xcolumnfield], GraphicIndex:i});
+						i=i+1;
+					}
+					var dataSortField:SortField = new SortField();
+					dataSortField.name = "YValue";
+					dataSortField.caseInsensitive=true;
+					dataSortField.numeric = true;
+					dataSortField.descending = true;
+					var numericDataSort:Sort = new Sort();
+					numericDataSort.fields = [dataSortField];
+					ColumnDataProvider.sort = numericDataSort;
+					ColumnDataProvider.refresh();
+					currentChart = 1;
+					PieChartStatistics.visible=false;
+					ColumnChartStatistics.visible=true;
+				}else{
+					PieChartStatistics.dataProvider  = chartSeries[0];
+					currentChart = 0;
+					ColumnChartStatistics.visible=false;
+					PieChartStatistics.visible=true;
+				}
+			}
+
+			private function clear():void
+			{
+				graphicsLayer.clear();
+				chartSeries.length = 0;
+				currentChart = 0;
+				PieChartStatistics.dataProvider = null;
+				ColumnDataProvider=null;
+				clearMessage();
+			}
+
+			private function showMessage(msg:String, swfVisible:Boolean):void
+			{
+				//txtMessage.text = msg;
+				//swfMessage.visible = swfVisible;
+				msgVisible = true;
+			}
+
+			private function clearMessage():void
+			{
+				msgVisible = false;
+			}
+
+			private function  FillPieFunction(item:ChartItem, index:Number):IFill
+			{
+				return new SolidColor(uint("0x" + chartSeriesColors[index]),0.9);
+			}
+
+			private function myEasingFunction():Number
+			{
+				return 0;
+			}
+
+			public function columnChartMouseOver(event:ChartItemEvent):void
+			{
+				var myGraphic:Graphic =  graphicsLayer.graphicProvider[ColumnDataProvider.getItemAt(event.hitData.chartItem.index).GraphicIndex];
+				var centerPoint:MapPoint;
+				if (myGraphic.geometry.type=="esriGeometryPolygon"){
+					myGraphic.symbol=new SimpleFillSymbol("solid", uint("0x" + FeatureOverColor), 0.5, lineSymFeatures);
+					var myPolygon:Polygon = Polygon(myGraphic.geometry);
+					centerPoint=myPolygon.extent.center;
+				}
+				else if (myGraphic.geometry.type=="esriGeometryPolyline"){
+					myGraphic.symbol=new SimpleLineSymbol("solid", uint("0x" + FeatureOverColor), 0.9, 2);
+					var myPolyline:Polyline = Polyline(myGraphic.geometry);
+					centerPoint=myPolyline.extent.center;
+				}
+				else if (myGraphic.geometry.type=="esriGeometryPoint"){
+					myGraphic.symbol= new SimpleMarkerSymbol("circle",12, uint("0x" + FeatureOverColor), 0.9);
+					centerPoint=MapPoint(myGraphic.geometry);
+				}
+				ColumnSelectedIndex=event.hitData.chartItem.index;
+				map.centerAt(centerPoint);
+			}
+
+			public function columnChartMouseOut(event:ChartItemEvent):void
+			{
+				var myGraphic:Graphic =  graphicsLayer.graphicProvider[ColumnDataProvider.getItemAt(event.hitData.chartItem.index).GraphicIndex];
+				if (myGraphic.geometry.type=="esriGeometryPolygon") {
+					myGraphic.symbol=polySymFeatures;
+				}
+				else if (myGraphic.geometry.type=="esriGeometryPolyline") {
+					myGraphic.symbol=lineSymFeatures;
+				}
+				else if (myGraphic.geometry.type=="esriGeometryPoint") {
+					myGraphic.symbol=pointSymFeatures;
+				}
+				ColumnSelectedIndex=-1;
+			}
+
+			private function dataTipFunction(item:HitData):String
+			{
+				return "<B>" + ColumnDataProvider.getItemAt(item.chartItem.index).XValue + "</B><BR/>" + ColumnDataProvider.getItemAt(item.chartItem.index).YValue;
+			}
+
+			private function widgetClosedHandler(event:Event):void
+			{
+				graphicsLayer.visible = false;
+				setMapNavigation(null, null);
+				ColumnChartStatistics.dataProvider=null;
+				PieChartStatistics.visible=false;
+				if (selectedDrawingIcon)
+				{
+					selectedDrawingIcon = null;
+				}
+				setMapAction(null, null, null, null);
+				clearSelectionFilter()
+			}
+
+			private function widgetOpenedHandler(event:Event):void
+			{
+				if (graphicsLayer)
+					graphicsLayer.visible = true;
+
+				PieChartStatistics.visible=true;
+				loading_Label.visible=false;
+				clearSelectionFilter();
+
+
+			}
+
+			protected function image1_clickHandler(event:MouseEvent):void
+			{
+				graphicsLayer.clear();
+				chartSeries.length = 0;
+				currentChart = 0;
+				PieChartStatistics.dataProvider = null;
+				ColumnDataProvider=null;
+				clearMessage();
+
+			}
+			public function dtFunc(hd:HitData):String {
+				return hd.item.label + hd.item.value;
+
+			}
+
+			protected function widgettemplate1_minimizedHandler(event:Event):void
+			{
+
+				setMapAction(null, null, null, null);
+				clearSelectionFilter();
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+
+
+	<s:GlowFilter id="glowFilter"
+				  alpha="1"
+				  color="{getStyle('focusColor')}"
+				  inner="true"
+				  strength="2"/>
+	</fx:Declarations>
+
+	<viewer:WidgetTemplate width="420" height="400" closed="widgetClosedHandler(event)" open="widgetOpenedHandler(event)" minimized="widgettemplate1_minimizedHandler(event)" minWidth="420" minHeight="400">
+
+		<s:VGroup id="SelectFeature"
+				  width="100%" height="100%"
+				  visible="true" horizontalAlign="left"
+				  >
+
+			<s:Label text="{descriptionLabel}"  paddingLeft="35" width="100%" textAlign="left"/>
+			<s:HGroup id="imageGroup"
+					  width="47%"
+					  gap="16"
+					  horizontalAlign="center">
+				<mx:Image name="{DrawTool.EXTENT}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="iconRollOutHandler(event)"
+						  rollOver="iconRollOverHandler(event)"
+						  source="widgets/CI/assets/images/i_draw_rect.png"
+						  toolTip="{rectangleLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.CIRCLE}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="iconRollOutHandler(event)"
+						  rollOver="iconRollOverHandler(event)"
+						  source="widgets/CI/assets/images/i_draw_circle.png"
+						  toolTip="{circleLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.ELLIPSE}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="iconRollOutHandler(event)"
+						  rollOver="iconRollOverHandler(event)"
+						  source="widgets/CI/assets/images/i_draw_ellipse.png"
+						  toolTip="{ellipseLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.POLYGON}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="iconRollOutHandler(event)"
+						  rollOver="iconRollOverHandler(event)"
+						  source="widgets/CI/assets/images/i_draw_poly.png"
+						  toolTip="{polygonLabel}"
+						  useHandCursor="true"/>
+
+				<mx:Image name="{DrawTool.FREEHAND_POLYGON}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="iconRollOutHandler(event)"
+						  rollOver="iconRollOverHandler(event)"
+						  source="widgets/CI/assets/images/i_draw_freepoly.png"
+						  toolTip="{freehandPolygonLabel}"
+						  useHandCursor="true"/>
+				<mx:Image id="thrash"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="image1_clickHandler(event)"
+						  rollOut="iconRollOutHandler(event)"
+						  rollOver="iconRollOverHandler(event)"
+						  source="widgets/CI/assets/images/clearIcon.png"
+						  toolTip="{clearLabel}"
+						  useHandCursor="true"/>
+
+			</s:HGroup>
+
+
+			<s:HGroup id="CV_Loading" horizontalAlign="center"
+					  includeInLayout="{msgVisible}"
+					  visible="{msgVisible}"
+					  width="100%" verticalAlign="middle">
+				<mx:Image id="SWF_Loading"
+						  source="assets/images/loader.swf"/>
+				<s:Label id="loading_Label" color="yellow"
+						 text="{loadingLabel}"
+						 width="90%"/>
+			</s:HGroup>
+
+			<s:HGroup horizontalAlign="left" verticalAlign="top">
+
+				<mx:PieChart id="PieChartStatistics"
+							 height="250"
+							 width="400"
+							 showDataTips="true"
+
+							 >
+					<mx:series>
+						<mx:PieSeries	id="pieSeries" width="350" height="250"
+										field="value"
+										nameField="label"
+										labelField="label"
+										labelPosition="inside"
+										showDataEffect="slideLeft"
+										fillFunction="FillPieFunction"
+										color="#FFFFFF"
+										fontSize="10"
+										fontWeight="normal"
+										alpha="1"
+										fontFamily="Arial"/>
+					</mx:series>
+				</mx:PieChart>
+				<mx:ColumnChart  color="#FFFFFF"
+								 id="ColumnChartStatistics"
+								 height="180"
+								 width="100%"
+								 visible="false"
+								 dataProvider="{ColumnDataProvider}"
+								 itemClick="chartItemClick(event)"
+								 showDataTips="true"
+								 columnWidthRatio="0.95"
+								 selectionMode="single"
+								 itemRollOver="{columnChartMouseOver(event)}"
+								 itemRollOut="{columnChartMouseOut(event)}"
+								 dataTipFunction="dataTipFunction">
+
+					<mx:horizontalAxis>
+						<mx:CategoryAxis id="myXAxis" categoryField="GraphicIndex" />
+					</mx:horizontalAxis>
+
+					<mx:horizontalAxisRenderers>
+						<mx:AxisRenderer axis="{myXAxis}" showLabels="false"/>
+					</mx:horizontalAxisRenderers>
+
+					<mx:series>
+						<mx:ColumnSeries xField="GraphicIndex"
+										 yField="YValue"
+										 color="#FFFFFF"
+										 alpha="1"
+										 showDataEffect="slideLeft"
+										 fill="{mySolidColor}"
+										 selectedIndex="{ColumnSelectedIndex}"
+										 labelField="XValue" />
+					</mx:series>
+				</mx:ColumnChart>
+			</s:HGroup>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

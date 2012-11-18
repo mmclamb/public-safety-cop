@@ -1,0 +1,1712 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Copyright 2008-2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<viewer:BaseWidget
+    xmlns:fx=       "http://ns.adobe.com/mxml/2009"
+    xmlns:s=        "library://ns.adobe.com/flex/spark"
+    xmlns:mx=       "library://ns.adobe.com/flex/mx"
+    xmlns:viewer=   "com.esri.viewer.*"
+    xmlns:esri=     "http://www.esri.com/2008/ags"
+    xmlns:LivelayerByException="widgets.LivelayerByException.*"
+    x					="600"
+    y					="300"
+    preinitialize       ="preinitializeHandler(event)"
+    widgetConfigLoaded	="init()" >
+
+  <fx:Declarations>
+        <!-- Symbol to clearly mark the point to be projected -->
+        <esri:SimpleMarkerSymbol id="smsPoint" style="square" color="0xFFFF00" size="11" alpha="0.9">
+            <esri:SimpleLineSymbol color="0x000000"/>
+        </esri:SimpleMarkerSymbol>
+
+        <esri:SimpleFillSymbol id="sfs" color="0xFF0000" alpha=".1">
+            <esri:SimpleLineSymbol color="0x000000"/>
+        </esri:SimpleFillSymbol>
+
+        <esri:SimpleFillSymbol id="rFill" alpha="0.2" color="0xFF0000"/>
+        <esri:SimpleFillSymbol id="gFill" alpha="0.3" color="0x00FF00"/>
+        <esri:SimpleFillSymbol id="bFill" alpha="0.3" color="#FFFF00"/>
+
+        <esri:GeometryService
+            id="geometryService"
+            concurrency="last"
+            fault="onFault(event)"
+            url="{queryGeometryServiceURL}"/>
+
+        <esri:Geoprocessor
+            id="gpDrivetime"
+            url="{rbeDriveTimeGPService}" />
+  </fx:Declarations>
+
+    <viewer:states>
+        <s:State name="rbeList"/>
+        <s:State name="rbeUserDefLoc"/>
+        <s:State name="rbeDefineOptions"/>
+        <s:State name="rbeNew"/>
+        <s:State name="rbeChart"/>
+        <s:State name="rbeFilterResults"/>
+    </viewer:states>
+
+    <viewer:transitions>
+        <s:Transition autoReverse="true" toState="*">
+            <s:Fade targets="{[rbeList, rbeUserDefLoc, rbeDefineOptions, rbeNew, rbeChart,rbeFilterResults]}"/>
+        </s:Transition>
+    </viewer:transitions>
+
+    <fx:Script>
+        <![CDATA[
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.Map;
+			import com.esri.ags.SpatialReference;
+			import com.esri.ags.Units;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.GeometryServiceEvent;
+			import com.esri.ags.events.GeoprocessorEvent;
+			import com.esri.ags.geometry.Extent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.layers.Layer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.symbols.Symbol;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.BufferParameters;
+			import com.esri.ags.tasks.supportClasses.ExecuteResult;
+			import com.esri.ags.tasks.supportClasses.LinearUnit;
+			import com.esri.ags.tasks.supportClasses.ParameterValue;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.ViewerContainer;
+			import com.esri.viewer.utils.Hashtable;
+
+			import mx.collections.*;
+			import mx.controls.Alert;
+			import mx.controls.TextArea;
+			import mx.core.UIComponent;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.xml.SimpleXMLDecoder;
+			import mx.utils.StringUtil;
+
+			import spark.components.supportClasses.ItemRenderer;
+
+
+            //not used for this version
+            private var bingBirdsEyeLink:String;
+            private var streetViewLink:String;
+            private var showBingBirdsEye:Boolean = true;
+            private var showStreetView:Boolean = true;
+            private var showBingSearch:Boolean = true;
+            private var showGoogleSearch:Boolean = true;
+            private var showTwitterSearch:Boolean = true;
+
+            private var bufferGraphicsLayer:GraphicsLayer = null;
+            private var mapClickLayer:GraphicsLayer = new GraphicsLayer;
+            private var outlineSym:SimpleLineSymbol = new SimpleLineSymbol("solid", 0xFFFFFF, 1, 2);
+            private var locSym:SimpleMarkerSymbol = new SimpleMarkerSymbol("circle", 12, 0x08C308, 1, 0,0,0,outlineSym);
+            //end of not used
+
+            //	REPORT BY EXCEPTION VARIABLES
+            [Bindable]
+            private var rbeRadiusMiles:String;
+            [Bindable]
+            private var rbeRadiusMinutes:String;
+            [Bindable]
+            private var bufferValue:String;
+            [Bindable]
+            private var bufferType:String;
+            [Bindable]
+            private var pointForLastRBE:MapPoint;
+            [Bindable]
+            private var bufferIcon:String;
+            private var rbePopupContents:String;
+            [Bindable]
+            private var defaultRESTURL:String;
+            [Bindable]
+            private var defaultRESTLayerName:String;
+            private var defaultRbeLinkField:String;
+            [Bindable]
+            private var queryGeometryServiceURL:String;
+            [Bindable]
+            private var rbeDriveTimeGPService:String;
+            [Bindable]
+            private var rbeSummary:ArrayCollection = new ArrayCollection();
+            [Bindable]
+            private var rbeCount:ArrayCollection = new ArrayCollection();
+            [Bindable]
+            private var populationSummary:String;
+            private var showPopulationCount:Boolean;
+            [Bindable]
+            private var reportByExceptionFeedAC:ArrayCollection;
+
+
+            //			Added for the dynamic rbe Array
+            [Bindable]
+            private var arrBuffer:Array = new Array();
+            private var fldAliases:Object;
+            private var rbeConfigList:Hashtable = new Hashtable();
+            [Bindable]
+            private var rbeAC:ArrayCollection = new ArrayCollection();
+            private var rbeGraphicsLayer:GraphicsLayer = null;
+            private var RBELabel:String;
+
+            //labels
+            private var loadingLabel:String;
+            private var queryLayer:String;
+            private var queryExpr:String;
+            private var queryFields:String;
+            private var queryTitleField:String;
+            private var queryLinkField:String;
+            private var fields:Array;
+            private var queryRefreshRate:String;
+            private var zoomScale:Number = 5000;
+            private var graphicsLayer:GraphicsLayer;
+            private var graphicPointSym:PictureMarkerSymbol;
+            private var infoTemplate:IInfowindowTemplate;
+
+            private var graphicLineSym:SimpleLineSymbol = new SimpleLineSymbol("solid", 0xFF0000, 0.8, 2);
+            private var graphicPolySym:SimpleFillSymbol = new SimpleFillSymbol("solid", 0xFF0000, 0.5, graphicLineSym);
+
+            private var timer:Timer;
+            private const cICON_URL:String = "widgets/LivelayerByException/assets/images/";
+            private var infowidgetReady:Boolean = false;
+            private var textFilterLabel:String;
+
+            [Bindable]
+            private var filterFieldAlias:String;
+            private var filterField:String;
+            private var infoUrl:String;
+			private var alertMsg:Object;
+
+            [Bindable]
+            private var msgVisible:Boolean = false;
+
+			// fix for embedded chart in 4.6
+			// by odejonge, http://forums.adobe.com/message/4143789
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+
+			protected function preinitializeHandler(event:FlexEvent):void
+			{
+				var styleObjects:Array = FlexGlobals.topLevelApplication.styleManager.selectors;
+				for each(var styleObj:String in styleObjects)  {
+					var style:CSSStyleDeclaration = FlexGlobals.topLevelApplication.styleManager.getStyleDeclaration(styleObj);
+					styleManager.setStyleDeclaration(styleObj, style, true);
+				}
+			}
+			// end fix
+
+            private function init():void
+            {
+                // order of graphics layers determines draw order.  buffers are on the bottom
+                bufferGraphicsLayer = new GraphicsLayer();
+                bufferGraphicsLayer.symbol = graphicPointSym;
+                map.addLayer(bufferGraphicsLayer);
+
+                // for marking manual map click
+                map.addLayer(mapClickLayer);
+
+                graphicPointSym = new PictureMarkerSymbol(widgetIcon, 30, 30)
+                graphicsLayer = new GraphicsLayer();
+                graphicsLayer.symbol = graphicPointSym;
+                map.addLayer(graphicsLayer);
+
+                rbeGraphicsLayer = new GraphicsLayer();
+                map.addLayer(rbeGraphicsLayer);
+
+                // Configure the widget title bar
+                wTemplate.addTitlebarButton(cICON_URL + "i_table.png", "List Records", listRecords);
+                wTemplate.addTitlebarButton(cICON_URL + "i_options.png", "Report By Exception", rbeOptions);
+                wTemplate.addTitlebarButton(cICON_URL + "w_addstart_border.png", "User Defined Location", rbeUserClick);
+                wTemplate.addTitlebarButton(cICON_URL + "RBE_addButton.png", "Add New Report by Exception", rbeNewLayer);
+                wTemplate.addTitlebarButton(cICON_URL + "i_piechart.png", "RBE Summary Chart", rbeResultChart);
+
+                infoUrl = configXML.info || "widgets/InfoTemplates/InfoPopupWidget.swf";
+                var data:Object = {
+                    id: String(this.widgetId),
+                    url: infoUrl,
+                    config: null
+                };
+
+
+
+
+               AppEvent.dispatch(AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady);
+
+                if (configXML)
+                {
+                    //labels
+                    loadingLabel = configXML.labels.loadinglabel || "Loading...";
+                    textFilterLabel = configXML.labels.textFilterLabel || "Filter results";
+                    filterField = configXML.filterfield.name;
+                    filterFieldAlias = configXML.filterfield.alias || configXML.filterfield.name;
+                    queryLayer = configXML.layer;
+                    queryExpr = configXML.query;
+
+                    //LOAD REPORT BY EXCECPTION VARIABLES FROM CONFIG FILE
+                    RBELabel = configXML.labels.loadinglabel || "Reporting by Exception...";
+                    queryGeometryServiceURL = configXML.geometryserviceurl;
+                    rbeRadiusMiles = configXML.rbeSearchRadiusMiles;
+                    rbeRadiusMinutes = configXML.rbeSearchRadiusMinutes;
+                    bufferType="simple";
+                    bufferIcon = "widgets/LivelayerByException/assets/images/RBE_Buffer80shadow.png"
+                    bufferValue = rbeRadiusMiles as String;
+                    rbePopupContents = configXML.rbeDynamicallyAddedLayerInfoContents;// used to populate info window of dynamic Data
+                    defaultRESTURL = configXML.rbedefaultRESTURL;
+                    defaultRESTLayerName = configXML.rbedefaultRESTLayerName;
+                    defaultRbeLinkField = configXML.rbedefaultDynamicLinkField;
+                    rbeDriveTimeGPService = configXML.rbeDriveTimeGPService;
+                    showPopulationCount = parseBoolean(configXML.showPopulationCount);
+
+
+					var xmlAlert:XML = (configXML.alertmessages[0]);
+					var xmlDoc:XMLDocument = new XMLDocument(xmlAlert.toString());
+					var decoder:SimpleXMLDecoder = new SimpleXMLDecoder(true);
+					var resultObj:Object = decoder.decodeXML(xmlDoc);
+					alertMsg = resultObj.alertmessages;
+
+                    //	CREATE HASH TABLE OF ALL RBE LAYERS IN CONFIG FILE
+                    var iCnt:int = 0;
+                    for each (var rbeConfigXML:XML in configXML.reportByExceptionLayers.reportByExceptionLayer)
+                    {
+                        var rbeRESTURL:String = rbeConfigXML.rbeRESTURL;
+                        var rbeLayerName:String = rbeConfigXML.rbeLayerName;
+                        var rbeIcon:String = rbeConfigXML.rbeIcon;
+
+                        var rbeTitleField:String = rbeConfigXML.rbeTitleField;
+                        var rbeLinkField:String = rbeConfigXML.rbeLinkField;
+                        var rbeFields:String = rbeConfigXML.rbeFields;
+
+                        var rbeConfig:Hashtable = new Hashtable();
+                        rbeConfig.add("rbeID", iCnt);
+                        rbeConfig.add("rbeRESTURL", rbeRESTURL);
+                        rbeConfig.add("rbeLayerName", rbeLayerName);
+                        rbeConfig.add("rbeIcon", rbeIcon);
+                        rbeConfig.add("rbeTitleField", rbeTitleField);
+                        rbeConfig.add("rbeLinkField", rbeLinkField);
+                        rbeConfig.add("rbeFields", rbeFields);
+                        rbeConfig.add("count", 0);
+
+                        rbeConfigList.add(iCnt, rbeConfig);
+                        iCnt++;
+                    }
+
+                    //	STANDARD LIVE LAYER WIDGET CODE
+                    if (!queryExpr)
+                        queryExpr = "OBJECTID > 0";
+                    queryFields = configXML.fields;
+                    fields      = queryFields.split(",");
+
+                    queryTitleField = configXML.titlefield;
+                    queryLinkField = configXML.linkfield;
+                    queryRefreshRate = configXML.refreshrate;
+                    if (Number(configXML.zoomscale) > 0)
+                        zoomScale = Number(configXML.zoomscale);
+
+                    // NOT USED - FOR CONTEXT POPUP - FOR USE WITH VIPER
+                    bingBirdsEyeLink = configXML.bingBirdsEyeURL;
+                    streetViewLink = configXML.streetViewURL;
+                    showGoogleSearch = parseBoolean(configXML.showGoogleSearch);
+
+                    if (bingBirdsEyeLink)
+                        showBingBirdsEye=true;
+                    if (streetViewLink)
+                        showStreetView=true;
+
+
+                    createRbeAC();
+                    queryFeatures();
+                    startWidgetTimer();
+                }
+				else
+				{
+					Alert.show('Config not found');
+				}
+
+                if (filterField) {
+                    wTemplate.addTitlebarButton(cICON_URL + "i_clear.png", "Clear Filter", clearFilter);
+                    wTemplate.addTitlebarButton(cICON_URL + "i_searchtext.png", textFilterLabel, toggleFilterPanel);
+                    rbeFilterResults.visible = true;
+                }
+                // ViewerContainer.request(AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady);
+            }
+
+            private function infoReady(event:AppEvent):void
+            {
+                var id:Number = Number(event.data.id);
+                if (id == this.widgetId)
+                {
+                    infoTemplate = event.data.infoWidget;
+                }
+            }
+
+            private function parseBoolean(str:String):Boolean
+            {
+                if (str == null)
+                    return false;
+                str = StringUtil.trim(str);
+                if (str.length == 0)
+                    return false;
+                if (str.toUpperCase() == "TRUE" || str.toUpperCase() == "T")
+                    return true;
+                if (str.toUpperCase() == "FALSE" || str.toUpperCase() == "F")
+                    return false;
+
+                trace("Returning false, unrecognized string["+str+"]");
+                return false;
+            }
+
+            //start widget timer
+            private function startWidgetTimer():void
+            {
+                if (queryRefreshRate)
+                {
+                    var seconds:Number = Number(queryRefreshRate);
+                    var rate:Number = seconds * 1000;
+                    stopWidgetTimer();
+                    timer = new Timer(rate);
+                    timer.addEventListener(TimerEvent.TIMER,timerTick);
+                    timer.start();
+                }
+            }
+
+            //stop widget timer
+            private function stopWidgetTimer():void
+            {
+                if (timer != null)
+                {
+                    if (timer.running)
+                        timer.stop();
+                }
+            }
+
+            //timer tick
+            private function timerTick(event:TimerEvent):void
+            {
+                queryFeatures();
+            }
+
+            //query features
+            private function queryFeatures():void
+            {
+                if (queryLayer)
+                {
+                    var queryTask:QueryTask = new QueryTask(queryLayer);
+                    queryTask.useAMF=false;
+                    queryTask.disableClientCaching = true;
+                    var query:Query = new Query();
+                    query.outFields = queryFields.split(",");
+                    query.returnGeometry = true;
+                    query.where = queryExpr;
+                    query.outSpatialReference = map.spatialReference;
+                    queryTask.execute(query, new AsyncResponder(onResult, onFault));
+                    showMessage(loadingLabel, true);
+
+                    // on result
+                    function onResult(featureSet:FeatureSet, token:Object = null):void
+                    {
+                        try
+                        {
+                            var recAC:ArrayCollection = createRecordData(featureSet);
+                            reportByExceptionFeedAC = recAC;
+                            addSharedData(widgetTitle, recAC);
+                            reportByExceptionDataGroup.dataProvider = recAC;
+                            clearMessage();
+                        }
+                        catch (error:Error)
+                        {
+							Alert.show(alertMsg.queryFeatures.alertmessage.toString(),alertMsg.queryFeatures.alertheader);
+                        }
+
+                    }
+
+                    //on fault
+                    function onFault(info:Object, token:Object = null) : void
+                    {
+						Alert.show(alertMsg.queryFeatures.alertmessage.toString(),alertMsg.queryFeatures.alertheader);
+                    }
+                }
+            }
+
+            //create record data new
+            private function createRecordData(featureSet:FeatureSet):ArrayCollection
+            {
+                graphicsLayer.clear();
+                if (!queryTitleField)
+                    queryTitleField = featureSet.displayFieldName;
+                var icon:String = widgetIcon;
+                var result:ArrayCollection = new ArrayCollection();
+
+                for each (var graphic:Graphic in featureSet.features)
+                {
+                    var value:String;
+                    var title:String;
+                    var content:String = "";
+                    var link:String = "";
+
+                    if (fields.indexOf("*") != -1) // outfields = ["*"]
+                    {
+                        for (var fld:String in graphic.attributes)
+                        {
+                            displayFields(fld);
+                        }
+                    }
+
+                    for each(var fld1:String in fields) // display the fields in the same order as specified
+                    {
+                        if (fld1 in graphic.attributes)
+                            displayFields(fld1)
+                    }
+
+                    function displayFields(field:String):void
+                    {
+                        try
+                        {
+                            value = graphic.attributes[field].toString();
+                        }
+                        catch (error:Error)
+                        {
+                            value = "";
+                        }
+
+                        if (field.toUpperCase() == queryTitleField.toUpperCase())
+                        {
+                            title = value;
+                            if (!title)
+                                title = widgetTitle;
+                        }
+                        else if (field.toUpperCase() == queryLinkField.toUpperCase())
+                        {
+                            link = value;
+                        }
+                        else
+                        {
+                            if (field.toUpperCase() != queryTitleField.toUpperCase())
+                                content += featureSet.fieldAliases[field] + ": " + value + "\n";
+                        }
+                    }
+
+                    var reportByException:ReportByException = new ReportByException;
+                    reportByException.icon     = widgetIcon;
+                    reportByException.title    = title;
+                    reportByException.content  = content;
+                    reportByException.point    = getGeomCenter(graphic);
+                    reportByException.link     = link;
+                    reportByException.geometry = graphic.geometry;
+                    result.addItem(reportByException);
+
+                    graphic.addEventListener(MouseEvent.ROLL_OVER, mouseOverGraphic)
+                    graphic.attributes = reportByException;
+                    switch (graphic.geometry.type)
+                    {
+                        case Geometry.POLYLINE:
+                            graphic.symbol = graphicLineSym;
+                            break;
+                        case Geometry.POLYGON:
+                            graphic.symbol = graphicPolySym;
+                            break;
+                    }
+                    graphicsLayer.add(graphic);
+                }
+                return result;
+            }
+
+            //get geom center
+            private function getGeomCenter(gra:Graphic):MapPoint
+            {
+                var pt:MapPoint;
+                switch (gra.geometry.type)
+                {
+                    case Geometry.MAPPOINT:
+                    {
+                        pt = gra.geometry as MapPoint;
+                        break;
+                    }
+
+                    case Geometry.POLYLINE:
+                    {
+                        var pl:Polyline = gra.geometry as Polyline;
+                        var pathCount:Number = pl.paths.length;
+                        var pathIndex:int = int(pathCount / 2) - 1;
+                        var midPath:Array = pl.paths[pathIndex];
+                        var ptCount:Number = midPath.length;
+                        var ptIndex:int = int(ptCount / 2) - 1;
+                        pt = pl.getPoint(pathIndex, ptIndex);
+                        break;
+                    }
+
+                    case Geometry.POLYGON:
+                    {
+                        var poly:Polygon = gra.geometry as Polygon;
+                        pt = poly.extent.center;
+                        break;
+                    }
+                }
+                return pt;
+            }
+
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            //	Begin REPORT BY EXCEPTION CODE.  POINTACTION() FIRES OF RBE WITH THE CORRECT PARAMETER AND CLEARS
+            //	VARIABLES BEFORE RUNNING AGAIN.  THIS IS THE CENTRAL FUNCTION.
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            private function pointAction(mp:MapPoint,buffType:String,buffDist:String):void
+            {
+                if (mp)
+                {
+                    arrBuffer=[];
+                    rbeAC.removeAll();
+                    rbeSummary.removeAll();
+                    pointForLastRBE = mp;	// used to re-apply buffer to last RBE location
+                    rbeGraphicsLayer.clear();
+                    bufferGraphicsLayer.clear();
+                    bufferGraphicsLayer.visible=true
+                    showBuffer.selected=true;
+                    var compare:String = buffType;
+
+                    if (compare == "simple")
+                    {
+                        simpleBuffer(mp,buffDist);
+                    }
+                    if (compare == "drivetime")
+                    {
+                        driveTime(mp,buffDist);
+                    }
+
+                }
+                else
+                {
+					Alert.show(alertMsg.noMapPointError.alertmessage.toString(),alertMsg.noMapPointError.alertheader);
+                }
+
+            }
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //	TAKES INPUT FROM THE rbeOptions panel for changing the type and distance/time parameters for report
+            //	by exception.  This is called when the radio button is clicked.
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////
+            private function setBufferType(buffType:String):void
+            {
+                bufferType = buffType;	// USED AS A BINDABLE VARIABLE FOR RE-USE IN VARIOUS PANELS
+
+                if (buffType =="simple")
+                {
+                    frmBufferMinutes.visible=false;
+                    frmBufferMinutes.includeInLayout=false;
+
+                    frmBufferMiles.visible=true;
+                    frmBufferMiles.includeInLayout=true;
+                    lblDescription.text="Simple buffer distance example: 3"
+
+                    rbeRadiusMiles = frmBufferMiles.text;
+                    buffLabel.text = "Miles"
+                    bufferIcon = "widgets/LivelayerByException/assets/images/RBE_Buffer80shadow.png"
+                }
+
+                if (buffType =="drivetime")
+                {
+                    frmBufferMiles.includeInLayout=false;
+                    frmBufferMiles.visible=false;
+
+                    frmBufferMinutes.visible=true;
+                    frmBufferMinutes.includeInLayout=true;
+
+                    lblDescription.text="Drive time example: 2 5 7"
+
+                    rbeRadiusMinutes = frmBufferMinutes.text;
+                    buffLabel.text = "Min"
+                    bufferIcon = "widgets/LivelayerByException/assets/images/RBE_DT_WhiteShadow.png"
+                }
+            }
+
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            //
+            //		Functions that support the UI for:
+            //			Toggle Buffer display
+            //			Re-Apply Buffer
+            //			Create a user defined location for Report By Exception
+            //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            // Called when user re-applys buffer to last coordinate
+            private function reApplyBuffer():void
+            {
+				if (bufferType == "simple"){
+					bufferValue = frmBufferMiles.text;
+					pointAction(pointForLastRBE,bufferType,bufferValue);
+					rbeUserClick();
+
+				};
+				if (bufferType == "drivetime"){
+					if(frmBufferMinutes.text=="")
+					{
+						Alert.show(alertMsg.invalidDriveTimeError.alertmessage.toString(),alertMsg.invalidDriveTimeError.alertheader);
+						//mapClickLayer.clear();
+					}
+					else{
+						bufferValue = frmBufferMinutes.text;
+						pointAction(pointForLastRBE,bufferType,bufferValue);
+						rbeUserClick();
+					}
+
+				};
+            }
+
+            ///////////////////////////////////////////////////////////
+            //  Toggle the Display of the bufferGraphicsLayer
+            ///////////////////////////////////////////////////////////
+            private function displayRBEBuffer(togglebuffer:String):void
+            {
+                if ((showBuffer.selected)&& (togglebuffer = "yes"))
+                {
+                    bufferGraphicsLayer.visible=true
+                }
+
+                if (!showBuffer.selected)
+                    bufferGraphicsLayer.visible=false;
+            }
+
+
+            private function clearBufferResults():void
+            {
+                rbeGraphicsLayer.clear();
+            }
+
+            ///////////////////////////////////////////////////////////
+            //  Place a graphic to the map to run Report by Exception
+            ///////////////////////////////////////////////////////////
+            private function activateTool():void
+            {
+                var status:String = "Location Address";
+                setMapAction(DrawTool.MAPPOINT, status, locSym, locationClick);
+            }
+
+            private function updateGraphics(locPoint:MapPoint):void
+            {
+                mapClickLayer.clear();
+                var locGra:Graphic = new Graphic(locPoint, locSym);
+                mapClickLayer.add(locGra);
+            }
+
+
+            private function locationClick(event:DrawEvent):void
+            {
+                var geom:Geometry = event.graphic.geometry;
+                var pt:MapPoint = geom as MapPoint;
+                var locPoint:MapPoint = pt;
+                updateGraphics(locPoint);
+
+				if (bufferType == "simple"){
+					bufferValue = frmBufferMiles.text;
+					pointAction(pt,bufferType,bufferValue);
+
+				};
+				if (bufferType == "drivetime"){
+					if(frmBufferMinutes.text=="")
+					{
+						Alert.show(alertMsg.invalidDriveTimeError.alertmessage.toString(),alertMsg.invalidDriveTimeError.alertheader);
+						mapClickLayer.clear();
+					}
+					else{
+						bufferValue = frmBufferMinutes.text;
+						pointAction(pt,bufferType,bufferValue);
+					}
+
+				};
+            }
+
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            //	The functions createRbeAC and newRbeLayer manage the report By Exception Layers
+            //	They work together.  CreateRbeAC keeps the array collection of RBE layers current, when you add one
+            //	dynamically.  newRbeLayer adds parameters from the input form and is how you can adjust default
+            //	behavior when the dynamic layers need more robust logic for displaying URLs, or popupContent, icons, etc.
+            //
+
+            private function createRbeAC():ArrayCollection
+            {
+                // create an array collection to list the RBE layers in a Panel with their icons
+                //get list of all rbeID numbers as set in the INIT function
+                rbeAC.removeAll();
+
+                var rbeIDs:Array = rbeConfigList.getKeySet();
+                for each (var rbeID:int in rbeIDs)
+                {
+                    var rbeConfig:Hashtable = rbeConfigList.find(rbeID) as Hashtable;
+                    var rbeData:Object =
+                        {
+                            restURL:rbeConfig.find("rbeRESTURL") as String,
+                            layername:rbeConfig.find("rbeLayerName") as String,
+                            icon: rbeConfig.find("rbeIcon") as String,
+                            titlefield: rbeConfig.find("rbeTitleField") as String,
+                            count: 0
+                        };
+                    rbeAC.addItem(rbeData);
+                } // end Hash Table Loop to ArrayCollection;
+                return rbeAC
+            }
+
+            private function newRbeLayer():void
+            {
+                var iconName:String = iconList.selectedItem as String;
+                var iconPath:String;
+                if (iconName=="Blue Pushpin")
+                {iconPath="widgets/LivelayerByException/assets/images/i_pushpin_blue.png"}
+                if (iconName =="Green Pushpin")
+                {iconPath="widgets/LivelayerByException/assets/images/i_pushpin_green.png"}
+                if (iconName =="Red Pushpin")
+                {iconPath="widgets/LivelayerByException/assets/images/i_pushpin_red.png"}
+
+                var rbeIDs:Array = rbeConfigList.getKeySet();
+                var iCnt:int = rbeIDs.length;
+                iCnt=iCnt+1;
+
+                var restURL:String = txtRESTURL.text;
+                var layerName:String = txtLayerName.text;
+
+                var rbeConfig:Hashtable = new Hashtable();
+                rbeConfig.add("rbeID", iCnt);
+                rbeConfig.add("rbeRESTURL", restURL);
+                rbeConfig.add("rbeLayerName", layerName);
+                rbeConfig.add("rbeIcon", iconPath);
+                rbeConfig.add("rbeTitleField","");
+                rbeConfig.add("rbeLinkField", "");
+                rbeConfig.add("rbeFields", rbePopupContents);
+                rbeConfig.add("count", 0);
+
+                rbeConfigList.add(iCnt, rbeConfig);
+
+                //add new record to rbeAC
+                createRbeAC();
+                reApplyBuffer();
+                rbeUserClick();
+            }
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //	PointAction function directs to one of the two:
+            //
+            //		1)	simpleBuffer(mp,buffDist)
+            //		2) 	driveTime(mp,buffDist)
+            //
+            //		Each function does the same process.
+            //			1) Call geometry service or Drive Time Service using parameters
+            //			2) Get result and create a new graphicsArray of the buffer object or objects(drive time).
+            //			3) Add the graphic or graphics to the map
+            //			4) Then loop through the Array of RBE Layer one at a time and filter each layer with that geometry.
+            //					- Drive time requires keeping track of the largest time buffer and doing a filter on that.
+            //					- Drive time  displays multiple drive rings for visual effect, but is not used in filter
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //  process simple buffer and return object for parameter use
+            private function simpleBuffer(mp:MapPoint,dist:String):void
+            {
+                var bufferParameters:BufferParameters = new BufferParameters();
+
+                if (mp.spatialReference.wkid==3857)
+                    mp.spatialReference.wkid=102100;
+
+                bufferParameters.geometries = [mp];
+                bufferParameters.distances = [dist];
+                bufferParameters.unit = GeometryService.UNIT_STATUTE_MILE;
+                bufferParameters.bufferSpatialReference = map.spatialReference;
+
+                geometryService.addEventListener(GeometryServiceEvent.BUFFER_COMPLETE, bufferCompleteHandler);
+                geometryService.buffer(bufferParameters);
+
+                function bufferCompleteHandler(event:GeometryServiceEvent):void
+                {
+                    geometryService.removeEventListener(GeometryServiceEvent.BUFFER_COMPLETE, bufferCompleteHandler);
+                    for each (var geometry:Polygon in event.result)
+                    {
+                        var graphic:Graphic = new Graphic();
+                        graphic.geometry = geometry;
+                        graphic.symbol = sfs;
+                        arrBuffer.push(graphic)
+                        var bufferExtent:Extent=graphic.geometry.extent;
+                        bufferGraphicsLayer.add(graphic);
+                    }
+
+                    map.extent = bufferExtent;
+
+                    if (rbeConfigList.size <= 0)
+                        return;
+
+                    var rbeIDs:Array = rbeConfigList.getKeySet();
+                    for each (var rbeID:int in rbeIDs)
+                    {
+                        showMessage(RBELabel, true);
+                        rbeGeoQuery(arrBuffer, rbeID);
+                    }
+                }
+            }
+
+
+            //////////////////////////////////////////////////////////////////////////////////////////////
+            //	Drive time rings.  This will submit twice to the Drive Time service
+            //	Once to get the result using the largest ring, again for the nice visual display of multiple rings
+
+            private function driveTime(mp:MapPoint,dist:String):void
+            {
+
+                var DriveRings:Array;
+                var DT_Dist:String = dist;
+
+                if (DT_Dist){
+
+                    DriveRings = DT_Dist.split(" ")
+                    for each (var item:Number in DriveRings)
+                    {
+                        var lastRing:Number = item;
+
+                    }
+                }
+
+                else
+                {
+                    rbeRadiusMinutes = "1 2 3";
+                    DriveRings[0] = "1"
+                    DriveRings[1] = "2"
+                    DriveRings[2] = "3"
+                    lastRing=3;
+                }
+
+
+                mp.spatialReference = map.spatialReference;// this is important to set
+                var graphic:Graphic = new Graphic(mp, null, null);
+
+                //if (graphic.geometry.spatialReference.wkid==3587)
+                    //graphic.geometry.spatialReference.wkid=102100;
+
+                gpDrivetime.outSpatialReference = map.spatialReference;
+                gpDrivetime.processSpatialReference = new SpatialReference(4326);
+                gpDrivetime.useAMF=false;
+
+                //				DriveTime for visualization
+                var featureSet:FeatureSet = new FeatureSet([graphic]);
+                //featureSet.spatialReference = new SpatialReference(4326);
+                var params:Object = {
+                    "Input_Location":featureSet,
+                    "Drive_Times":dist
+                };
+
+                var featureSet1:FeatureSet = new FeatureSet([graphic]);
+                //featureSet1.spatialReference = new SpatialReference(4326);
+                var params1:Object = {
+                    "Input_Location":featureSet1,
+                    "Drive_Times":lastRing
+                };
+
+
+                gpDrivetime.execute(params1, new AsyncResponder(rbeDTResult, onFault, "singleRing"));
+                gpDrivetime.execute(params, new AsyncResponder(rbeDTResult,onFault, "multipleRing"));
+
+                //anonymous function, due to closure it has access to vars defined in this method/context
+                // Display Drive Time and pass shape to REST Query for Report By Exception Results
+                function rbeDTResult(gpResult:ExecuteResult, ringType:String,token:Object = null):void
+                {
+                    try
+                    {
+                        var pv:ParameterValue = gpResult.results[0];
+                        var fs:FeatureSet = pv.value as FeatureSet;
+                        var features:Array = fs.features;
+                        var len:int = features.length;
+
+                        //	Re-use rusult from last submit as a single ring to query multiple layers
+                        if (ringType=="singleRing")
+                        {
+							bufferGraphicsLayer.clear()
+                            for (var a:int = 0; a<len; a++)
+                            {
+                                var graphicDTa:Graphic = fs.features[i];
+                                arrBuffer.push(graphicDTa)// this is assigned in both simple and DT loops - graphic shape
+                                // no query if there are no rbe layers
+                                if (rbeConfigList.size <= 0)
+                                    return;
+                                var rbeIDs:Array = rbeConfigList.getKeySet();
+
+                                //	Re-use rusult from last submit as a single ring to query multiple layers
+                                for each (var rbeID:int in rbeIDs)
+                                {
+                                    showMessage(loadingLabel, true);
+                                    rbeGeoQuery(arrBuffer, rbeID);
+                                }
+                            }
+                        }
+                        //  create the driveTime Layers for visualization, geometry not for RBE layer query
+                        if (ringType=="multipleRing") {
+							bufferGraphicsLayer.clear()
+                            for (var i:int = 0; i<len; i++)
+                            {
+                                var graphicDT:Graphic = fs.features[i];
+                                graphicDT.symbol = new SimpleFillSymbol;
+                                var bufferExtent:Extent=graphicDT.geometry.extent;
+                                if (i==0)
+                                {
+                                    graphicDT.symbol = rFill;
+                                    bufferGraphicsLayer.add(graphicDT);
+                                    map.extent = bufferExtent;
+                                }
+
+                                if (i==1)
+                                {
+                                    graphicDT.symbol = bFill;
+                                    bufferGraphicsLayer.add(graphicDT);
+                                }
+                                if (i==2){
+                                    graphicDT.symbol = gFill;
+                                    bufferGraphicsLayer.add(graphicDT);
+
+                                }
+
+                            }
+                        }
+                    }
+                    catch (error:Error)
+                    {
+						Alert.show(alertMsg.driveTimeError.alertmessage.toString(),alertMsg.driveTimeError.alertheader);
+                        trace ("ERROR: " + error.toString());
+                    }
+                    finally
+                    {
+                        clearMessage();
+                    }
+                }
+
+                showMessage(RBELabel, true);
+            }
+
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //	rbeGeoQuery is called one time for each Report by Exception layer.
+            //	This is a REST API call to filter a service using the geometry of the buffer just created.
+            //	The user action required for this process is clicking on the record listed in the widget,
+            //	or by clicking on the map with the RBE tool.  Results are cleared every time a record is clicked.
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            private function rbeGeoQuery(arrBuffer:Array,rbeID:Number):void
+            {
+                //use try-catch, because config data may have invalid values
+                trace("Calling ID["+rbeID+"] on query results");
+                if (!rbeConfigList.containsKey(rbeID))
+                {
+                    trace("ERROR: rbeConfig with key["+rbeID+"] not found");
+                    return;
+                }
+                var rbeConfig:Hashtable = rbeConfigList.find(rbeID) as Hashtable;
+                var rbeQueryLayer:String = rbeConfig.find("rbeRESTURL") as String;
+                var icon:String = rbeConfig.find("rbeIcon") as String;
+                var radius:Number = rbeConfig.find("rbeRadius") as Number;
+                var searchDistance:LinearUnit = new LinearUnit(radius, "esriMiles");
+                var layerName:String = rbeConfig.find("rbeLayerName") as String;
+                var titleField:String = rbeConfig.find("rbeTitleField") as String;
+                var linkField:String = rbeConfig.find("rbeLinkField") as String;
+                var queryFields:String = rbeConfig.find("rbeFields") as String;
+                queryFields = queryFields + "," + linkField; // must add URL field as an "outfield" in result Array
+                queryFields = queryFields + "," + defaultRbeLinkField;
+
+                //  this loops through the polygon graphics in the array to make sure that it uses the last buffer
+                //	in the arrBuffer. the last buffer contains the largest drivetime polygon
+                var counti:Number=0;
+                var lastBuff:Graphic;
+                for each (var grabuff:Graphic in arrBuffer)
+                {
+                    counti=counti+1;
+                    lastBuff = grabuff as Graphic;
+                }
+
+                if (lastBuff.geometry.spatialReference.wkid==3587)
+                    lastBuff.geometry.spatialReference.wkid=102100;
+
+                var queryLayer:String = rbeQueryLayer;
+                var queryTask:QueryTask = new QueryTask(queryLayer);
+                queryTask.useAMF=false;
+                queryTask.disableClientCaching = false;
+                var query:Query = new Query();
+                query.geometry = lastBuff.geometry;
+                query.outFields = queryFields.split(",");
+                query.returnGeometry = true;
+                query.outSpatialReference = map.spatialReference;
+                queryTask.execute(query, new AsyncResponder(onRbeResult, onFault));
+
+                function onRbeResult(featureSet:FeatureSet, token:Object = null):void
+                {
+                    try
+                    {
+                        createRbeRecordData(featureSet,rbeID);
+                        clearMessage();
+                    }
+                    catch (error:Error)
+                    {
+                        showMessage(error.message, false);
+                    }
+                }// end result function
+            }// end layer query function
+
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            //		Create record data for every RBE result.  rbeGeoQuery calls this function
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            private function createRbeRecordData(featureSet:FeatureSet,rbeID:Number):void
+
+            {
+                var recCount:Number = 0;
+                var rbeConfig:Hashtable = rbeConfigList.find(rbeID) as Hashtable;
+                var rbeQueryLayer:String = rbeConfig.find("rbeRESTURL") as String;
+                var rbeIcon:String = rbeConfig.find("rbeIcon") as String;
+                var rbeRadius:Number = rbeConfig.find("rbeRadiusMiles") as Number;
+                var searchDistance:LinearUnit = new LinearUnit(rbeRadius, "esriMiles");
+                var layerName:String = rbeConfig.find("rbeLayerName") as String;
+                var titleField:String = rbeConfig.find("rbeTitleField") as String;
+                var linkField:String = rbeConfig.find("rbeLinkField") as String;
+                var queryFields:String = rbeConfig.find("rbeFields") as String;
+
+                var flds:Array;
+                if (queryFields)
+                    flds = queryFields.split(",");
+
+                for each (var graRBE:Graphic in featureSet.features)
+                {
+                    recCount = recCount+1;
+                    var obj:Object = graRBE.attributes;
+                    var fld:String;
+                    var value:String;
+                    var title:String;
+                    var content:String = "";
+                    var link:String = "";
+
+                    var point:MapPoint = graRBE.geometry as MapPoint;
+
+                    if (!titleField)
+                    {
+                        title=layerName;
+                    }
+                    else
+                    {
+                        title = graRBE.attributes[titleField];
+                    }
+
+                    link = graRBE.attributes[linkField];
+
+                    if(!linkField)
+                    {
+                        link=graRBE.attributes[defaultRbeLinkField];
+                    }
+
+
+                    fldAliases = featureSet.fieldAliases;
+
+                    for (fld in obj)
+                    {
+
+                        try {
+                            value = obj[fld].toString();
+                        } catch (error:Error ){
+                            value = "";
+                        }
+
+                        if (fld.toUpperCase() == titleField.toUpperCase())
+                        {
+                            title = value;
+                        }
+                        else if (fld.toUpperCase() == linkField.toUpperCase())
+                        {
+                            var templink:String = value;
+                        }
+                        else
+                        {
+                            if (layerName!="Traffic Cameras")
+                                {
+                                    if (fld.toUpperCase() != titleField.toUpperCase())
+                                        content += fldAliases[fld] + ": " + value + "\n";
+                                }
+                        }
+                    }
+
+                    var infoData:Object =
+                        {
+                            icon: rbeIcon,
+                            title: title,
+                            link: link,
+                            content: content,
+                            rbeRadius: rbeRadius,
+                            point: point,
+                            geometry: graRBE.geometry as MapPoint,
+                                showBirdsEyeViewLink: showBingBirdsEye,
+                                showStreetViewLink: showStreetView,
+                                showGoogleSearch: showGoogleSearch,
+                                showBingSearch: showBingSearch,
+                                showTwitterSearch: showTwitterSearch
+                        };
+
+
+                    var rbePointSymbol:Symbol = new PictureMarkerSymbol(rbeIcon, 25, 25);
+
+                    var gra:Graphic = new Graphic(point, null, null);
+                    gra.addEventListener(MouseEvent.ROLL_OVER, mouseOverGPGraphic)
+                    gra.attributes = infoData;
+                    switch (gra.geometry.type)
+                    {
+                        case Geometry.MAPPOINT:
+                        {
+                            gra.symbol = rbePointSymbol;
+                            break;
+                        }
+                        case Geometry.POLYLINE:
+                        {
+                            gra.symbol = graphicLineSym;
+                            break;
+                        }
+                        case Geometry.POLYGON:
+                        {
+                            gra.symbol = graphicPolySym;
+                            break;
+                        }
+                    }
+                    //		             if (isUserGP) {
+                    //		             	userGraphicsList.addItem(gra1);
+                    //		             	graphicsLayer.add(gra1);
+                    //		             }  else {
+                    //		             	gpGraphicsList.addItem(gra1);
+                    rbeGraphicsLayer.add(gra);
+
+                }
+
+                // create a bindable array for the result chart.
+                rbeSummaryAC(rbeID,recCount);
+
+                // set pan tool to rollover result without having to re-select the tool.
+                setMapNavigation("pan","Re-center Map");
+            }
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////
+            //
+            //	   Create Array that assigns a feature count for the layers returned from Report By Exception
+            //
+            //
+            private function rbeSummaryAC(rbeID:Number,i:Number):void
+            {
+                var rbeConfig:Hashtable = rbeConfigList.find(rbeID) as Hashtable;
+                var layerName:String = rbeConfig.find("rbeLayerName") as String;
+                var iText:String=i.toString();
+                var chartData:Object =
+                    {
+                        rbeID: rbeID,
+                        layer: layerName,
+                        count: iText
+                    };
+                rbeSummary.addItem(chartData);
+
+                var rbeData:Object =
+                    {
+                        restURL:rbeConfig.find("rbeRESTURL") as String,
+                            layername:rbeConfig.find("rbeLayerName") as String,
+                            icon: rbeConfig.find("rbeIcon") as String,
+                            titlefield: rbeConfig.find("rbeTitleField") as String,
+                            count: iText
+
+                    };
+
+                rbeAC.addItem(rbeData);
+            }
+
+            // code lifted from from the ChartWidget
+            private function queryPopulationFeatures():void
+            {
+
+                if (showPopulationCount==true)
+                {
+                    if(pointForLastRBE)
+                    {
+                        for each (var grabuff:Graphic in arrBuffer)
+                        {
+                            var lastBuff:Graphic = grabuff as Graphic;
+                        }
+
+                        //chartSeries.length = 0;
+                        var currentChart:Number = 0;
+                        var populationService:String = "http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Demographics/ESRI_Census_USA/MapServer/1"
+                        var summaryField:String = "POP2000";
+
+                        var querySpatialRel:String = "esriSpatialRelIntersects";
+                        var queryTask:QueryTask = new QueryTask(populationService);
+                        queryTask.useAMF=false;
+                        var query:Query = new Query();
+                        query.geometry = lastBuff.geometry;
+                        query.outFields = summaryField.split(",");
+                        query.returnGeometry = false;
+                        query.spatialRelationship = querySpatialRel;
+                        query.outSpatialReference = map.spatialReference;
+                        queryTask.execute(query, new AsyncResponder(onResult, onFault));
+
+                        // on result
+                        function onResult(featureSet:FeatureSet, token:Object = null):void
+                        {
+                            try
+                            {
+                                calcPopulationStatistics(featureSet);
+                            }
+                            catch (error:Error)
+                            {
+								Alert.show(alertMsg.calcPopulationStatisticsError.alertmessage.toString(),alertMsg.calcPopulationStatisticsError.alertheader);
+                            }
+                        }
+
+                        //on fault
+                        function onFault(info:Object, token:Object = null) : void
+                        {
+							Alert.show(alertMsg.queryFeatures.alertmessage.toString(),alertMsg.queryFeatures.alertheader);
+                        }
+                    }
+                }
+            }// end check for config file
+            //calculate statistics
+            private function calcPopulationStatistics(featureSet:FeatureSet):void
+            {
+                var summaryValue:Number = 0;
+                var summaryField:String = "POP2000";
+                for (var r:Number = 0; r < featureSet.features.length; r++)
+                {
+                    summaryValue += Number(featureSet.attributes[r][summaryField]);
+                }
+                var tempTotal:String = summaryValue as String;
+                population.text=summaryValue.toString();
+                chartText.text ="Population within Buffer(Census 2000): ";
+            }
+
+
+            private function infoDataFunction(infoData:Object):void
+            {
+                if (infoData && infoData.point)
+                {
+                    var pt:MapPoint = infoData.point as MapPoint;
+                    if (bufferType == "simple"){bufferValue = frmBufferMiles.text};
+                    if (bufferType == "drivetime"){bufferValue = frmBufferMinutes.text};
+
+                    pointAction(pt,bufferType,bufferValue);
+                    rbeUserClick();
+                }
+            }
+
+
+			private function onFault(info:Object, token:Object = null):void
+			{
+				if (bufferType =="simple")
+				{
+					Alert.show(alertMsg.invalidSimpleBufferError.alertmessage.toString(),alertMsg.invalidSimpleBufferError.alertheader);
+				}
+				else
+				{
+					Alert.show(alertMsg.invalidDriveTimeError.alertmessage.toString(),alertMsg.invalidDriveTimeError.alertheader);
+				}
+				clearMessage();
+			}
+
+            //mouse over graphic
+            private function mouseOverGraphic(event:MouseEvent):void
+            {
+                var gra:Graphic = event.currentTarget as Graphic;
+                var infoData:Object = gra.attributes;
+                showHighlight([infoData]);
+                //this.showInfoWindow(infoData);
+            }
+
+
+            private function mouseOverGPGraphic(event:MouseEvent):void
+            {
+                var gra:Graphic = event.currentTarget as Graphic;
+                var infoData:Object = gra.attributes;
+                showHighlight([infoData]);
+                //this.showInfoWindow(infoData);
+            }
+
+
+            private var hitimer:uint;
+            private function mouseOverRecord(event:MouseEvent):void
+            {
+                var infoData:Object = event.currentTarget.infoData;
+                showHighlight([infoData]);
+
+                //var infoData:Object = event.currentTarget.infoData;
+                //clearTimeout(hitimer);
+                //hitimer = setTimeout(showHighlight, 800, [infoData]);
+            }
+
+            private function mouseOutRecord():void
+            {
+                //clearTimeout(hitimer);
+                //this.showInfoWindow(null);
+            }
+
+            //			private function clickRecord(event:MouseEvent):void
+            //			{
+            //				var infoData:Object = event.currentTarget.infoData;
+            //				var pt:MapPoint = infoData.point;
+            //				if (map.scale > zoomScale)
+            //					map.scale = zoomScale;
+            //				map.centerAt(pt);
+            //			}
+
+
+            //////////////////////////////////////////////////////
+            //			Click Record for RBE Widget
+            //////////////////////////////////////////////////////
+
+            private function showHighlight(params:Array):void
+            {
+                var infoData:Object = params[0];
+                if (infoData)
+                {
+                    infoTemplate.data = infoData;
+                    map.infoWindow.content = infoTemplate as UIComponent;
+                    map.infoWindow.label = infoData.title || "";
+                    map.infoWindow.show(infoData.point);
+                }
+                else
+                {
+                    map.infoWindow.hide();
+                }
+            }
+
+            ///////////////////////////////////////////
+            //	Shows the message for "RBE Processing"
+            private function showMessage(msg:String, swfVisible:Boolean):void
+            {
+                txtMessage.text = msg;
+                swfMessage.visible = swfVisible;
+                msgVisible = true;
+                txtMessage2.text = msg;
+                swfMessage2.visible = swfVisible;
+                txtMessage3.text = msg;
+                swfMessage3.visible = swfVisible;
+            }
+
+            private function clearMessage():void
+            {
+                msgVisible = false;
+            }
+
+            private function widgetClosedHandler(event:Event):void
+            {
+				mapClickLayer.visible=false;
+                graphicsLayer.visible = false;
+                rbeGraphicsLayer.visible = false;
+                bufferGraphicsLayer.visible = false
+                stopWidgetTimer();
+
+                //this.showInfoWindow(null);
+                map.infoWindow.hide();
+            }
+
+            private function widgetMinimizedHandler(event:Event):void
+            {
+                this.widgetClosedHandler(event);
+            }
+
+
+            private function widgetOpenedHandler(event:Event):void
+            {
+                if (graphicsLayer)
+                {
+					mapClickLayer.visible=true;
+					bufferGraphicsLayer.visible=true;
+                    graphicsLayer.visible = true;
+                    rbeGraphicsLayer.visible = true;
+                    bufferGraphicsLayer.visible = true;
+                    startWidgetTimer();
+                }
+            }
+
+
+            private function toggleFilterPanel(event:MouseEvent):void
+            {
+                //if (viewStack.selectedIndex == 0)
+                //    viewStack.selectedIndex = 1;
+                //WidgetEffects.flipWidget(this, viewStack, "selectedIndex", 1, 400);
+                //else
+                //WidgetEffects.flipWidget(this, viewStack, "selectedIndex", 0, 400);
+                //    viewStack.selectedIndex = 0;
+            }
+
+
+            private function doFilter():void
+            {
+                if(txtFilter.text !='') {
+                    ArrayCollection(graphicsLayer.graphicProvider).filterFunction = filterGraphicLayer;
+                    ArrayCollection(reportByExceptionDataGroup.dataProvider).filterFunction = filterDataList;
+                } else {
+                    ArrayCollection(graphicsLayer.graphicProvider).filterFunction = null;
+                    ArrayCollection(reportByExceptionDataGroup.dataProvider).filterFunction = null;
+                }
+                ArrayCollection(graphicsLayer.graphicProvider).refresh();
+                ArrayCollection(reportByExceptionDataGroup.dataProvider).refresh();
+
+                this.currentState="rbeList";
+            }
+            private function clearFilter(event:MouseEvent):void
+            {
+                doClear();
+
+            }
+            private function doClear():void
+            {
+                txtFilter.text ='';
+                doFilter();
+            }
+
+            private function filterGraphicLayer(item:Object):Boolean
+            {
+
+                return Graphic(item).attributes["content"].match(new RegExp(txtFilter.text,'gi'));
+            }
+
+
+            private function filterDataList(item:Object):Boolean
+            {
+                return item.content.match(new RegExp(txtFilter.text,'i'));
+            }
+
+			/* private function onFault(info:Object, token:Object = null):void
+			{
+				Alert.show(alertMsg.invalidDriveTimeError.alertmessage.toString(),alertMsg.invalidDriveTimeError.alertheader);
+				clearMessage();
+			} */
+
+            private function listRecords():void
+            {
+                this.currentState="rbeList";
+
+            }
+
+            private function rbeUserClick():void
+            {
+                this.currentState="rbeUserDefLoc";
+				wTemplate.selectedTitlebarButtonIndex = 2;
+                rbeAC.refresh();
+            }
+
+            private function rbeOptions():void {
+                this.currentState="rbeDefineOptions";
+
+            }
+
+            private function rbeNewLayer():void {
+                this.currentState="rbeNew";
+            }// show form to enter new rbe layer
+
+            private function rbeResultChart():void {
+                this.currentState="rbeChart";
+                queryPopulationFeatures();
+            }// show form to enter new rbe layer
+
+            private function rbeClick(event:Event):void
+            {
+                var infoData:Object = ItemRenderer(event.target).data as Object;
+                var pt:MapPoint = infoData.point;
+
+                if (bufferType == "simple"){bufferValue = frmBufferMiles.text};
+                if (bufferType == "drivetime"){bufferValue = frmBufferMinutes.text};
+
+                pointAction(pt,bufferType,bufferValue);
+                rbeUserClick();
+            }
+        ]]>
+    </fx:Script>
+
+    <viewer:WidgetTemplate id="wTemplate"
+                           closed="widgetClosedHandler(event)"
+                           open="widgetOpenedHandler(event)"
+                           minimized="widgetMinimizedHandler(event)"
+                           width="400" height="230">
+
+        <!--Exceptions Report List!-->
+        <s:Group id="rbeList"
+                 width="100%" height="100%"
+                 visible="false"
+                 visible.rbeList="true">
+            <s:HGroup id="boxMessage" visible="{msgVisible}" includeInLayout="{msgVisible}" width="100%">
+                <mx:SWFLoader id="swfMessage" source="assets/images/loader.swf" visible="false" />
+                <s:TextArea id="txtMessage" text="" width="90%"/>
+            </s:HGroup>
+            <s:Scroller height="100%" width="100%">
+                <LivelayerByException:ReportByExceptionDataGroup id="reportByExceptionDataGroup"
+                                                              dataProvider="{reportByExceptionFeedAC}"
+                                                              rbeClick="rbeClick(event)">
+                    <LivelayerByException:layout>
+                        <s:VerticalLayout gap="2"
+                                          horizontalAlign="justify"
+                                          useVirtualLayout="true"/>
+                    </LivelayerByException:layout>
+                </LivelayerByException:ReportByExceptionDataGroup>
+            </s:Scroller>
+        </s:Group>
+
+        <!--User defined location!-->
+        <s:Group id="rbeUserDefLoc"
+                 width="100%" height="100%"
+                 visible="false"
+                 visible.rbeUserDefLoc="true">
+            <s:layout>
+                <s:VerticalLayout gap="10"
+                                  horizontalAlign="left"
+                                  paddingTop="10"/>
+            </s:layout>
+            <s:HGroup id="boxMessage2" visible="{msgVisible}" includeInLayout="{msgVisible}" width="100%">
+                <mx:SWFLoader id="swfMessage2" source="widgets/LivelayerByException/assets/images/loader.swf" visible="false" />
+                <s:Label id="txtMessage2" text="" width="90%"/>
+            </s:HGroup>
+            <s:HGroup width="100%" verticalAlign="top" horizontalAlign="left"  paddingTop="4" paddingLeft="3">
+                <mx:Image useHandCursor="true" buttonMode="true" id="userClick" height="20" width="20" toolTip="Report by Exception Tool"
+                          source="widgets/LivelayerByException/assets/images/w_addstart_border.png" click="activateTool()"/>
+                <s:Label fontWeight="bold" name="test" text="1) Click Report By Exception Tool.  2) Click on Map." />
+            </s:HGroup>
+            <s:HGroup paddingTop="0" paddingBottom="0" verticalAlign="top" paddingLeft="22">
+                <s:CheckBox id="showBuffer"
+                            selected="true" label="Display Report By Exception Buffer"
+                            click="displayRBEBuffer('yes')" />
+            </s:HGroup>
+            <s:HGroup paddingLeft="22">
+                <LivelayerByException:UserDefinedLocationDataGroup id="userDefinedLocations"
+                                                                dataProvider="{rbeAC}">
+                    <LivelayerByException:layout>
+                        <s:VerticalLayout gap="2"
+                                          horizontalAlign="left"
+                                          useVirtualLayout="true"/>
+                    </LivelayerByException:layout>
+                </LivelayerByException:UserDefinedLocationDataGroup>
+            </s:HGroup>
+        </s:Group>
+
+        <!--Report By Exception!-->
+        <s:Group id="rbeDefineOptions"
+                 width="100%" height="100%"
+                 visible="false"
+                 visible.rbeDefineOptions="true">
+            <s:layout>
+                <s:VerticalLayout gap="10"
+                                  horizontalAlign="center"
+                                  paddingTop="10"/>
+            </s:layout>
+            <s:HGroup id="boxMessage3" visible="{msgVisible}" includeInLayout="{msgVisible}" width="100%">
+                <mx:SWFLoader id="swfMessage3" source="assets/images/loader.swf" visible="false" />
+                <s:Label id="txtMessage3" text="" width="90%"/>
+            </s:HGroup>
+            <s:HGroup visible="true" width="100%" paddingTop="5" paddingLeft="25">
+                <s:Label id="lblDescription" visible="true" text="Simple Buffer distance example: 3"/>
+            </s:HGroup>
+            <s:HGroup width="100%" verticalAlign="top" horizontalAlign="center" paddingTop="5" paddingLeft="20">
+                <s:RadioButton id="btnSimple1" selected="true" label="Simple Buffer" click="setBufferType('simple')"/>
+                <s:RadioButton id="btnDriveTime1" label="Drive Time" click="setBufferType('drivetime')"/>
+                <s:TextInput includeInLayout="true" useHandCursor="true" id="frmBufferMiles" width="48" fontSize="12" visible="true"
+                             text="{rbeRadiusMiles}" restrict="0-9"/>
+                <s:TextInput includeInLayout="false" useHandCursor="true" id="frmBufferMinutes" width="48" fontSize="12"
+                             visible="false" text="{rbeRadiusMinutes}" restrict="0-9 "/>
+                <s:Label id="buffLabel" fontSize="12" text="Miles" paddingTop="7" width="40"/>
+            </s:HGroup>
+            <s:HGroup width="100%" verticalAlign="top" horizontalAlign="center">
+                <s:VGroup width="90%" height="100%" verticalAlign="top" paddingTop="2" horizontalAlign="center">
+                    <mx:Image id="BufferIcon" height="70" width="70"  source="{bufferIcon}"/>
+                    <s:HGroup horizontalAlign="center" verticalAlign="top">
+                        <s:Button name="btnReApplyBuffer" click="reApplyBuffer()" label="Re-apply Buffer"/>
+                    </s:HGroup>
+                </s:VGroup>
+            </s:HGroup>
+        </s:Group>
+
+        <!--Add New Exception!-->
+        <s:Group id="rbeNew"
+                 width="100%" height="100%"
+                 visible="false"
+                 visible.rbeNew="true">
+            <s:layout>
+                <s:VerticalLayout gap="10"
+                                  horizontalAlign="center"
+                                  paddingTop="10"/>
+            </s:layout>
+            <mx:Form width="100%" height="100%" paddingLeft="0" >
+                <s:Label verticalCenter="top" horizontalCenter="center"  fontSize="12"
+                         id="newLayer" text="Add New Layer for Report By Exception:"/>
+                <mx:FormItem  textAlign="left"  id="alltag" fontSize="12" label="REST URL:" fontWeight="bold">
+                    <s:TextInput id="txtRESTURL"  text ="{defaultRESTURL}" width="210"  fontSize="12" fontWeight="normal"/>
+                </mx:FormItem>
+                <mx:FormItem textAlign="left" labelStyleName="Left" id="anytag" fontSize="12" label="Layer Name:"  fontWeight="bold">
+                    <s:TextInput id="txtLayerName" text ="{defaultRESTLayerName}" width="210" fontWeight="normal"/>
+                </mx:FormItem>
+                <mx:FormItem textAlign="left" fontSize="12" fontWeight="bold" labelStyleName="Left" label="Icon: ">
+                    <s:HGroup width="100%">
+                        <s:ComboBox id="iconList" selectedIndex="0" height="25" fontWeight="normal">
+                            <s:ArrayCollection>
+                                <fx:String>Blue Pushpin</fx:String>
+                                <fx:String>Green Pushpin</fx:String>
+                                <fx:String>Red Pushpin</fx:String>
+                            </s:ArrayCollection>
+                        </s:ComboBox>
+                        <s:Button name="btnNewRBE" click="newRbeLayer()" height="25" label="Add New"/>
+                    </s:HGroup>
+                </mx:FormItem>
+            </mx:Form>
+        </s:Group>
+
+        <!--RBE Summary Chart!-->
+        <s:Group id="rbeChart"
+                 width="100%" height="100%"
+                 visible="false"
+                 visible.rbeChart="true">
+            <s:layout>
+                <s:VerticalLayout gap="10"
+                                  horizontalAlign="center"
+                                  paddingTop="10"/>
+            </s:layout>
+            <s:HGroup id="Heading3" horizontalAlign="left" width="100%" height="25">
+                <s:Label id="chartText" text=""/>
+                <s:Label id="population" fontWeight="bold" fontSize="12" text=""/>
+            </s:HGroup>
+            <mx:ColumnChart id="chartStatistics" dataProvider="{rbeSummary}" width="330" height="85%" showDataTips="true"
+                            color="#FFFFFF" >
+                <mx:horizontalAxis>
+                    <mx:CategoryAxis dataProvider="{rbeSummary}" categoryField="layer"/>
+                </mx:horizontalAxis>
+                <mx:series>
+                    <mx:ColumnSeries dataProvider="{rbeSummary}" id="barSeries" yField="count" xField="layer" showDataEffect="slideLeft" hideDataEffect="slideRight" fontSize="10" fontWeight="bold" fontFamily="Arial"/>
+                </mx:series>
+            </mx:ColumnChart>
+        </s:Group>
+
+        <!--The below is not used in the widget!-->
+        <s:Group id="rbeFilterResults"
+                 width="100%" height="100%"
+                 visible="false"
+                 visible.rbeFilterResults="true">
+            <s:layout>
+                <s:VerticalLayout gap="10"
+                                  horizontalAlign="center"
+                                  paddingTop="10"/>
+            </s:layout>
+            <s:Label text="Filter list" width="100%" />
+            <s:HGroup>
+                <s:Label id="txtLabelText" text="{filterFieldAlias} : " textAlign="left" />
+                <s:TextInput id="txtFilter" width="90%" />
+            </s:HGroup>
+            <s:HGroup horizontalAlign="center" width="100%">
+                <s:Button label="Filter" click="doFilter()" />
+                <s:Button label="Clear" click="doClear()" />
+            </s:HGroup>
+        </s:Group>
+    </viewer:WidgetTemplate >
+
+</viewer:BaseWidget>

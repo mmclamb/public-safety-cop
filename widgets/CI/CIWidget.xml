@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Copyright 2008-2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+
+ Adapted and customized by:  Gaetan LAVENU - ESRI France
+-->
+<configuration>
+	<layer>http://localgovtemplates2.esri.com/ArcGIS/rest/services/PublicSafety/EmergencyOperations/MapServer/0</layer>
+	<geometryserviceURL>http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer</geometryserviceURL>
+	<featureselectioncolor>FF9191</featureselectioncolor>
+	<featureovercolor>202020</featureovercolor>
+
+	<fields>SUBTYPEFIELD</fields>
+<!--	<summaryfield>710,720,730,740,750,760,780,790,800,810,820,830,840,850,880</summaryfield>-->
+<!--	<Xcolumnfield>Industry,Commercial and Retail,Education,Emergency Response and Law Enforcement,Energy, Banking and Finance,Mail and Shipping,Building General,Health and Medical,Transportation Facilities,Public Attractions and Landmark Buildings,Government and Military,Weather,Water Supply and Treatment,Information and Communication </Xcolumnfield>-->
+
+
+	<chart>
+<!--		<series>700,710,720,730,740,750,760,780,790,800,810,820,830,840,850,880</series>-->
+<!--		<serieslabels>Agriculture_food and Live Stock,Industry,Commercial and Retail,Education,Emergency Response and Law Enforcement,Energy, Banking and Finance,Mail and Shipping,Building General,Health and Medical,Transportation Facilities,Public Attractions and Landmark Buildings,Government and Military,Weather,Water Supply and Treatment,Information and Communication</serieslabels> -->
+
+<seriescolors>FB9613,FAFC54,E68C7A,116BFF,AD2B78,C699C7,A90D0D,74D4D3,77C359,F76D6D,FF557F,94BF3F,BF6A3F,6A15EA,00FFFF</seriescolors>
+	</chart>
+	<chartlabels>
+	<nofeatures label="No Features Found"/>
+	<ellipsetooltip label="Draw Ellipse"/>
+	<thrashtooltip label="Clear Selection"/>
+	</chartlabels>
+</configuration>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Copyright 2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<configuration>
+	<about>
+		<label>Select ESF Role</label>
+		<visible>true</visible>
+		<width>375</width>
+		<height>375</height>
+		<content>
+        <![CDATA[<p align='center'><img src='assets/images/globe.png' width='140' height='140' /></p>
+        <font size="16"><b>Welcome to ArcGIS Viewer for Flex.</b></font>
+        <br><p>This application is developed with ArcGIS Viewer for Flex 2.</p>
+        <br>More information at links below:
+        <textformat indent="25"><p><br><a href="http://help.arcgis.com/en/webapps/flexviewer/" target='_blank'><font color='#FFFF00'>ArcGIS Viewer for Flex</font></a>
+        <br><a href="http://help.arcgis.com/en/webapi/flex/" target='_blank'><font color='#FFFF00'>ArcGIS API for Flex</font></a>
+        <br><a href="http://www.esri.com" target='_blank'><font color='#FFFF00'>Esri</font></a></p></textformat>
+        ]]>
+		</content>
+		<btnlabel>OK</btnlabel>
+	</about>
+	<searchTextLabel>Enter Address</searchTextLabel>
+	<geocoding enable="true">
+		<locator>http://tasks.arcgisonline.com/ArcGIS/rest/services/Locators/TA_Streets_US_10/GeocodeServer
+		</locator>
+		<minscore>40</minscore>
+		<zoomscale>10000</zoomscale>
+	</geocoding>
+
+	<searchlayers enable="true">
+		<searchlayer>
+			<url>http://localgovtemplates2.esri.com/ArcGIS/rest/services/PublicSafety/IncidentCommand/MapServer
+		</url>
+		<layername>CategoryLayer</layername>
+		<layerids>5,6,7,8,9,10</layerids>
+		<searchfields>Category</searchfields>
+		<infopopupfields> Total Population,Number of Males,Number of Females</infopopupfields>
+
+		</searchlayer>
+		<searchlayer>
+            <url>http://localgovtemplates2.esri.com/ArcGIS/rest/services/PublicSafety/EmergencyOperations/MapServer/</url>
+			<layername>STCOFIPSLayer</layername>
+			<layerids>10,11</layerids>
+			<searchfields>STCOFIPS</searchfields>
+	        <infopopupfields>Total Population,Number of Males,Number of Females</infopopupfields>
+
+		 </searchlayer>
+		 <resultsymbols>
+				<linesymbol color='0xFFFF00' outlinecolor='0x000000'
+					alpha='0.9' width='3' style='solid'></linesymbol>
+				<markersymbol alpha="0.9" outlinecolor='0x000000' color="0xFFFF00"
+					 size="11" style="square"></markersymbol>
+				<fillsymbol alpha="0.7" outlinecolor='0x000000' color="0xFFFF00"></fillsymbol>
+			</resultsymbols>
+		</searchlayers>
+
+<!--	 Splash widget -->
+
+
+	<splashwidth>400</splashwidth>
+	<splashheight>200</splashheight>
+	<splashtitle>Emergency Management Common Operational Picture</splashtitle>
+	<eventtitle>Identify the type of event you are responding to
+	</eventtitle>
+	<!-- Specify the emergency management common operations event names  and id-->
+	<events>
+
+		<event id="1" name='Fire' />
+		<event id="2" name='Flood' />
+		<event id="3" name='Earthquakes' />
+		<event id="4" name='Hurricane' />
+		<event id="5" name='SevereWeather' />
+	</events>
+	<!-- Specify the ESF base configuration ,role name,config  file name and id  -->
+	<!-- @esfname: specify the title or name of ESF
+		 @configfile: specify config file name of ESF
+		 @imagesrc: specify the source for ESF image
+
+	-->
+
+	<esfroles>
+		<esfrole  esfname="Transportation" configfile="config-ESF01.xml"  imagesrc='widgets/HeaderController/assets/images/esf/transportation.jpg' />
+		<esfrole  esfname="Communications" configfile="config-ESF02.xml" imagesrc='widgets/HeaderController/assets/images/esf/Communication.jpg' />
+		<esfrole  esfname="Public Works" configfile="config-ESF03.xml"  imagesrc='widgets/HeaderController/assets/images/esf/PublicWorks.jpg'/>
+		<esfrole  esfname="Fire Fighting" configfile="config-ESF04.xml" imagesrc='widgets/HeaderController/assets/images/esf/FireFighting.jpg' />
+		<esfrole  esfname="ESF05" configfile="config-ESF05.xml" imagesrc='widgets/HeaderController/assets/images/esf/street.png' />
+		<esfrole  esfname="Mass Care" configfile="config-ESF06.xml" imagesrc='widgets/HeaderController/assets/images/esf/MassCare.jpg' />
+		<esfrole  esfname="Logistics" configfile="config-ESF07.xml" imagesrc='widgets/HeaderController/assets/images/esf/logistics.jpg' />
+		<esfrole  esfname="Public Health" configfile="config-ESF08.xml" imagesrc='widgets/HeaderController/assets/images/esf/PublicHealth.jpg' />
+		<esfrole  esfname="Search  And  Rescue" configfile="config-ESF09.xml" imagesrc='widgets/HeaderController/assets/images/esf/SearchAndRescue.jpg' />
+		<esfrole  esfname="Hazmat" configfile="config-ESF10.xml" imagesrc='widgets/HeaderController/assets/images/esf/Hazmat.jpg' />
+		<esfrole  esfname="Natural Resources" configfile="config-ESF11.xml" imagesrc='widgets/HeaderController/assets/images/esf/NaturalResources.jpg'/>
+		<esfrole  esfname="Energy" configfile="config-ESF12.xml" imagesrc='widgets/HeaderController/assets/images/esf/Energy.jpg' />
+		<esfrole  esfname="Public Safety" configfile="config-ESF13.xml" imagesrc='widgets/HeaderController/assets/images/esf/street.png' />
+		<esfrole  esfname="Long Term Recovery" configfile="config-ESF14.xml" imagesrc='widgets/HeaderController/assets/images/esf/LongTermRecovery.jpg' />
+		<esfrole  esfname="External Affairs" configfile="config-ESF15.xml" imagesrc='widgets/HeaderController/assets/images/esf/ExternalAffairs.jpg' />
+
+	</esfroles>
+	<savebtnlabel>Save Event Type and Role</savebtnlabel>
+
+</configuration>
+
+<!-- See HeaderController widget tag reference at http://links.esri.com/headercontrollerwidget -->

@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Copyright 2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   width="100%" height="50%"
+				   cornerRadius="10"
+				   creationComplete="htmlPopup_creationCompleteHandler(event)"
+				   xmlns:containers="widgets.EMSplash.utils.containers.*" xmlns:Component="widgets.EMSplash.Component.*" >
+	<s:filters>
+		<s:GlowFilter alpha="0.8"
+					  blurX="50"
+					  blurY="50"
+					  color="0xFFFFFF"
+					  quality="{BitmapFilterQuality.HIGH}"
+					  strength="1"/>
+	</s:filters>
+
+	<fx:Script>
+		<![CDATA[
+			import com.esri.viewer.components.HTMLPopupManager;
+
+			import flash.filters.BitmapFilterQuality;
+			import flash.net.navigateToURL;
+
+			import flashx.textLayout.conversion.TextConverter;
+
+			import mx.containers.Panel;
+			import mx.controls.Alert;
+			import mx.controls.HScrollBar;
+			import mx.controls.Image;
+			import mx.controls.sliderClasses.Slider;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.ScrollEvent;
+			import mx.events.SliderEvent;
+
+			import spark.events.IndexChangeEvent;
+
+			import widgets.EMHeaderController.SplashUtils.skins.*;
+			import widgets.EMHeaderController.SplashUtils.utils.DataParserUtils;
+
+
+			[Bindable]
+			public var content:String;
+
+			[Bindable]
+			public var btnLabel:String = "OK";
+
+			[Bindable]
+			public var txtareaWidth:Number = 700;
+
+			[Bindable]
+			public var txtareaHeight:Number = 700;
+
+			public var _dataParserUtil:DataParserUtils = DataParserUtils.getInstance();
+
+			public var eventName:String='';
+			public var roleName:String='';
+			//private var scrollbar:HSlider = new HSlider();
+
+
+
+
+			private function onMouseWheel(event:MouseEvent):void
+			{
+				if(event.delta > 0)
+				{
+					if(coverflow.selectedIndex < _dataParserUtil.esfRolesArr.length-1)
+						coverflow.selectedIndex += 1;
+
+				}
+				else if(event.delta < 0)
+				{
+					if(coverflow.selectedIndex  > 0)
+						coverflow.selectedIndex -= 1;
+				}
+
+
+
+			}
+
+			private function update(event:Event):void
+			{
+				event.currentTarget.dispatchEvent(new FlexEvent(FlexEvent.UPDATE_COMPLETE));
+			}
+
+			private function htmlPopup_creationCompleteHandler(event:FlexEvent):void
+			{
+				scrollbar.setStyle("skinClass",HSliderSkin);
+				scrollbar.addEventListener("incrementButtonClicked",incrementButton_ClickHandler);
+				scrollbar.addEventListener("decrementButtonClicked",decrementButton_ClickHandler);
+				_dataParserUtil.sharedObj = SharedObject.getLocal("myCookiedata");
+				//coverflow_creationCompleteHandler();
+				if (_dataParserUtil.sharedObj.data!=null)
+				{
+					if(_dataParserUtil.sharedObj.data.isRoleSave== true)
+					{
+						var eventTypeArr:Array=String(_dataParserUtil.sharedObj.data.EventName).split(',');
+						var idx:uint;
+						var i:int;
+						var iscached:Boolean=false;
+						const len:uint = chkGroup.numElements;
+
+						for (idx = 0; idx < len; idx++)
+						{
+							var elmt:CheckBox = chkGroup.getElementAt(idx) as CheckBox;
+							var obj:Object;
+							for(i=0;i<eventTypeArr.length;i++)
+							{
+								if(elmt.label == eventTypeArr[i])
+								{
+									elmt.selected=true;
+									break;
+								}
+								else
+								{
+									elmt.selected=false;
+								}
+							}
+						}
+						eventName=_dataParserUtil.sharedObj.data.EventName ;
+						roleName=_dataParserUtil.sharedObj.data.RoleName ;
+						chkSave.selected = _dataParserUtil.sharedObj.data.isRoleSave;
+						coverflow.selectedIndex=_dataParserUtil.sharedObj.data.roleIndex;
+					}
+				}
+
+				setStyle("backgroundColor", getStyle("contentBackgroundColor"));
+				setStyle("backgroundAlpha", FlexGlobals.topLevelApplication.getStyle("backgroundAlpha"));
+
+			}
+
+			private function incrementButton_ClickHandler(event:Event):void
+			{
+				if(coverflow.selectedIndex < _dataParserUtil.esfRolesArr.length-1)
+					coverflow.selectedIndex += 1;
+
+
+			}
+			private function decrementButton_ClickHandler(event:Event):void
+			{
+				if(coverflow.selectedIndex > 0)
+					coverflow.selectedIndex -= 1;
+			}
+
+
+			private function CloseBtn_clickHandler(event:MouseEvent):void
+			{
+				if(roleName != '' && eventName!= "")
+				{
+					HTMLPopupManager.removePopUp(this);
+					dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+					var requestUrl:URLRequest= new URLRequest();
+					var strArr:Array= _dataParserUtil.windowsUrl.split('?');
+					if(strArr.length>0)
+						_dataParserUtil.windowsUrl=strArr[0]
+
+					var queryString:String;
+					var index:Number=_dataParserUtil.sharedObj.data.roleIndex;
+
+					queryString=(_dataParserUtil.esfRolesArr.getItemAt(index) as Object).configFileName+"&e="+eventName;
+					requestUrl.url="?config="+queryString;
+					navigateToURL(requestUrl,'_self');
+					//navigateToURL('index.html','_self');
+				}
+				else
+				{
+
+					const len:uint = chkGroup.numElements;
+					var tempeventName:String=''
+					var temproleName:String='';
+					for (var idx:Number = 0; idx < len; idx++) {
+						var elmt:CheckBox = chkGroup.getElementAt(idx) as CheckBox;
+						if(elmt.selected == true)
+						{
+							if(tempeventName =='')
+								tempeventName=elmt.label;
+							else
+								tempeventName=eventName+','+elmt.label;
+						}
+					}
+					temproleName = (coverflow.selectedChild as Panel).title;
+
+					if(temproleName == '' || tempeventName == "")
+					{
+						Alert.show("Please select the event type and role ",'Error');
+					}
+					else if(chkSave.selected==false && temproleName != '' && tempeventName != "" )
+					{
+						Alert.show("Selected role and event is not saved. Please select '"+_dataParserUtil.saveBtnLabel+"'.",'Error');
+						//Alert.show("Are you sure? You want to processed without saving role and event type. ", "Warning",
+						//	mx.controls.Alert.YES | mx.controls.Alert.NO, this, alertEventHandler);
+					}
+				}
+			}
+
+
+			function alertEventHandler(event:CloseEvent):void {
+
+				if(event.detail == Alert.YES) {
+					if(roleName == '' && eventName == "" )
+					{
+						Alert.show("Selected role and event is not saved. Please select '"+_dataParserUtil.saveBtnLabel+"'",'Error');
+					}
+				}
+				else
+				{
+
+				}
+			}
+
+			private function chkSave_changeHandler(event:Event):void
+			{
+				if(chkSave.selected==true)
+				{
+					var idx:uint;
+					eventName='';
+					const len:uint = chkGroup.numElements;
+					for (idx = 0; idx < len; idx++) {
+						var elmt:CheckBox = chkGroup.getElementAt(idx) as CheckBox;
+
+						if(elmt.selected == true)
+						{
+							if(eventName =='')
+								eventName=elmt.label;
+							else
+								eventName=eventName+','+elmt.label;
+						}
+					}
+					roleName= (coverflow.selectedChild as Panel).title;
+					_dataParserUtil.sharedObj.data.EventName = eventName;
+					_dataParserUtil.sharedObj.data.RoleName =roleName;
+					_dataParserUtil.sharedObj.data.roleIndex=coverflow.selectedIndex;
+					_dataParserUtil.sharedObj.data.isRoleSave = chkSave.selected;
+					_dataParserUtil.sharedObj.flush();
+
+				}
+				else
+				{
+					_dataParserUtil.sharedObj.clear();
+					_dataParserUtil.sharedObj.flush();
+					eventName='';
+					roleName='';
+					/**
+					 * Reset all values
+					 */
+					var idx1:uint;
+					const len1:uint = chkGroup.numElements;
+					for (idx1 = 0; idx1 < len1; idx1++) {
+						var elmt:CheckBox = chkGroup.getElementAt(idx1) as CheckBox;
+
+						//elmt.selected = false;
+
+					}
+
+				}
+
+			}
+
+
+
+			private function changeHandler(event:Event):void
+			{
+
+				chkSave.selected=false;
+				roleName = '' ;
+				eventName= "";
+			}
+
+			private function chkGroup_creationCompleteHandler(event:FlexEvent):void
+			{
+				var chkControl:CheckBox;
+				var objChkDetails:Object;
+
+				for(var j:Number=0; j<_dataParserUtil.eventArr.length;j++)
+				{
+					objChkDetails= new Object();
+					chkControl= new CheckBox();
+					objChkDetails=_dataParserUtil.eventArr[j] as Object;
+					chkControl.id=objChkDetails.eventId;
+					chkControl.label=objChkDetails.eventName;
+					chkControl.percentWidth=100;
+					trace(objChkDetails.eventName);
+					chkControl.addEventListener(Event.CHANGE,changeHandler);
+					chkGroup.addElement(chkControl);
+
+				}
+
+			}
+
+			private function CancelBtn_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				scrollbar.removeEventListener("incrementButtonClicked",incrementButton_ClickHandler);
+				scrollbar.removeEventListener("decrementButtonClicked",decrementButton_ClickHandler);
+				rept.dataProvider=null;
+				coverflow.removeEventListener(IndexChangeEvent.CHANGE,coverflow_changeHandler);
+				coverflow.removeEventListener(MouseEvent.MOUSE_WHEEL,onMouseWheel);
+				this.removeAllElements();
+				HTMLPopupManager.removePopUp(this);
+				System.gc();
+				System.gc();
+				dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+				_dataParserUtil.sharedObj= null;
+			}
+
+			private function coverflow_changeHandler(event:IndexChangedEvent):void
+			{
+				if (_dataParserUtil.sharedObj.data!=null)
+				{
+					if(_dataParserUtil.sharedObj.data.isRoleSave== true)
+					{
+						if(coverflow.selectedIndex==_dataParserUtil.sharedObj.data.roleIndex){
+							chkSave.selected=true;
+
+						}
+						else{
+							chkSave.selected=false;
+							roleName='';
+							_dataParserUtil.sharedObj.clear();
+							_dataParserUtil.sharedObj.flush();
+						}
+					}
+					else
+					{
+						chkSave.selected=false;
+						roleName='';
+						_dataParserUtil.sharedObj.clear();
+						_dataParserUtil.sharedObj.flush();
+					}
+
+					//_dataParserUtil.sharedObj.clear();
+				}
+				else{
+					chkSave.selected=false;
+					roleName='';
+					_dataParserUtil.sharedObj.clear();
+					_dataParserUtil.sharedObj.flush();
+				}
+
+			}
+
+
+
+
+
+
+
+
+
+			protected function coverflow_creationCompleteHandler(event:FlexEvent):void
+			{
+				coverflow.addEventListener(MouseEvent.MOUSE_WHEEL,onMouseWheel);
+
+			}
+
+		]]>
+	</fx:Script>
+	<!-- doc reference http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flashx/textLayout/conversion/TextConverter.html#TEXT_FIELD_HTML_FORMAT -->
+	<s:RectangularDropShadow id="dropShadow"
+							 left="0" right="0" top="0" bottom="0"
+							 alpha="0.32"
+							 angle="90"
+							 blRadius="10"
+							 blurX="20"
+							 blurY="20"
+							 brRadius="10"
+							 distance="25"/>
+
+
+
+	<s:VGroup horizontalAlign="center" width="{txtareaWidth}" gap="10"  paddingBottom="10">
+
+
+		<s:Spacer height="8%"/>
+
+		<s:Label text="{_dataParserUtil.widgetTitle}" width="100%" textAlign="center" top="10" fontSize="14"  fontWeight="bold"/>
+
+		<s:VGroup width="370" height="100%" horizontalAlign="left">
+
+
+			<s:Label text="{_dataParserUtil.eventGroupTitle}"  width="100%" textAlign="left" />
+
+			<s:Group id='chkGroup' width="370" height="100%" creationComplete="chkGroup_creationCompleteHandler(event)">
+
+				<s:layout>
+					<s:TileLayout horizontalAlign="left"  requestedColumnCount="{Math.round((_dataParserUtil.eventArr.length/2))}" requestedRowCount="2" columnWidth="100" />
+				</s:layout>
+
+			</s:Group>
+
+
+
+			<s:Label text="Identify your Emergency Support Function (ESF)"  width="100%" textAlign="left" />
+			<!--	<s:TextInput id='txt'/>-->
+			<mx:VBox id="box" verticalGap="0" horizontalAlign="center" height="220" width="370" left="3" right="3">
+
+				<containers:CoverFlowContainer id="coverflow" width="100%" height="100%" creationComplete="coverflow_creationCompleteHandler(event)"  change="coverflow_changeHandler(event)"
+
+											   horizontalGap="20" borderStyle="solid" backgroundColor="{getStyle('contentBackgroundColor')}"
+											   segments="6" reflectionEnabled="true" >
+					<mx:Repeater id="rept"  dataProvider="{_dataParserUtil.esfRolesArr}">
+
+						<mx:Panel id="ESF" width="150" height="150" title="{rept.currentItem.efsname}" horizontalAlign="center" verticalAlign="middle">
+								<mx:Image width="100%" height="100%" autoLoad="true" scaleContent="true" horizontalAlign="center" verticalAlign="middle"
+										  source="{rept.currentItem.imgsrc}"/>
+						</mx:Panel>
+					</mx:Repeater>
+
+
+
+				</containers:CoverFlowContainer>
+				<s:Spacer height="2"/>
+				<Component:mySlider id="scrollbar" width="100%"
+									minimum="0"
+									maximum="{coverflow.numChildren-1}"
+									stepSize="1"
+									liveDragging="true"
+									value="@{coverflow.selectedIndex}"
+									/>
+
+			</mx:VBox>
+
+			<s:CheckBox  textAlignLast="left" width="100%" id="chkSave" label="{_dataParserUtil.saveBtnLabel}" change="chkSave_changeHandler(event)" />
+			<s:HGroup horizontalAlign="center" width="100%">
+				<s:Button label="OK" useHandCursor="true" buttonMode="true"   id="CloseBtn" click="CloseBtn_clickHandler(event)" />
+				<s:Button label="Cancel" useHandCursor="true" buttonMode="true"  id="CancelBtn" click="CancelBtn_clickHandler(event)" />
+			</s:HGroup>
+		</s:VGroup>
+	</s:VGroup>
+</s:BorderContainer>

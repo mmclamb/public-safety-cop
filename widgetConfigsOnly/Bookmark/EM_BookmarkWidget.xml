@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<configuration>
+    <bookmarks>
+        <bookmark name="City of Naperville">-9833100 5107400 -9786800 5134100</bookmark>
+        <bookmark name="City Wide">-9823300 5120100 -9800200 5133500</bookmark>
+        <bookmark name="Incident Area">-9823600 5120800 -9812000 5127500</bookmark>
+        <bookmark name="Quarry Lake">-9816410 5124680 -9810620 5128030</bookmark>
+        <bookmark name="Contiguous USA">-16533000 1345000 -4674000 7871000</bookmark>
+    </bookmarks>
+</configuration>
+
+<!--
+    See Bookmark widget documentation at
+    http://links.esri.com/bookmarkwidget
+-->

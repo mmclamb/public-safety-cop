@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<project name="Flash" default="build" basedir=".">
+    <property name="flexviewer" value="__ArcGISViewerForFlex-flexviewer-3.0-src" />
+    <property name="widgets" value="widgets" />
+    <property name="distrib" value="__distrib" />
+
+    <target name="build">
+        <echo message="Building ${flexviewer}" />
+
+        <!-- Create the build project and the results directory -->
+        <delete dir="${flexviewer}" />
+        <sleep seconds="2" />
+        <unzip src="${flexviewer}.zip" dest="./" />
+
+        <delete dir="${distrib}" />
+        <mkdir dir="${distrib}"/>
+
+        <!-- Insert widget sources -->
+        <antcall target="-addWidgetSource"><param name="widget" value="BombThreat" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="CI" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="ClosestFacility" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="EMHeaderController" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="EMSplash" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="ERGChemical" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="LivelayerByException" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="NationalGrid" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="PDC" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="ReportByException" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="Swipe" /></antcall>
+
+        <!-- Insert customizations -->
+        <copy todir="${flexviewer}\libs" overwrite="true">
+            <fileset dir="libs" />
+        </copy>
+
+        <copy todir="${flexviewer}\src" overwrite="true">
+            <fileset dir="config" />
+        </copy>
+
+        <copy todir="${flexviewer}\src\assets" overwrite="true">
+            <fileset dir="assets" />
+        </copy>
+        <copy todir="${flexviewer}\src\com" overwrite="true">
+            <fileset dir="com" />
+        </copy>
+        <copy todir="${flexviewer}\src\org" overwrite="true">
+            <fileset dir="org" />
+        </copy>
+        <copy todir="${flexviewer}\src\popups" overwrite="true">
+            <fileset dir="popups" />
+        </copy>
+        <copy todir="${flexviewer}\src\widgets" overwrite="true">
+            <fileset dir="widgetConfigsOnly" />
+        </copy>
+
+        <!-- Build widgets -->
+        <exec executable="cmd" failonerror="true">
+            <arg value="/c"/>
+            <arg value="flexbuild.bat"/>
+        </exec>
+
+        <!-- Retrieve results -->
+        <antcall target="-getWidgetResults"><param name="widget" value="BombThreat" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="CI" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="ClosestFacility" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="EMHeaderController" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="EMSplash" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="ERGChemical" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="LivelayerByException" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="NationalGrid" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="PDC" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="ReportByException" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="Swipe" /></antcall>
+    </target>
+
+    <target name="-addWidgetSource">
+        <copy todir="${flexviewer}\src\widgets\${widget}" overwrite="true">
+            <fileset dir="${widgets}\${widget}" />
+        </copy>
+        <replace file="${flexviewer}\.actionScriptProperties">
+            <replacetoken><![CDATA[</modules>]]></replacetoken>
+            <replacevalue><![CDATA[  <module application="src/index.mxml" destPath="widgets/@@@/@@@Widget.swf" optimize="true" sourcePath="src/widgets/@@@/@@@Widget.mxml"/>
+  </modules>]]></replacevalue>
+        </replace>
+        <replace file="${flexviewer}\.actionScriptProperties" token="@@@" value="${widget}" />
+    </target>
+
+    <target name="-registerAdditionalWidgetSource">
+        <replace file="${flexviewer}\.actionScriptProperties">
+            <replacetoken><![CDATA[</modules>]]></replacetoken>
+            <replacevalue><![CDATA[  <module application="src/index.mxml" destPath="widgets/@@@/???Widget.swf" optimize="true" sourcePath="src/widgets/@@@/???Widget.mxml"/>
+  </modules>]]></replacevalue>
+        </replace>
+        <replace file="${flexviewer}\.actionScriptProperties" token="@@@" value="${widget}" />
+        <replace file="${flexviewer}\.actionScriptProperties" token="???" value="${addon}" />
+    </target>
+
+    <target name="-getWidgetResults">
+        <copy todir="${distrib}\${widget}" overwrite="true">
+            <fileset dir="${flexviewer}\bin-release\widgets\${widget}" />
+        </copy>
+    </target>
+</project>
