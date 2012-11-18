@@ -9,7 +9,7 @@
     1. install Apache Ant 1.8.2 or later - [About](http://ant.apache.org/)
     2. set the path to the FlashBuilderC.exe command-line compiler in file flexbuild.bat
 
-## How To Set Up for Builds
+## How To Set Up for All Builds
 
 These steps set up a Flash Builder workspace for this project and then save it into a zip so that the
 build process has fresh ingredients to fall back upon in the case of workspace corruption.
@@ -49,7 +49,7 @@ __distrib distribution directory.
 The script does not delete the __ArcGISViewerForFlex-flexviewer-3.0-src folder that it creates, so
 you can use Flash Builder and the public-safety-cop workspace for interactive development and testing.
 
-## How To Set Up for Manual Builds
+## How To Complete Set Up for Manual Builds
 
 1. Copy folder "libs"
 into the __ArcGISViewerForFlex-flexviewer-3.0-src folder;
