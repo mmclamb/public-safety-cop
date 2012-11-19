@@ -6,30 +6,46 @@ providing incident information that enables the Incident Commander/Unified Comma
 agencies and organizations to make effective, consistent, and timely decisions. It is a configuration of
 ArcGIS Viewer for Flex that can be used by emergency management staff in an Emergency Operations Center (EOC).
 
-[View sample Public Safety COP application](http://localgovtemplates2.esri.com/PublicSafetyCOP/index.html)
+[Try the Public Safety COP application](http://localgovtemplates2.esri.com/PublicSafetyCOP/index.html)
 
 ## Features
 
-Widgets
+The Public Safety COP includes a series of useful widgets that can be used with the ArcGIS for Flex Viewer by the Public Safety community in a COP application.  The widgets include: 
+
 * Bomb Threat
-* Critical Infrastructure
+* Critical Infrastructure (CI)
 * Closest Facility
+* Emergency Management Header Controller
 * Emergency Response Guide (ERG)
-* National Grid
-* PDC Active Hazard
+* Emergency Management Splash Screen
+* GeoRSS Report by Exception
+* Live Layer Report by Exception
+* Untied States National Grid (USNG)
+* Pacific Disaster Center Active Hazard (PDC)
 * Swipe
 
 ## Instructions
 
+### Esri Sample Map Services
+
+Esri's sample services can be used with this repository to extend the application.
+
+### Your Map Services
+
 [Detailed help](http://resources.arcgis.com/en/help/localgovernment/10.1/index.html#/What_is_Public_Safety_Common_Operational_Picture_COP/028s0000001w000000/)
-on the ArcGIS Resource Center can guide you in the setup and configuration of your app.
+on the ArcGIS Resource Center can guide you in the setup and configuration of the app with your map services.
 
 ## Requirements
 
+### Esri Sample Services
+
+* Adobe Flash Player Plug-in - [About](http://get.adobe.com/flashplayer/)
+
+### Your Map Services
+
+* ArcGIS for Desktop 10.1 - Standard or Advanced - [About](http://www.esri.com/software/arcgis/arcgis-for-desktop)
+* ArcGIS for Server 10.1 - Standard or Advanced - [About](http://www.esri.com/software/arcgis/arcgisserver)
 * Local Government Information Model - [About](http://www.arcgis.com/home/item.html?id=5f799e6d23d94e25b5aaaf2a58e63fb1)
-
-* ArcGIS for Server 10.1 - [About](http://www.esri.com/software/arcgis/arcgisserver)
-
 * Adobe Flash Player Plug-in - [About](http://get.adobe.com/flashplayer/)
 
 ## Resources
