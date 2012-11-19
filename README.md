@@ -10,7 +10,7 @@ ArcGIS Viewer for Flex that can be used by emergency management staff in an Emer
 
 ## Features
 
-The Public Safety COP includes a series of useful widgets that can be used with the ArcGIS for Flex Viewer by the Public Safety community in a COP application.  The widgets include: 
+The Public Safety COP includes a series of useful widgets that can be used with the ArcGIS Viewer for Flex by the Public Safety community in a COP application.  The widgets include: 
 
 * Bomb Threat
 * Critical Infrastructure (CI)
