@@ -26,14 +26,14 @@ The Public Safety COP includes a series of useful widgets that can be used with 
 
 ## Instructions
 
-### Esri Sample Map Services
+### Esri Sample Services
 
 Esri's sample services can be used with this repository to extend the application.
 
-### Your Map Services
+### Your Services
 
 [Detailed help](http://resources.arcgis.com/en/help/localgovernment/10.1/index.html#/What_is_Public_Safety_Common_Operational_Picture_COP/028s0000001w000000/)
-on the ArcGIS Resource Center can guide you in the setup and configuration of the app with your map services.
+on the ArcGIS Resource Center can guide you in the setup and configuration of the app with your services.
 
 ## Requirements
 
@@ -41,7 +41,7 @@ on the ArcGIS Resource Center can guide you in the setup and configuration of th
 
 * Adobe Flash Player Plug-in - [About](http://get.adobe.com/flashplayer/)
 
-### Your Map Services
+### Your Services
 
 * ArcGIS for Desktop 10.1 - Standard or Advanced - [About](http://www.esri.com/software/arcgis/arcgis-for-desktop)
 * ArcGIS for Server 10.1 - Standard or Advanced - [About](http://www.esri.com/software/arcgis/arcgisserver)
