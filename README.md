@@ -8,9 +8,11 @@ ArcGIS Viewer for Flex that can be used by emergency management staff in an Emer
 
 [Try the Public Safety COP application](http://localgovtemplates2.esri.com/PublicSafetyCOP/index.html)
 
+![Image of Public Safety Common Operational Picture (COP) application](https://raw.github.com/MikeTschudi/LGOnline/master/screen.png "Public Safety Common Operational Picture (COP) application")
+
 ## Features
 
-The Public Safety COP includes a series of useful widgets that can be used with the ArcGIS Viewer for Flex by the Public Safety community in a COP application.  The widgets include: 
+The Public Safety COP includes a series of useful widgets that can be used with the ArcGIS Viewer for Flex by the Public Safety community in a COP application.  The widgets include:
 
 * Bomb Threat
 * Critical Infrastructure (CI)
