@@ -8,7 +8,7 @@ ArcGIS Viewer for Flex that can be used by emergency management staff in an Emer
 
 [Try the Public Safety COP application](http://localgovtemplates2.esri.com/PublicSafetyCOP/index.html)
 
-![Image of Public Safety Common Operational Picture (COP) application](https://raw.github.com/Esri/public-safety-cop/master/public-safety-cop.png "Public Safety Common Operational Picture (COP) application")
+![Image of Public Safety Common Operational Picture (COP) application](https://raw.github.com/Esri/public-safety-cop/master/public-safety-cop.png)
 
 ## Features
 
