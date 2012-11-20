@@ -85,4 +85,4 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 A copy of the license is available in the repository's
-[license.txt](https://github.com/Esri/public-safety-cop/blob/master/license.txt) file.
+[license.txt](https://raw.github.com/Esri/public-safety-cop/master/license.txt) file.
