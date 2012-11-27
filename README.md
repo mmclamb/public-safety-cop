@@ -1,5 +1,4 @@
 # public-safety-cop
-**from [Esri's ArcGIS for Local Government team](http://resources.arcgis.com/en/communities/local-government/)**
 
 The Public Safety Common Operational Picture (COP) application offers a standard overview of an incident,
 providing incident information that enables the Incident Commander/Unified Command and any supporting
@@ -51,6 +50,8 @@ on the ArcGIS Resource Center can guide you in the setup and configuration of th
 * Adobe Flash Player Plug-in - [About](http://get.adobe.com/flashplayer/)
 
 ## Resources
+
+Learn more about Esri's [ArcGIS for Local Government maps and apps](http://resources.arcgis.com/en/communities/local-government/).
 
 Additional [information and sample data](http://www.arcgis.com/home/item.html?id=4d5a8964c9c54b07af7317b9c9ac86fd)
 are available for the application.
