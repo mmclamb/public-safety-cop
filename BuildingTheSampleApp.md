@@ -15,7 +15,7 @@ These steps set up a Flash Builder workspace for this project and then save it i
 build process has fresh ingredients to fall back upon in the case of workspace corruption.
 
 1. Download Esri's
-[ArcGIS Viewer 3.0 for Flex source](https://github.com/ArcGIS/ArcGISViewerForFlex/archive/flexviewer-3.0-src.zip)
+[ArcGIS Viewer 3.0 for Flex source](https://github.com/Esri/arcgis-viewer-flex/archive/flexviewer-3.0-src.zip)
 from GitHub
 
 2. From the ArcGIS Viewer for Flex zip, extract its top-level folder ArcGISViewerForFlex-flexviewer-3.0-src
