@@ -90,3 +90,6 @@ limitations under the License.
 
 A copy of the license is available in the repository's
 [license.txt](https://raw.github.com/Esri/public-safety-cop/master/license.txt) file.
+
+[](Esri Tags: Local Government public safety cop)
+[](Esri Language: ActionScript)
