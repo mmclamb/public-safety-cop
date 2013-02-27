@@ -1333,7 +1333,7 @@
             <s:layout>
                 <s:VerticalLayout gap="5" horizontalAlign="left" paddingTop="5"/>
             </s:layout>
-            <s:Label id="lnkERGGuide" text="Click to view Emeregency Guide Book"
+            <s:Label id="lnkERGGuide" text="Click to view Emergency Guide Book"
                      click="guideLinkClick(event)" verticalCenter="0" horizontalCenter="0"
                      textDecoration="underline" color="#FDD017" width="100%" textAlign="center"
                      useHandCursor="true" buttonMode="true"/>
