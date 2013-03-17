@@ -18,7 +18,7 @@
  Adapted and customized by:  Gaetan LAVENU - ESRI France
 -->
 <configuration>
-	<layer>http://localgovtemplates2.esri.com/ArcGIS/rest/services/PublicSafety/EmergencyOperations/MapServer/0</layer>
+	<layer>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer/0</layer>
 	<geometryserviceURL>http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer</geometryserviceURL>
 	<featureselectioncolor>FF9191</featureselectioncolor>
 	<featureovercolor>202020</featureovercolor>
