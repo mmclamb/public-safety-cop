@@ -94,7 +94,7 @@
       </layer>
 
       <layer label="Emergency Operations" type="dynamic" visible="true" alpha="0.5"
-             url="http://localgovtemplates.esri.com/ArcGIS/rest/services/EmergencyOperations/MapServer" visiblelayers="3"></layer>
+             url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer" visiblelayers="3"></layer>
         <layer label="Incident Point" type="feature" visible="true"
                popupconfig="popups/PopUp_EMIncidentPoints.xml"
                url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/0"/>
