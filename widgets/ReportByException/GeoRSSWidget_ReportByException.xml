@@ -70,7 +70,7 @@ http://publicsafetytemplates.esri.com/GeoRSS/PlannedEvents.xml  -->
   <outwkid>4326</outwkid>
   <reportByExceptionLayers>
     <reportByExceptionLayer>
-      <rbeRESTURL>http://50.18.106.114/ArcGIS/rest/services/IncidentCommand/MapServer/3</rbeRESTURL>
+      <rbeRESTURL>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/MapServer/3</rbeRESTURL>
       <rbeLayerName>Road Blocks</rbeLayerName>
       <rbeIcon>widgets/ReportByException/assets/images/i_camera.png</rbeIcon>
       <rbeTitleField>NAME</rbeTitleField>
@@ -84,7 +84,7 @@ http://publicsafetytemplates.esri.com/GeoRSS/PlannedEvents.xml  -->
   <showPopulationCount>true</showPopulationCount>
   <rbeDynamicallyAddedLayerInfoContents>NAME, FULLADD</rbeDynamicallyAddedLayerInfoContents>
   <rbedefaultDynamicLinkField/>
-  <rbedefaultRESTURL>http://50.18.106.114/ArcGIS/rest/services/EmergencyOperations/MapServer/4</rbedefaultRESTURL>
+  <rbedefaultRESTURL>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer/4</rbedefaultRESTURL>
    <rbedefaultRESTLayerName>New Exception</rbedefaultRESTLayerName>
 
    <!-- Specify  Error Messages for appropriate method
