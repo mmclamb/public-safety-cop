@@ -97,7 +97,7 @@
 
         <layer label="Incident Line" type="feature" visible="true"
                popupconfig="popups/PopUp_EMIncidentLines.xml"
-               url="http://50.18.106.114/ArcGIS/rest/services/IncidentCommand/FeatureServer/1"/>
+               url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/1"/>
 
         <layer label="Incident Area" type="feature" visible="true"
                 popupconfig="popups/PopUp_EMIncidentArea.xml"
