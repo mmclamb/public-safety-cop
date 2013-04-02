@@ -211,7 +211,7 @@
 			}
 
 
-			function alertEventHandler(event:CloseEvent):void {
+			private function alertEventHandler(event:CloseEvent):void {
 
 				if(event.detail == Alert.YES) {
 					if(roleName == '' && eventName == "" )
@@ -263,9 +263,9 @@
 					var idx1:uint;
 					const len1:uint = chkGroup.numElements;
 					for (idx1 = 0; idx1 < len1; idx1++) {
-						var elmt:CheckBox = chkGroup.getElementAt(idx1) as CheckBox;
+						var elmt1:CheckBox = chkGroup.getElementAt(idx1) as CheckBox;
 
-						//elmt.selected = false;
+						//elmt1.selected = false;
 
 					}
 

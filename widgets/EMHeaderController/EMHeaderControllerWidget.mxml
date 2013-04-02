@@ -478,7 +478,7 @@
 				var msg:String = "Unable to connect to Locator Service:\n"
 					+ locator.url + "\n\n"
 					+ "Most likely cause:\n"
-					+ ErrorMessageUtil.getKnownErrorCauseMessage(fault.faultCode) + "\n\n"
+					+ ErrorMessageUtil.getKnownErrorCauseMessage(fault) + "\n\n"
 					+ "Details:\n"
 					+ makeHTMLSafe(fault.toString());
 				showError(msg);
