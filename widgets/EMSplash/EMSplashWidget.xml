@@ -68,21 +68,21 @@
 	-->
 
 	<esfroles>
-		<esfrole  esfname="Transportation" configfile="config-ESF01.xml"  imagesrc='widgets/EMSplash/assets/images/esf/transportation.jpg' />
-		<esfrole  esfname="Communications" configfile="config-ESF02.xml" imagesrc='widgets/EMSplash/assets/images/esf/Communication.jpg' />
-		<esfrole  esfname="Public Works" configfile="config-ESF03.xml"  imagesrc='widgets/EMSplash/assets/images/esf/PublicWorks.jpg'/>
-		<esfrole  esfname="Fire Fighting" configfile="config-ESF04.xml" imagesrc='widgets/EMSplash/assets/images/esf/FireFighting.jpg' />
-		<esfrole  esfname="ESF05" configfile="config-ESF05.xml" imagesrc='widgets/EMSplash/assets/images/esf/street.png' />
-		<esfrole  esfname="Mass Care" configfile="config-ESF06.xml" imagesrc='widgets/EMSplash/assets/images/esf/MassCare.jpg' />
-		<esfrole  esfname="Logistics" configfile="config-ESF07.xml" imagesrc='widgets/EMSplash/assets/images/esf/logistics.jpg' />
-		<esfrole  esfname="Public Health" configfile="config-ESF08.xml" imagesrc='widgets/EMSplash/assets/images/esf/PublicHealth.jpg' />
-		<esfrole  esfname="Search  And  Rescue" configfile="config-ESF09.xml" imagesrc='widgets/EMSplash/assets/images/esf/SearchAndRescue.jpg' />
-		<esfrole  esfname="Hazmat" configfile="config-ESF10.xml" imagesrc='widgets/EMSplash/assets/images/esf/Hazmat.jpg' />
-		<esfrole  esfname="Natural Resources" configfile="config-ESF11.xml" imagesrc='widgets/EMSplash/assets/images/esf/NaturalResources.jpg'/>
-		<esfrole  esfname="Energy" configfile="config-ESF12.xml" imagesrc='widgets/EMSplash/assets/images/esf/Energy.jpg' />
-		<esfrole  esfname="Public Safety" configfile="config-ESF13.xml" imagesrc='widgets/EMSplash/assets/images/esf/street.png' />
-		<esfrole  esfname="Long Term Recovery" configfile="config-ESF14.xml" imagesrc='widgets/EMSplash/assets/images/esf/LongTermRecovery.jpg' />
-		<esfrole  esfname="External Affairs" configfile="config-ESF15.xml" imagesrc='widgets/EMSplash/assets/images/esf/ExternalAffairs.jpg' />
+    <esfrole  esfname="ESF #1 - Transportation" configfile="config-ESF01.xml"  imagesrc='widgets/Splash/assets/images/esf/esf1.png' />
+    <esfrole  esfname="ESF #2 - Communications" configfile="config-ESF02.xml" imagesrc='widgets/Splash/assets/images/esf/esf2.png' />
+    <esfrole  esfname="ESF #3 - Public Works" configfile="config-ESF03.xml"  imagesrc='widgets/Splash/assets/images/esf/esf3.png'/>
+    <esfrole  esfname="ESF #4 - Fire Fighting" configfile="config-ESF04.xml" imagesrc='widgets/Splash/assets/images/esf/esf4.png' />
+    <esfrole  esfname="ESF #5 - Emergency Management" configfile="config-ESF05.xml" imagesrc='widgets/Splash/assets/images/esf/esf5.png' />
+    <esfrole  esfname="ESF #6 - Mass Care" configfile="config-ESF06.xml" imagesrc='widgets/Splash/assets/images/esf/esf6.png' />
+    <esfrole  esfname="ESF #7 - Logistics" configfile="config-ESF07.xml" imagesrc='widgets/Splash/assets/images/esf/esf7.png' />
+    <esfrole  esfname="ESF #8 - Public Health" configfile="config-ESF08.xml" imagesrc='widgets/Splash/assets/images/esf/esf8.png' />
+    <esfrole  esfname="ESF #9 - Search  And  Rescue" configfile="config-ESF09.xml" imagesrc='widgets/Splash/assets/images/esf/esf9.png' />
+    <esfrole  esfname="ESF #10 - Hazmat" configfile="config-ESF10.xml" imagesrc='widgets/Splash/assets/images/esf/esf10.png' />
+    <esfrole  esfname="ESF #11 - Natural Resources" configfile="config-ESF11.xml" imagesrc='widgets/Splash/assets/images/esf/esf11.png'/>
+    <esfrole  esfname="ESF #12 - Energy" configfile="config-ESF12.xml" imagesrc='widgets/Splash/assets/images/esf/esf12.png' />
+    <esfrole  esfname="ESF #13 - Public Safety" configfile="config-ESF13.xml" imagesrc='widgets/Splash/assets/images/esf/esf13.png' />
+    <esfrole  esfname="ESF #14 - Long Term Recovery" configfile="config-ESF14.xml" imagesrc='widgets/Splash/assets/images/esf/esf14.png' />
+    <esfrole  esfname="ESF #15 - External Affairs" configfile="config-ESF15.xml" imagesrc='widgets/Splash/assets/images/esf/esf15.png' />
 
 	</esfroles>
 	<savebtnlabel>Save Event Type and Role</savebtnlabel>
