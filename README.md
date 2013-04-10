@@ -63,8 +63,9 @@ are available for the application.
 
 This application uses the 3.0 version of
 [Esri's ArcGIS API for Flex](http://resources.arcgis.com/en/communities/flex-api/)
-an the 4.6 version of [Adobe's Flex SDK](http://www.adobe.com/devnet/flex/flex-sdk-download.html);
-see the ArcGIS API site for concepts, samples, and a reference for using the API to create mapping web sites.
+and the 4.6 version of [Adobe's Flex SDK](http://www.adobe.com/devnet/flex/flex-sdk-download.html)
+in conjunction with the 10.1.1 version of ArcGIS.
+See the ArcGIS API site for concepts, samples, and a reference for using the API to create mapping web sites.
 
 ## Issues
 
