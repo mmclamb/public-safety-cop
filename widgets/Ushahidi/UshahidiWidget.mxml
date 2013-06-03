@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+				   creationComplete="onCreationCompleteHandler(event)"
+				   widgetConfigLoaded="init(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.clusterers.WeightedClusterer;
+			import com.esri.ags.clusterers.supportClasses.FlareSymbol;
+			import com.esri.ags.clusterers.supportClasses.SimpleClusterSymbol;
+			import com.esri.ags.events.ExtentEvent;
+			import com.esri.ags.events.FlareMouseEvent;
+			import com.esri.ags.events.MapEvent;
+			import com.esri.ags.events.ZoomEvent;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.symbols.SimpleFillSymbol;
+			import com.esri.ags.symbols.SimpleMarkerSymbol;
+			import com.esri.ags.symbols.Symbol;
+			import com.esri.ags.utils.GraphicUtil;
+			import com.esri.ags.utils.JSONUtil;
+			import com.esri.ags.utils.WebMercatorUtil;
+
+			import flash.utils.flash_proxy;
+
+			import flashx.textLayout.formats.BackgroundColor;
+
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.controls.Image;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.mxml.HTTPService;
+			import mx.rpc.xml.SimpleXMLDecoder;
+			import mx.utils.GraphicsUtil;
+
+			import spark.components.supportClasses.ItemRenderer;
+
+			import widgets.Ushahidi.Tools.UshahidiItem;
+			import widgets.Ushahidi.Tools.UshahidiTool;
+			import widgets.Ushahidi.Tools.UshahidiUtils;
+			import widgets.Ushahidi.events.ResultsReadyEvent;
+
+
+			private var ushahidiGraphics:GraphicsLayer=null;
+			[Bindable] private var ushaarrResult:ArrayCollection;
+			[Bindable]
+			private var ushahidiDropDown:ArrayList;
+			// contains all alert and confirmation messages
+			private var resultObj:Object=new Object;
+			private var ushahidiIcon:Image = new Image();
+			private var ushahidiSymbol:PictureMarkerSymbol=new PictureMarkerSymbol();
+			private var _dataUtil:UshahidiUtils = UshahidiUtils.getInstance();
+			private var clusererWt:WeightedClusterer = new WeightedClusterer();// Creating clustrer
+			private var ushahidiurl:String;
+
+			protected function init(event:Event):void
+			{
+				if(configXML)
+				{
+					clusererWt = new WeightedClusterer();
+					clusererWt.symbol = _dataUtil.parseFlareSymbol(configXML.clustering.clustersymbol[0]);
+					clusererWt.sizeInPixels = configXML.clustering.@sizeinpixels;
+					clusererWt.minGraphicCount = configXML.clustering.@mingraphiccount;
+					var xmlAlert:XML = (configXML.alerts[0]);
+					var xmlDoc:XMLDocument = new XMLDocument(xmlAlert.toString());
+					var decoder:SimpleXMLDecoder = new SimpleXMLDecoder(true);
+					resultObj = decoder.decodeXML(xmlDoc);
+					_dataUtil.parseConfigXml(configXML);
+					var proxyUrl:String = _dataUtil.proxyUrl;
+
+					var url:String=_dataUtil.apiUrl +"/api?task=categories";
+					if(proxyUrl!="")
+					{
+						url=proxyUrl + "?" +_dataUtil.apiUrl +"/api?task=categories";
+					}
+					var Ushaservicess:HTTPService = new HTTPService();
+					Ushaservicess.useProxy = false;
+					Ushaservicess.url = url ;
+					Ushaservicess.resultFormat = "e4x";
+					Ushaservicess.addEventListener(ResultEvent.RESULT, HttpServiceResult);
+					Ushaservicess.addEventListener(FaultEvent.FAULT, HttpServiceFault);
+					Ushaservicess.send();
+					cursorManager.setBusyCursor();
+
+					map.addEventListener(ExtentEvent.EXTENT_CHANGE,onZoomUpdateHandler);
+					map.addEventListener(FlexEvent.HIDE,myfunction)
+				}
+				var symbol:SimpleFillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, 0xFF0000, 0.1);
+				ushahidiGraphics=new GraphicsLayer();
+				ushahidiGraphics.symbol=new SimpleMarkerSymbol("circle",10,000000);
+				map.addLayer(ushahidiGraphics);
+			}
+			private function myfunction(event:MapEvent):void
+			{
+				Alert.show(event.layer.id);
+			}
+			protected function onCreationCompleteHandler(event:FlexEvent):void
+			{
+
+				UshahidiTemplate.closeButton.toolTip="Close"
+				UshahidiTemplate.minimizeButton.toolTip="Minimize";
+
+
+			}
+
+
+			private function HttpServiceResult(eve:ResultEvent):void
+			{
+				cursorManager.removeBusyCursor();
+				var resultString:String = String(eve.result);
+				var dat:Object = com.esri.ags.utils.JSONUtil.decode(resultString);
+				if(dat.payload.categories.length>0)
+				{
+					ushahidiDropDown=new ArrayList();
+
+						var arr:Array=dat.payload.categories as Array;
+
+						for (var i:int=0;i<arr.length;i++)
+						{
+						var obj1:Object = new Object()
+							obj1.title=arr[i].category.title;
+							obj1.color="0x"+arr[i].category.color;
+							ushahidiDropDown.addItem(obj1);
+						}
+						var obj2:Object = new Object();
+						obj2.title=_dataUtil.categoryDropDownFirstLabel;
+						obj2.color=_dataUtil.categoryDropDownFirstColor;
+					ushahidiDropDown.addItemAt(obj2,0);
+
+				}
+			}
+			private function HttpServiceFault(event:FaultEvent):void
+			{
+				cursorManager.removeBusyCursor();
+				Alert.show("HttpServiceFault","Error");
+
+			}
+			// Close The Infowindow when ZoomChange
+			private function onZoomUpdateHandler(event:ExtentEvent):void
+			{
+
+			}
+			// Search Incidents when DropDowm Change
+			protected function searchUshahidi():void
+			{
+				// Clear graphics
+				ushahidiGraphics.clear();
+				ushahidiGraphics.refresh();
+				map.infoWindow.hide();
+				loadingFlag.visible = true;
+				loadingFlag.includeInLayout = true;
+				if( categoryTitleList.selectedIndex >=0)
+				{
+					 categoryColor=(categoryTitleList.selectedItem as Object).color;
+					var UshaKw:String= categoryTitleList.selectedItem.title
+					SearchUshahidi(UshaKw,_dataUtil.parameterLimitValue);
+				}else
+				{
+					categoryTitleList.selectedIndex=-1
+					Alert.show(resultObj.alerts.noTitleFound.alertmessage.toString(),resultObj.alerts.noTitleFound.alertheader);
+
+				   loadingFlag.visible = false;
+				   loadingFlag.includeInLayout = false;
+				}
+			}
+			private function SearchUshahidi( Keyword:String,limitValue:Number):void
+			{
+				if(Keyword !="")
+				{
+					ClearGraphics.enabled=false;
+					var ushahidiTool:UshahidiTool=new UshahidiTool();
+
+					ushahidiTool.addEventListener(ResultsReadyEvent.RESULTS_REARDY,UshahidiReadyHandler);
+
+					ushahidiTool.SearchByLocation(Keyword,limitValue);
+
+
+				}
+			}
+			private var categoryColor:uint
+
+			private function UshahidiReadyHandler(event:ResultsReadyEvent):void
+			{
+				ClearGraphics.enabled=true;
+			 if(event.Results != null)
+				{
+					if (event.Results.length != 0 )
+					{
+						var graphic:Graphic= null;
+
+
+
+							ushaarrResult=new ArrayCollection;
+							for each(var ushahidi:UshahidiItem in event.Results)
+							{
+								if(ushahidi.point !=null)
+								{
+									var _ushaobj:Object=new Object();
+									_ushaobj.title=ushahidi.incidenttitle;
+									_ushaobj.des=ushahidi.incidentdescription;
+									_ushaobj.location=ushahidi.locationname;
+									_ushaobj.date=ushahidi.incidentdate;
+									_ushaobj.id=ushahidi.incidentid;
+									_ushaobj.point=ushahidi.point;
+									_ushaobj.color=categoryColor;
+									ushaarrResult.addItem(_ushaobj)
+
+									graphic=new Graphic(WebMercatorUtil.geographicToWebMercator(ushahidi.point));
+									graphic.attributes={ "title": ushahidi.incidenttitle, "content":ushahidi.incidentdescription, "published": ushahidi.incidentdate, "location": ushahidi.locationname, "categoryTitle": ushahidi.categoryTitle};
+									graphic.addEventListener(MouseEvent.CLICK,UshahidiGraphic_ClickHandler);
+									(ushahidiGraphics.symbol as SimpleMarkerSymbol).color=categoryColor;
+									ushahidiGraphics.add(graphic);
+
+
+									// Applying clustrer to graphics layer
+
+									(clusererWt.symbol as FlareSymbol).backgroundColor=categoryColor;
+									(clusererWt.symbol as FlareSymbol).backgroundColors=[categoryColor,categoryColor,categoryColor]
+									ushahidiGraphics.clusterer = clusererWt;
+
+									ushahidiGraphics.addEventListener(FlareMouseEvent.FLARE_CLICK,onFlareClickHandler);
+								}
+
+							}
+
+							ushaidilistdata.visible=true;
+							hbx.visible=true;
+							ClearGraphics.visible = true;
+							resizeWidget(400,460,1000);
+
+							if((ushahidiGraphics.graphicProvider as ArrayCollection).length > 1)
+							{
+								map.extent =com.esri.ags.utils.GraphicUtil.getGraphicsExtent((ushahidiGraphics.graphicProvider as ArrayCollection).toArray());
+
+							}
+							else if((ushahidiGraphics.graphicProvider as ArrayCollection).length == 1)
+							{
+								map.centerAt((ushahidiGraphics.graphicProvider[0] as Graphic).geometry as MapPoint);
+							}
+
+
+						}
+
+					}
+					else
+					{
+						Alert.show(resultObj.alerts.noResultsFound.alertmessage.toString(),resultObj.alerts.noResultsFound.alertheader);
+					}
+				loadingFlag.visible = false;
+				loadingFlag.includeInLayout = false;
+				}
+
+		// Ushaidi Graphics Click
+			protected function UshahidiGraphic_ClickHandler(event:MouseEvent):void
+			{
+				var infoWindowContent:DisplayObject;
+				var infoWindowRenderer:ClassFactory;
+
+				if (event.currentTarget != null)
+				{
+					var graphic:Graphic = Graphic(event.currentTarget);
+						var ushaContent:UshaInfoTemplate=new UshaInfoTemplate();
+						ushaContent.title=graphic.attributes.title;
+						ushaContent.location=graphic.attributes.location;
+						ushaContent.description=graphic.attributes.content;
+						ushaContent.date=graphic.attributes.published;
+						(ushaContent.image as BorderContainer).setStyle("backgroundColor",categoryColor);
+						map.infoWindow.label=graphic.attributes.categoryTitle;
+						map.infoWindow.content=ushaContent;
+
+
+				}
+					map.infoWindow.closeButton.toolTip = "Close";
+					map.infoWindow.closeButton.buttonMode = true;
+					map.infoWindow.show(event.currentTarget.geometry);
+		  }
+			// Ushahidi FlareGraphics Click
+			private function onFlareClickHandler(event:FlareMouseEvent):void
+			{
+
+				var grap:Graphic = event.graphic;
+				var ushaContent:UshaInfoTemplate=new UshaInfoTemplate();
+				ushaContent.title=grap.attributes.title;
+				ushaContent.location=grap.attributes.location;
+				ushaContent.description=grap.attributes.content;
+				ushaContent.date=grap.attributes.published;
+				(ushaContent.image as BorderContainer).setStyle("backgroundColor",categoryColor);
+				map.infoWindow.label=grap.attributes.categoryTitle;
+				map.infoWindow.content=ushaContent;
+				map.infoWindow.closeButton.toolTip = "Close";
+				map.infoWindow.closeButton.buttonMode = true;
+				map.infoWindow.show(map.toMapFromStage(event.stageX, event.stageY));
+			}
+
+
+
+			//UshahidiList Click
+			protected function UshahidilistSearch(event:ListEvent):void
+			{
+				for (var j:int=0; j<ushaidilistdata.dataProvider.length;j++)
+				{
+					if(ushaarrResult[j].id==ushaidilistdata.selectedItem.id)
+					{
+						var ushaContent:UshaInfoTemplate=new UshaInfoTemplate();
+						ushaContent.location=ushaarrResult[j].location;
+						ushaContent.description=ushaarrResult[j].des;
+						ushaContent.date=ushaarrResult[j].date;
+						ushaContent.title=ushaarrResult[j].title;
+						(ushaContent.image as BorderContainer).setStyle("backgroundColor",categoryColor);
+						map.infoWindow.label=ushaarrResult[j].title;
+						map.infoWindow.content=ushaContent;
+						map.infoWindow.closeButton.toolTip = "Close";
+						map.infoWindow.closeButton.buttonMode = true;
+						map.infoWindow.show(WebMercatorUtil.geographicToWebMercator(ushaarrResult[j].point as MapPoint)as MapPoint);
+						map.centerAt(WebMercatorUtil.geographicToWebMercator(ushaarrResult[j].point as MapPoint) as MapPoint);
+					}
+				}
+
+			}
+
+			protected function UshahidiTemplate_openHandler(event:Event):void
+			{
+				if(ushahidiGraphics)
+				{
+					ushahidiGraphics.visible=true;
+				}
+			}
+			//Clear The  UshahidiGraphics When Template Closed
+			protected function UshahidiTemplate_closedHandler(event:Event):void
+			{
+
+				map.infoWindow.hide();
+				ushahidiGraphics.visible=false;
+
+			}
+			//Clear Ushahidi Graphics
+			protected function cleargraphics(event:MouseEvent):void
+			{
+				categoryTitleList.selectedIndex=-1;
+				ushahidiGraphics.clear();
+				ushaarrResult=new ArrayCollection();
+				hbx.visible=false;
+				ClearGraphics.visible = false;
+				map.infoWindow.hide();
+				ushaidilistdata.visible=false;
+				resizeWidget(130,460,1000)
+
+			}
+			//Changing UshahidiTemplateSize
+			private function resizeWidget(height:Number, width:Number, duration:Number):void
+			{
+				resize.widthTo = width;
+				resize.heightTo = height;
+				resize.duration = duration;
+				resize.play([UshahidiTemplate]);
+				UshahidiTemplate.widgetHeight = height;
+				UshahidiTemplate.widgetWidth = width;
+				UshahidiTemplate.minWidth = width;
+				UshahidiTemplate.minHeight = height;
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:Resize id="resize"/>
+	</fx:Declarations>
+	<viewer:WidgetTemplate id="UshahidiTemplate" width="460" height="130" minWidth="460"
+						   minHeight="130" closed="UshahidiTemplate_closedHandler(event)"
+						   open="UshahidiTemplate_openHandler(event)">
+		<s:Spacer height="5"/>
+
+		<s:VGroup width="100%" height="100%">
+
+			<mx:HBox verticalAlign="middle">
+				<s:Label id="title" fontWeight="bold" text="Category Title             :"  paddingLeft="2"/>
+
+				<s:DropDownList  id="categoryTitleList"   fontWeight="normal" width="150"    labelField="title" itemRenderer="widgets.Ushahidi.categoryItemRenderer"
+								change="searchUshahidi()" dataProvider="{ushahidiDropDown}"
+								prompt="Select Category"  skinClass="widgets.Ushahidi.Tools.customDropdownSkin" >
+					<s:layout>
+						<s:VerticalLayout requestedMaxRowCount="2"/>
+					</s:layout>
+					</s:DropDownList>
+				<s:Button id="ClearGraphics" label="Clear" buttonMode="true"  click="cleargraphics(event)"
+						  toolTip="Clear Graphics"
+						  visible="false"/>
+				<s:BorderContainer id="loadingFlag" visible="false" width="20" height="20"
+								   cornerRadius="5" includeInLayout="false" >
+
+
+					<s:backgroundFill>
+						<s:SolidColor alpha="1" color="0x660000" />
+					</s:backgroundFill>
+					<mx:SWFLoader width="18" height="18" autoLoad="true" horizontalAlign="center"
+								  source="assets/images/loader.swf" verticalAlign="middle" />
+				</s:BorderContainer>
+			</mx:HBox>
+			<mx:HBox id="hbx" visible="false" verticalAlign="middle">
+
+				<mx:Label id="Search" fontWeight="bold" text="Search Result Count :"/>
+				<mx:Label id="count" fontStyle="italic" text="{ushaarrResult.length}"/>
+				<s:Spacer width="100" />
+
+			</mx:HBox>
+
+			<mx:List id="ushaidilistdata" visible="false" width="100%" height="90%"
+					 borderVisible="false" dataProvider="{ushaarrResult}"
+					 itemClick="UshahidilistSearch(event)"
+					 itemRenderer="widgets.Ushahidi.UshahidiItemRenderer" />
+
+		</s:VGroup>
+
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

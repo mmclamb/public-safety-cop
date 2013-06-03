@@ -1,12 +1,26 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
 <configuration>
-    <!-- <title>Map from a Flex Viewer application</title>  -->
-    <!-- <subtitle>Powered by ArcGIS</subtitle> -->
-  <title>Common Operational Picture</title>
-  <subtitle>Emergency Operations Center</subtitle>
+    <!-- change this URL to your own Export Web Map Task (requires ArcGIS 10.1), or just remove the taskurl tag to get quick printing -->
+    <taskurl>http://sampleserver6.arcgisonline.com/ArcGIS/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task</taskurl>
 </configuration>
 
 <!--
-    See Print widget documentation at
+    See Print widget tag reference at
     http://links.esri.com/printwidget
 -->

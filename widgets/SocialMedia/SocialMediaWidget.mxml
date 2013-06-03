@@ -1,0 +1,1184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:esri="http://www.esri.com/2008/ags"
+				   xmlns:media="widgets.SocialMedia.Tools.*"
+				   xmlns:viewer="com.esri.viewer.*"
+				   widgetConfigLoaded="init()" >
+
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.Map;
+			import com.esri.ags.SpatialReference;
+			import com.esri.ags.components.InfoWindow;
+			import com.esri.ags.events.ExtentEvent;
+			import com.esri.ags.events.GeometryServiceEvent;
+			import com.esri.ags.events.MapEvent;
+			import com.esri.ags.events.MapMouseEvent;
+			import com.esri.ags.geometry.Extent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.layers.supportClasses.LOD;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.tasks.GeometryService;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.BufferParameters;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.ags.utils.WebMercatorUtil;
+
+			import flash.sampler.NewObjectSample;
+
+			import flashx.textLayout.formats.Float;
+
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.controls.Text;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.ListEvent;
+			import mx.formatters.DateFormatter;
+			import mx.formatters.NumberFormatter;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.Fault;
+			import mx.rpc.events.FaultEvent;
+			import mx.utils.StringUtil;
+
+			import org.osmf.events.BufferEvent;
+
+			import spark.events.IndexChangeEvent;
+
+			import widgets.SocialMedia.Events.ResultsReadyEvent;
+			import widgets.SocialMedia.Events.SocialMediaType;
+			import widgets.SocialMedia.Tools.FlickrItem;
+			import widgets.SocialMedia.Tools.FlickrTool;
+			import widgets.SocialMedia.Tools.TweetItem;
+			import widgets.SocialMedia.Tools.TweetTool;
+			import widgets.SocialMedia.Tools.YouTubeItem;
+			import widgets.SocialMedia.Tools.YouTubePlayer;
+			import widgets.SocialMedia.Tools.YouTubeTool;
+
+			private const YouTubeTimeRanges:Array = new Array("today", "this_week", "this_month", "all_time");
+
+			private var mediaProxyUrl:String = "";
+			private var location:MapPoint = null;
+			private var zoomRadius:Number;
+			private var fromDate:Date;
+			private var toDate:Date;
+			[Bindable] private var searchKeyword:String = "";
+			[Bindable] private var maxYouTubeSearchRadius:Number = 60;
+			[Bindable] private var maxTwitterSearchRadius:Number = 60;
+			[Bindable] private var maxFlickerSearchRadius:Number=20;
+			[Bindable] private var locationLabel:String = "";
+			[Bindable] private var frFromDay:String = "";
+			[Bindable] private var frToDay:String = "";
+			[Bindable] private var arrResultSet:ArrayCollection;
+			[Bindable] private var flickerarrResult:ArrayCollection;
+			[Bindable] private var tweetarrResult:ArrayCollection;
+			[Bindable] private var youTubeArrLstdropDown:ArrayList;
+			[Bindable] private var tweetArrLstdropDown:ArrayList;
+
+			// Binded to the map in the application module
+			private var flickrGraphics:GraphicsLayer;
+			private var youtubeGraphics:GraphicsLayer;
+			private var twitterGraphics:GraphicsLayer;
+			private var bufferGraphics:GraphicsLayer;
+
+			[Embed("assets/images/flickr.png")] private const flickrIcon:Class;
+			[Embed("assets/images/twitter.png")] private const twitterIcon:Class;
+			[Embed("assets/images/ytube.png")] private const youtubeIcon:Class;
+
+			private var flickrSymbol:PictureMarkerSymbol = new PictureMarkerSymbol(flickrIcon, 20, 20);
+			private var twitterSymbol:PictureMarkerSymbol = new PictureMarkerSymbol(twitterIcon, 20, 20);
+			private var youtubeSymbol:PictureMarkerSymbol = new PictureMarkerSymbol(youtubeIcon, 20, 20);
+
+			private function init():void
+			{
+				if (configXML) // checking for valid content in the configuration file
+				{
+
+					SocialMediaTemplate.minimizeButton.toolTip="Minimize";
+					SocialMediaTemplate.closeButton.toolTip="Close";
+
+					if (configXML.socialMediaProxyUrl) mediaProxyUrl = configXML.socialMediaProxyUrl;
+					if (configXML.defaultSearchKeyword) searchKeyword = configXML.defaultSearchKeyword;
+					if (configXML.maximumYouTubeSearchRadius) maxYouTubeSearchRadius = configXML.maximumYouTubeSearchRadius;
+					if (configXML.maximumTwitterSearchRadius) maxTwitterSearchRadius = configXML.maximumTwitterSearchRadius;
+					if(configXML.maximumFlickerSearchRadius) maxFlickerSearchRadius =configXML.maximumFlickerSearchRadius;
+					if(configXML.youTubeDateFields.dateField.length() > 0)
+					{
+
+						youTubeArrLstdropDown = new ArrayList();
+						for each(var youTubeXml:XML in configXML.youTubeDateFields.dateField)
+						{
+							var obj:Object = new Object();
+							obj.value = youTubeXml.@value.toString();
+							obj.label = youTubeXml.@label.toString();
+							youTubeArrLstdropDown.addItem(obj);
+						}
+					}
+					if(configXML.twitterDateFields.dateField.length() > 0)
+					{
+						tweetArrLstdropDown = new ArrayList();
+						for each(var twitterXml:XML in configXML.twitterDateFields.dateField)
+						{
+							var obj1:Object = new Object();
+							obj1.value = twitterXml.@value.toString();
+							obj1.label = twitterXml.@label.toString();
+							tweetArrLstdropDown.addItem(obj1);
+						}
+					}
+
+				}
+				dropDownTwitterTime.selectedIndex=2;
+				dropDownYouTubeTime.selectedIndex=2;
+				var dateFormatter:DateFormatter = new DateFormatter();
+				dateFormatter.formatString = "YYYY-MM-DD";
+
+				var msday:Number = 24 * 60 * 60 * 1000;
+				var today:Date = new Date();
+				var hh:Number = today.getHours();
+
+				var until:Date = new Date();
+				until.setTime(today.getTime() - ((hh > 12) ? 0:1) * msday);
+				frToDay = dateFormatter.format(until);
+				toDate=new Date();
+				toDate.setTime(today.getTime() - ((hh > 12) ? 0:1) * msday);
+
+				var since:Date = new Date();
+				since.setTime(today.getTime() - ((hh > 12) ? 7:8) * msday);
+				frFromDay = dateFormatter.format(since);
+				fromDate=new Date();
+				fromDate.setTime(today.getTime() - ((hh > 12) ? 7:8) * msday);
+
+				flickrGraphics = new GraphicsLayer();
+				flickrGraphics.symbol = flickrSymbol;
+				youtubeGraphics = new GraphicsLayer();
+				youtubeGraphics.symbol = youtubeSymbol;
+				twitterGraphics = new GraphicsLayer();
+				twitterGraphics.symbol = twitterSymbol;
+			       bufferGraphics = new GraphicsLayer();
+
+
+
+				setLocation(map.extent.center);
+				map.addLayer(bufferGraphics);
+				map.addLayer(flickrGraphics);
+				map.addLayer(youtubeGraphics);
+				map.addLayer(twitterGraphics);
+
+				map.addEventListener(ExtentEvent.EXTENT_CHANGE, mapExtentChange);
+				map.infoWindow.closeButton.addEventListener(MouseEvent.CLICK, onInfoWindowClose);
+				map.infoWindow.closeButton.toolTip = "Close";
+				map.crosshairVisible = true;
+				map.addEventListener(MouseEvent.CLICK,onMapClick);
+
+
+
+
+			}
+
+
+			private function onInfoWindowClose(event:MouseEvent):void
+			{
+				stopYouTubeVedio();
+			}
+
+			private function mapExtentChange(event:ExtentEvent):void
+			{
+				setLocation(event.extent.center);
+			}
+
+			private function setLocation(point:MapPoint):void
+			{
+				var wkid:int = map.spatialReference.wkid;
+
+				if (wkid == 102100 || wkid == 102113 || wkid == 3857)
+				{
+					location = WebMercatorUtil.webMercatorToGeographic(point) as MapPoint;
+				}
+				else
+				{
+					location = point;
+				}
+
+				var numFormatter:NumberFormatter = new NumberFormatter();
+				numFormatter.precision = 5;
+
+				locationLabel = "long: " + numFormatter.format(location.x) + "  lat: " + numFormatter.format(location.y);
+			}
+
+			//****************************************
+			// Beginning of Setting Search Parameters
+			//****************************************
+			protected function CalendarButton_ClickHandler(event:MouseEvent, which:String):void
+			{
+				if(fromDate != null && which == "From")
+				{
+					dateChooser.selectedDate = fromDate;
+				}
+				else if (toDate != null && which == "To")
+				{
+					dateChooser.selectedDate = toDate;
+				}
+				else
+				{
+					dateChooser.selectedDate = new Date();
+				}
+				dateChooser.selectableRange = {rangeEnd:new Date()};
+				dateChooser.move((which == "From") ? 43:156, 5);
+				dateChooser.toolTip = which;
+				dateChooser.visible = true;
+
+			}
+
+			protected function DateChooser_ChangeHandler(event:CalendarLayoutChangeEvent):void
+			{
+				var dateFormatter:DateFormatter = new DateFormatter();
+				dateFormatter.formatString = "YYYY-MM-DD";
+
+				if (dateChooser.toolTip == "From")
+				{
+
+					fromDate = event.newDate;
+					txtFlickrFromDay.text = dateFormatter.format(event.newDate);
+				}
+				else if (dateChooser.toolTip == "To")
+				{
+					toDate = event.newDate;
+					txtFlickrToDay.text = dateFormatter.format(event.newDate);
+				}
+
+				if((fromDate != null && toDate != null)&&(fromDate > toDate))
+				{
+					Alert.show("\t\tInvalid date range selected.","Error");
+				}
+				dateChooser.visible = false;
+			}
+
+			//**************************************
+			// Beginning of Searching Social Medias
+			//**************************************
+			protected function clearGraphics():void
+			{
+
+				loadingFlag.visible= false;
+				hideInfoWindow();
+				if(bufferGraphics)
+					bufferGraphics.clear()
+				if(tabSocialMedias.selectedIndex == 0)
+				{
+					youtubeGraphics.clear();
+					Statesbtn.visible=false;
+					currentState = "baseState";
+					btnSeatchMedia.enabled=true;
+
+					arrResultSet=new ArrayCollection();
+					resizeWidget(335,450,500);
+				}
+				else if(tabSocialMedias.selectedIndex == 1)
+				{
+					fromDate = null;
+					toDate = null;
+					flickrGraphics.clear();
+					Statesbtn.visible=false;
+					currentState = "baseState";
+					btnSeatchMedia.enabled=true;
+
+
+					flickerarrResult= new ArrayCollection();
+					resizeWidget(335,450,500);
+
+
+				}
+				else if(tabSocialMedias.selectedIndex == 2)
+				{
+					twitterGraphics.clear();
+					Statesbtn.visible=false;
+					currentState = "baseState";
+					btnSeatchMedia.enabled=true;
+					tweetarrResult=new ArrayCollection();
+					resizeWidget(335,450,500);
+
+				}
+
+			}
+			private var twRadius:Number=new Number();
+			protected function startSearchMedia():void
+			{
+
+				bufferGraphics.clear()
+				SocialMediaTemplate.mouseChildren=false;
+				dateChooser.visible=false;
+				loadingFlag.visible = true;
+				loadingFlag.includeInLayout = true;
+
+				if (tabSocialMedias.selectedIndex == 0 && StringUtil.trim(txtYouTubeKeyword.text).length > 0) // Search YouTube
+				{
+
+					var ytKw:String = StringUtil.trim(txtYouTubeKeyword.text);
+					var ytDays:String = dropDownYouTubeTime.selectedItem.value;
+					twRadius = Math.round(sliderYouTubeDistance.value*1.60934) ;
+					SearchYouTube(location, ytKw, ytDays, twRadius);
+
+
+
+				}
+				else if (tabSocialMedias.selectedIndex == 1 && StringUtil.trim(txtFlickrKeyword.text).length > 0) // Search Flickr
+				{
+					var frKw:String = StringUtil.trim(txtFlickrKeyword.text);
+					var frFd:String = txtFlickrFromDay.text;
+					var frTd:String = txtFlickrToDay.text;
+					var frRd:Number = Math.round(sliderFlickrDistance.value*1.60934);
+
+					SearchFlickr(location, frKw, frFd, frTd, frRd);
+				}
+				else if (tabSocialMedias.selectedIndex == 2  && StringUtil.trim(txtTwitterKeyword.text).length > 0)  // Search Twitter
+				{
+					var today:Date = new Date();
+					var since:Date = new Date();
+					var twDays:Number = dropDownTwitterTime.selectedItem.value;
+					var hh:Number = today.getHours();
+					if (hh > 12 && twDays == 5) twDays = 4;
+					since.setTime(today.getTime() - twDays * 24 * 60 * 60 *1000);
+
+					var dateFormatter:DateFormatter = new DateFormatter();
+					dateFormatter.formatString = "YYYY-MM-DD";
+
+					var twKw:String = StringUtil.trim(txtTwitterKeyword.text);
+					var twRd:Number = Math.round(sliderTwitterDistance.value*1.60934);
+
+
+
+					SearchTwitter(location, twKw, dateFormatter.format(since), twRd);
+				}
+				else
+				{
+					if (tabSocialMedias.selectedIndex == 0)
+					{
+						txtYouTubeKeyword.text = "";
+					}
+					else if (tabSocialMedias.selectedIndex == 1)
+					{
+						txtFlickrKeyword.text = "";
+					}
+					else if (tabSocialMedias.selectedIndex == 2)
+					{
+						txtTwitterKeyword.text = "";
+					}
+					loadingFlag.visible = false;
+					loadingFlag.includeInLayout = false;
+					Alert.show("Please enter Keyword to search.","Alert");
+					SocialMediaTemplate.mouseChildren=true;
+				}
+
+			}
+
+			private function SearchFlickr(location:MapPoint, keyword:String, minTime:String, maxTime:String, radius:Number):void
+			{
+				if (keyword != "")
+				{
+					var flickrTool:FlickrTool = new FlickrTool();
+					zoomRadius = new Number(radius);
+					flickrTool.addEventListener(ResultsReadyEvent.RESULTS_REARDY, SocialResultsReadyHandler);
+					flickrTool.SearchByLocation(keyword, minTime, maxTime, location, radius);
+					var bufferparams:BufferParameters = new BufferParameters();
+					bufferparams.distances=[radius];
+					bufferparams.geometries=[location];
+					bufferparams.unit=GeometryService.UNIT_KILOMETER;
+					bufferparams.bufferSpatialReference=map.spatialReference;
+					bufferparams.outSpatialReference=map.spatialReference;
+					var geometeryService:GeometryService = new GeometryService();
+					geometeryService.url=configData.geometryService.url;
+					geometeryService.buffer(bufferparams,new AsyncResponder(onyBufferComplete,onfault));
+					function onyBufferComplete(result:Object,token:Object=null):void
+					{
+
+						var tempGraphics:Graphic = new Graphic();
+						tempGraphics.symbol=sfs;
+						bufferGeo1=result[0] as Geometry;
+						tempGraphics.geometry = result[0] as Geometry;
+						bufferGraphics.add(tempGraphics);
+
+					}
+					function onfault(e:Fault, token:Object = null):void
+					{
+
+					}
+
+				}
+			}
+			private var bufferGeo:Geometry = new  Geometry()
+			private var bufferGeo1:Geometry = new Geometry()
+			private function SearchTwitter(location:MapPoint, keyword:String, since:String, distance:Number):void
+			{
+				if (keyword != "")
+				{
+					var tweetTool:TweetTool = new TweetTool();
+					zoomRadius = new Number(distance);
+					if (mediaProxyUrl != "")tweetTool.ProxyUrl = mediaProxyUrl;
+					tweetTool.addEventListener(ResultsReadyEvent.RESULTS_REARDY, SocialResultsReadyHandler);
+					var bufferparams1:BufferParameters = new BufferParameters();
+					var geometryService1:GeometryService = new GeometryService();
+					bufferparams1.distances=[distance];
+					bufferparams1.geometries=[location];
+					bufferparams1.unit=GeometryService.UNIT_KILOMETER;
+					bufferparams1.bufferSpatialReference=map.spatialReference;
+					bufferparams1.outSpatialReference=map.spatialReference;
+					geometryService1.url=configData.geometryService.url;
+					geometryService1.buffer(bufferparams1,new AsyncResponder(onyBufferComplete1,onfault1));
+					function onyBufferComplete1(result:Object,token:Object=null):void
+					{
+
+						var tempGraphics:Graphic = new Graphic();
+						tempGraphics.symbol=sfs;
+						bufferGeo=result[0] as Geometry;
+						tempGraphics.geometry = result[0] as Geometry;
+						tempGraphics.addEventListener(MouseEvent.CLICK,onclick)
+						bufferGraphics.add(tempGraphics);
+
+
+
+
+					}
+					function onclick(event:MouseEvent):void
+					{
+
+					}
+					function onfault1(e:Fault, token:Object = null):void
+					{
+
+					}
+					tweetTool.Search(keyword, since, location, distance, "km");
+
+
+
+				}
+			}
+
+			private function SearchYouTube(location:MapPoint, keyword:String, timeRange:String, distance:Number):void
+			{
+				if (keyword != "")
+				{
+					var youTubeTool:YouTubeTool = new YouTubeTool();
+					zoomRadius = new Number(distance);
+					if (mediaProxyUrl != "") youTubeTool.ProxyUrl = mediaProxyUrl;
+					youTubeTool.addEventListener(ResultsReadyEvent.RESULTS_REARDY, SocialResultsReadyHandler);
+					youTubeTool.Search(keyword, timeRange, location, distance, "km");
+
+				}
+			}
+
+			private function getMonthByName(num:Number):String
+			{
+				var months:Array = new Array('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
+
+				return months[num];
+			}
+
+			private function SocialResultsReadyHandler(event:ResultsReadyEvent):void
+			{
+
+
+				SocialMediaTemplate.mouseChildren=true;
+				if(map.infoWindow.visible=true)
+					hideInfoWindow();
+				if(event.Results != null)
+				{
+					if (event.Results.length != 0 )
+					{
+						var graphic:Graphic = null;
+						setMapExtent(location, zoomRadius);
+						if (event.MediaType == SocialMediaType.Flickr)
+						{
+							flickrGraphics.clear();
+							flickerarrResult=new ArrayCollection();
+							for each (var flickr:FlickrItem in event.Results)
+							{
+								if(flickr.point != null  && (bufferGeo1 as Polygon).contains(flickr.point))
+								{
+								var flickrobj:Object=new Object();
+								flickrobj.title=flickr.title;
+								flickrobj.author=flickr.ownerName;
+								flickrobj.image=flickr.imageUrl;
+								flickrobj.date=flickr.dateTaken;
+								flickrobj.point=flickr.point;
+								flickerarrResult.addItem(flickrobj);
+								graphic = new Graphic(flickr.point);
+								graphic.attributes = {"type": SocialMediaType.Flickr, "title": flickr.title, "author": flickr.ownerName, "image": flickr.imageUrl, "datetaken": flickr.dateTaken};
+								graphic.addEventListener(MouseEvent.CLICK, SocialMediaGraphic_ClickHandler);
+								flickrGraphics.add(graphic);
+							}
+							}
+							this.currentState="resultState";
+							btnSeatchMedia.enabled=false;
+							Statesbtn.visible=true;
+
+
+							if(flickerlist.dataProvider.length>3)
+							{
+								resizeWidget(450,450,500);
+							}
+
+
+						}
+						else if (event.MediaType == SocialMediaType.YouTube)
+						{
+							youtubeGraphics.clear();
+							arrResultSet = new ArrayCollection();
+							for each (var ytVideo:YouTubeItem in event.Results)
+							{
+
+
+								if (ytVideo.point != null)
+								{
+
+									var obj:Object = new Object();
+									obj.title = ytVideo.title;
+									obj.point = ytVideo.point;
+									obj.date=ytVideo.publishDate;
+									obj.image=ytVideo.thumbnail;
+									obj.id=ytVideo.id;
+									obj.meadiaurl=ytVideo.mediaUrl;
+									obj.aspectRatio=ytVideo.aspectRatio;
+									obj.description=ytVideo.description;
+
+									arrResultSet.addItem(obj);
+
+									graphic = new Graphic(WebMercatorUtil.geographicToWebMercator(ytVideo.point));
+									graphic.attributes = {"type": SocialMediaType.YouTube, "title": ytVideo.title, "videoID": ytVideo.id, "thumbnail": ytVideo.thumbnail, "published": ytVideo.publishDate, "aspectRatio": ytVideo.aspectRatio};
+									graphic.addEventListener(MouseEvent.CLICK, SocialMediaGraphic_ClickHandler);
+
+									youtubeGraphics.add(graphic);
+
+
+
+								}
+							}
+
+							this.currentState = "resultState";
+							btnSeatchMedia.enabled=false;
+							Statesbtn.visible=true;
+							if(youtublist.dataProvider.length>3)
+							{
+								resizeWidget(450,450,500);
+							}
+
+
+						}
+						else if (event.MediaType == SocialMediaType.Tweet)
+						{
+							twitterGraphics.clear();
+							tweetarrResult=new ArrayCollection();
+							for each (var tweet:TweetItem in event.Results)
+							{
+								if (tweet.point != null  && (bufferGeo as Polygon).contains(tweet.point as MapPoint))
+								{
+									var tweetobj:Object=new Object();
+									tweetobj.title=tweet.title;
+									tweetobj.content=tweet.content;
+									tweetobj.photo=tweet.authorPhoto;
+
+									var newdate:Date = new Date(tweet.publishDate);
+
+									tweetobj.date=""+getMonthByName(newdate.getMonth() as Number)+","+newdate.date+" "+newdate.fullYear+" @ "+newdate.hours+":"+newdate.minutes+":"+newdate.seconds;
+									tweetobj.authorUri=tweet.authorUri;
+									tweetobj.author=tweet.authorName;
+									tweetobj.point=tweet.point;
+									tweetobj.screenName=tweet.screenName;
+									tweetarrResult.addItem(tweetobj);
+
+									graphic = new Graphic(tweet.point);
+									graphic.attributes = {"type": SocialMediaType.Tweet, "title": tweet.title, "content":tweet.content, "published": tweet.publishDate, "photo": tweet.authorPhoto, "author": tweet.authorName, "authorUri": tweet.authorUri,"screenName":tweet.screenName};
+									graphic.addEventListener(MouseEvent.CLICK, SocialMediaGraphic_ClickHandler);
+									twitterGraphics.add(graphic);
+								}
+							}
+							this.currentState="resultState";
+							btnSeatchMedia.enabled=false;
+							Statesbtn.visible=true;
+							if(tweetlist.dataProvider.length>3)
+							{
+
+								resizeWidget(450,450,500);
+
+							}
+
+						}
+
+					}
+					else
+					{
+						Alert.show("No results found.","Error");
+					}
+				}else{
+					Alert.show("No results found.","Server Not Found");
+				}
+				loadingFlag.visible = false;
+				loadingFlag.includeInLayout = false;
+			}
+			private function onMapClick(event:MouseEvent):void
+			{
+				if(event.target is  com.esri.ags.Map)
+				{
+
+				}
+				else
+				{
+					stopYouTubeVedio();
+				}
+
+
+
+
+
+			}
+			protected function SocialMediaGraphic_ClickHandler(event:MouseEvent):void
+			{
+				var infoWindowContent:DisplayObject;
+				var infoWindowRenderer:ClassFactory;
+
+				if (event.currentTarget != null)
+				{
+					var recreate:Boolean = true;
+					var graphic:Graphic = Graphic(event.currentTarget);
+
+					if (graphic.attributes.type == SocialMediaType.YouTube)
+					{
+						stopYouTubeVedio();
+						var ytContent:YouTubeInfoTemplate = new YouTubeInfoTemplate();
+						ytContent.videoID = graphic.attributes.videoID;
+						ytContent.aspectRatio = graphic.attributes.aspectRatio;
+						map.infoWindow.label = graphic.attributes.title;
+						map.infoWindow.content = ytContent;
+					}
+
+					if (graphic.attributes.type == SocialMediaType.Flickr)
+
+					{
+						stopYouTubeVedio();
+						var frContent:FlickrInfoTemplate = new FlickrInfoTemplate();
+						frContent.image = graphic.attributes.image;
+						frContent.author = graphic.attributes.author;
+
+						var str:Text = new Text();
+						str.text = graphic.attributes.title;
+						map.infoWindow.labelText.toolTip = graphic.attributes.title;
+						if(str.text.length > 25)
+						{
+							str.text = str.text.slice(0,24) + "....";
+						}
+						graphic.attributes.title = str.text;
+
+						map.infoWindow.label = graphic.attributes.title;
+						map.infoWindow.content = frContent;
+					}
+
+					if (graphic.attributes.type == SocialMediaType.Tweet)
+					{
+						stopYouTubeVedio();
+						var twContent:TweetInfoTemplate = new TweetInfoTemplate();
+						twContent.photo = graphic.attributes.photo;
+						twContent.content = graphic.attributes.content;
+						twContent.authorUri1 = graphic.attributes.authorUri;
+						twContent.screenName=graphic.attributes.screenName;
+						map.infoWindow.label = graphic.attributes.author;
+						map.infoWindow.content = twContent;
+					}
+					map.infoWindow.closeButton.toolTip = "Close";
+					map.infoWindow.closeButton.buttonMode = true;
+					map.infoWindow.show(event.currentTarget.geometry);
+				}
+			}
+
+			private function stopYouTubeVedio():void
+			{
+				if (map.infoWindow.content is YouTubeInfoTemplate)
+				{
+					var ytPlayer:YouTubePlayer = map.infoWindow.content.getChildByName("youTubePlayer") as YouTubePlayer;
+					if (ytPlayer != null)
+					{
+						ytPlayer.stopVideoImmidieate();
+					}
+				}
+			}
+
+			private function hideInfoWindow():void
+			{
+				stopYouTubeVedio();
+				callLater(
+					function():void
+					{
+						map.infoWindow.hide();
+					}
+				);
+			}
+
+			private function setMapExtent(location:MapPoint, radius:Number):void {
+				var point:MapPoint = WebMercatorUtil.geographicToWebMercator(location) as MapPoint;
+				var minx:Number = point.x - radius * 1500;
+				var miny:Number = point.y - radius * 1500;
+				var maxx:Number = point.x + radius * 1500;
+				var maxy:Number = point.y + radius * 1500;
+
+				map.extent = new Extent(minx, miny, maxx, maxy);
+			}
+			//**************************************
+			// End of Searching Functions
+			//**************************************
+
+			protected function TabSocialMedias_changeHandler(event:IndexChangedEvent):void
+			{
+				if (dateChooser.visible) dateChooser.visible = false;
+
+				if(tabSocialMedias.selectedIndex==0 )
+				{
+					if(youtublist != null  )
+					{
+						if(youtublist.dataProvider != null && (youtublist.dataProvider as ArrayCollection).length > 0)
+						{
+							currentState = "resultState"
+							Statesbtn.visible=true;
+							btnSeatchMedia.enabled=false;
+
+						}
+						else
+						{
+							currentState = "baseState"
+							Statesbtn.visible=false;
+							btnSeatchMedia.enabled=true;
+							resizeWidget(335,450,500);
+						}
+						if(youtublist.dataProvider.length>3)
+						{
+							resizeWidget(450,450,1000);
+						}else
+						{
+							resizeWidget(335,450,500)
+						}
+					}
+					else
+					{
+						currentState = "baseState"
+						Statesbtn.visible=false;
+						btnSeatchMedia.enabled=true;
+						resizeWidget(335,450,500);
+					}
+
+
+				}
+				if(tabSocialMedias.selectedIndex==1)
+
+				{
+
+
+					if(flickerlist != null)
+					{
+						if(flickerlist.dataProvider != null && (flickerlist.dataProvider as ArrayCollection).length > 0)
+						{
+
+							currentState = "resultState"
+							Statesbtn.visible=true;
+							btnSeatchMedia.enabled=false;
+
+						}
+						else
+						{
+
+							currentState = "baseState"
+							Statesbtn.visible=false;
+							btnSeatchMedia.enabled=true;
+							resizeWidget(335,450,500);
+						}
+						if(flickerlist.dataProvider.length>3)
+						{
+							resizeWidget(450,450,1000);
+						}else
+						{
+							resizeWidget(335,450,500);
+						}
+					}
+					else{
+						this.currentState = "baseState";
+						Statesbtn.visible=false;
+						btnSeatchMedia.enabled=true;
+						resizeWidget(335,450,500);
+					}
+
+				}
+				if(tabSocialMedias.selectedIndex==2)
+				{
+
+
+					if(tweetlist != null)
+					{
+						if(tweetlist.dataProvider != null && (tweetlist.dataProvider as ArrayCollection).length > 0)
+						{
+
+							currentState = "resultState"
+							Statesbtn.visible=true;
+							btnSeatchMedia.enabled=false;
+
+						}
+						else
+						{
+
+							currentState = "baseState"
+							btnSeatchMedia.enabled=true;
+							Statesbtn.visible=false;
+							resizeWidget(335,450,500);
+						}
+						if(tweetlist.dataProvider.length>3)
+						{
+
+							resizeWidget(450,450,1000);
+						}else
+						{
+							resizeWidget(335,450,500);
+						}
+					}
+					else{
+						this.currentState = "baseState";
+						btnSeatchMedia.enabled=true;
+						Statesbtn.visible=false;
+						resizeWidget(335,450,500);
+					}
+
+
+				}
+
+			}
+
+			private function SocialMediaTemplate_openHandler(event:Event):void
+			{
+
+				SocialMediaTemplate.closeButton.toolTip="Close";
+				SocialMediaTemplate.minimizeButton.toolTip="Minimize";
+				map.crosshairVisible = true;
+
+				if(flickrGraphics)
+				{
+					flickrGraphics.visible = true;
+				}
+				if(youtubeGraphics)
+				{
+					youtubeGraphics.visible = true;
+				}
+				if(twitterGraphics)
+				{
+					twitterGraphics.visible = true;
+				}
+				if(bufferGraphics)
+				{
+					bufferGraphics.visible = true;
+				}
+			}
+
+			private function SocialMediaTemplate_closedHandler(event:Event):void
+			{
+				stopYouTubeVedio()
+				map.infoWindow.visible = false;
+				map.infoWindow.hide();
+				flickrGraphics.visible = false;
+				youtubeGraphics.visible = false;
+				twitterGraphics.visible = false;
+				bufferGraphics.visible=false;
+				map.crosshairVisible = false;
+			}
+
+			protected function dateChooser_focusOutHandler(event:FocusEvent):void
+			{
+				dateChooser.visible = false;
+			}
+
+			protected function dateChooser_rollOutHandler(event:MouseEvent):void
+			{
+				dateChooser.visible = false;
+			}
+
+
+
+
+
+			protected function youtubelistsearchData(event:ListEvent):void
+			{
+				stopYouTubeVedio();
+				for  (var i:int=0; i<youtublist.dataProvider.length;i++)
+				{
+					if(arrResultSet[i].title==youtublist.selectedItem.title)
+					{
+
+						var ytContent1:YouTubeInfoTemplate = new YouTubeInfoTemplate();
+						ytContent1.videoID = arrResultSet[i].id;
+						ytContent1.aspectRatio = arrResultSet[i].aspectRatio;
+						map.infoWindow.label = arrResultSet[i].title;
+						map.infoWindow.content = ytContent1;
+						map.infoWindow.show(WebMercatorUtil.geographicToWebMercator(arrResultSet[i].point as MapPoint) as MapPoint);
+						map.centerAt(WebMercatorUtil.geographicToWebMercator(arrResultSet[i].point as MapPoint) as MapPoint);
+					}
+
+				}
+
+			}
+
+			protected function tweetSearchListData(event:ListEvent):void
+			{
+
+				stopYouTubeVedio()
+				for  (var j:int=0; j<tweetlist.dataProvider.length;j++)
+				{
+					if(tweetarrResult[j].title==tweetlist.selectedItem.title)
+					{
+
+						var twContent:TweetInfoTemplate = new TweetInfoTemplate();
+						twContent.photo = tweetarrResult[j].photo;
+						twContent.content = tweetarrResult[j].content;
+						twContent.authorUri1 = tweetarrResult[j].authorUri;
+						twContent.screenName=tweetarrResult[j].screenName;
+						map.infoWindow.label =tweetarrResult[j].author;
+						map.infoWindow.content = twContent;
+						map.infoWindow.show(tweetarrResult[j].point as MapPoint);
+						map.centerAt(tweetarrResult[j].point as MapPoint);
+					}
+
+				}
+
+
+			}
+
+			protected function flickerSearchlistData(event:ListEvent):void
+			{
+				stopYouTubeVedio()
+				for  (var j:int=0; j<flickerlist.dataProvider.length;j++)
+				{
+					if(flickerarrResult[j].title==flickerlist.selectedItem.title)
+					{
+
+						var frContent:FlickrInfoTemplate = new FlickrInfoTemplate();
+						frContent.image = flickerarrResult[j].image;
+						frContent.author = flickerarrResult[j].author;
+
+						var str1:Text = new Text();
+						str1.text = flickerarrResult[j].title;
+						map.infoWindow.labelText.toolTip = flickerarrResult[j].title;
+						if(str1.text.length > 25)
+						{
+							str1.text = str1.text.slice(0,24) + "....";
+						}
+						flickerarrResult[j].title = str1.text;
+						map.infoWindow.label = flickerarrResult[j].title;
+						map.infoWindow.content = frContent;
+						map.infoWindow.show(flickerarrResult[j].point as MapPoint);
+						map.centerAt(flickerarrResult[j].point as MapPoint);
+					}
+				}
+			}
+
+			protected function States_clickHandler(event:MouseEvent):void
+			{
+
+				if(currentState=="resultState"&& tabSocialMedias.selectedIndex==0)
+				{
+					currentState="baseState";
+					Statesbtn.visible=false;
+					youtublist.dataProvider=null;
+					btnSeatchMedia.enabled=true;
+					resizeWidget(335,450,500);
+
+				}else if(currentState=="resultState" && tabSocialMedias.selectedIndex==1)
+				{
+
+					currentState="baseState";
+					Statesbtn.visible=false;
+					flickerlist.dataProvider=null;
+					btnSeatchMedia.enabled=true;
+					resizeWidget(335,450,500);
+				}else if(currentState=="resultState" &&  tabSocialMedias.selectedIndex==2)
+				{
+
+					currentState="baseState";
+					Statesbtn.visible=false;
+					tweetlist.dataProvider=null;
+					btnSeatchMedia.enabled=true;
+					resizeWidget(335,450,500);
+				}
+
+			}
+			private function resizeWidget(height:Number, width:Number, duration:Number):void
+			{
+				resize.widthTo = width;
+				resize.heightTo = height;
+				resize.duration = duration;
+				resize.play([SocialMediaTemplate]);
+				SocialMediaTemplate.widgetHeight = height;
+				SocialMediaTemplate.widgetWidth = width;
+				SocialMediaTemplate.minWidth = width;
+				SocialMediaTemplate.minHeight = height;
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace esri "http://www.esri.com/2008/ags";
+		@namespace media "widgets.SocialMedia.Tools.*";
+		@namespace viewer "com.esri.viewer.*";
+
+
+	</fx:Style>
+	<viewer:states>
+		<s:State name="baseState"/>
+		<s:State name="resultState"/>
+	</viewer:states>
+	<fx:Declarations>
+		<s:Resize id="resize"/>
+		<esri:SimpleFillSymbol id="sfs" color="0xFF0000" alpha=".1">
+			<esri:SimpleLineSymbol color="0x000000"/>
+		</esri:SimpleFillSymbol>
+		<mx:DateFormatter id="dateFormatter"  formatString="EEE, MMM.DD,L:NN:QQQ YYYY "/>
+	</fx:Declarations>
+
+	<viewer:WidgetTemplate id="SocialMediaTemplate"
+						   width="450" height="335"
+						   minWidth="450" minHeight="335"
+						   draggable="false"
+						   open="SocialMediaTemplate_openHandler(event)"
+						   closed="SocialMediaTemplate_closedHandler(event)">
+
+		<s:VGroup width="100%" height="100%" id="boxSocialMedia" horizontalAlign="left" verticalAlign="middle">
+			<mx:TabNavigator creationPolicy="all" id="tabSocialMedias" change="TabSocialMedias_changeHandler(event)" selectedIndex="2" width="100%" height="100%" >
+				<mx:VBox id="youtubeSearch" creationPolicy="all" label="YouTube" icon="@Embed('assets/images/ytube.png')" verticalScrollPolicy="off" textAlign="left" verticalGap="6" paddingTop="4" paddingBottom="8">
+					<mx:Form  includeIn="baseState" >
+						<mx:FormHeading textAlign="left" label="Search YouTube for videos" fontWeight="bold" />
+						<mx:FormItem label="Use this Keyword" >
+							<s:TextInput id="txtYouTubeKeyword" text="{searchKeyword}" editable="true" enabled="true" width="200" height="20"/>
+						</mx:FormItem>
+						<mx:FormItem label="At this location" paddingTop="5" >
+							<s:Label id="lblYouTubeLocation" text="{locationLabel}" />
+						</mx:FormItem>
+						<mx:FormItem label="Within this distance" paddingTop="2" >
+							<s:HGroup gap="4">
+								<s:HSlider id="sliderYouTubeDistance" showDataTip="false" minimum="5" maximum="{maxYouTubeSearchRadius}"
+										   value="20" width="120" verticalCenter="0" liveDragging="true" focusEnabled="false" />
+								<s:Label id="lblYouTubeDistance" text="{sliderYouTubeDistance.value}" />
+								<s:Label text="Miles" />
+							</s:HGroup>
+						</mx:FormItem>
+						<mx:FormItem label="From the past" >
+							<s:DropDownList id="dropDownYouTubeTime" width="120" height="20" dataProvider="{youTubeArrLstdropDown}"   />
+
+						</mx:FormItem>
+					</mx:Form>
+					<mx:VBox id="mybox" width="100%" height="100%"   verticalScrollPolicy="off" horizontalScrollPolicy="off"  label="Search Data"  includeIn="resultState"  >
+
+						<mx:Label text="Search Results :{arrResultSet.length}"/>
+						<mx:List id="youtublist" width="100%" height="100%" dataProvider="{arrResultSet}" borderVisible="false" itemRenderer="widgets.SocialMedia.YouTubeSearchItemrenderer"  itemClick="youtubelistsearchData(event)"  />
+
+					</mx:VBox>
+				</mx:VBox>
+				<mx:VBox id="flickrSearch" creationPolicy="all" label="Flickr" icon="@Embed('assets/images/flickr.png')" textAlign="left" verticalGap="6" paddingTop="4" paddingBottom="8" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+					<mx:Form  includeIn="baseState">
+						<mx:FormHeading textAlign="left" label="Search Flickr for photos" fontWeight="bold"  />
+						<mx:FormItem label="Use this Keyword">
+							<s:TextInput id="txtFlickrKeyword" text="{searchKeyword}" editable="true" enabled="true" width="200" height="20"/>
+						</mx:FormItem>
+						<mx:FormItem label="At this location" paddingTop="5" >
+							<s:Label id="lblFlickrLocation" text="{locationLabel}" />
+						</mx:FormItem>
+						<mx:FormItem label="Within this distance" paddingTop="2" >
+							<s:HGroup gap="4">
+								<s:HSlider id="sliderFlickrDistance" showDataTip="false" minimum="5" maximum="{maxFlickerSearchRadius}"
+										   width="120" verticalCenter="0" liveDragging="true" focusEnabled="false"/>
+								<s:Label id="lblFlickrDistance" text="{sliderFlickrDistance.value}" />
+								<s:Label text="Miles" />
+							</s:HGroup>
+						</mx:FormItem>
+						<mx:FormItem label="Within these dates" >
+							<s:HGroup id="boxFlickrDates" gap="2" verticalAlign="middle">
+								<s:TextInput id="txtFlickrFromDay" restrict="0-9/"  text="{frFromDay}"
+											 editable="false" enabled="true" width="82" height="20"/>
+								<mx:Image id="imgFromCalendar" source="widgets/SocialMedia/assets/images/calendar.png"
+										  width="16" height="16" maintainAspectRatio="true" toolTip="From"
+										  click="CalendarButton_ClickHandler(event, 'From')"/>
+								<s:Label text="to" paddingLeft="2" paddingRight="2" paddingTop="2"/>
+								<s:TextInput id="txtFlickrToDay"  restrict="0-9/"  text="{frToDay}"
+											 editable="false" enabled="true" width="82" height="20"/>
+								<mx:Image id="imgToCalendar" source="widgets/SocialMedia/assets/images/calendar.png"
+										  width="16" height="16" maintainAspectRatio="true" toolTip="To"
+										  click="CalendarButton_ClickHandler(event, 'To')" />
+							</s:HGroup>
+						</mx:FormItem>
+					</mx:Form>
+					<mx:VBox id="mybox1" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off"  label="Search Data" includeIn="resultState" >
+						<mx:Label text="Search Results :{flickerarrResult.length}"/>
+						<mx:List  id="flickerlist" width="100%" height="100%" verticalScrollPolicy="auto"   dataProvider="{flickerarrResult}" borderVisible="false" itemRenderer="widgets.SocialMedia.flickerItemRenderer" itemClick="flickerSearchlistData(event)"   />
+					</mx:VBox>
+				</mx:VBox>
+				<mx:VBox id="twitterSearch" creationPolicy="all" label="Twitter" icon="@Embed('assets/images/twitter.png')" textAlign="left" verticalGap="6" paddingTop="4" paddingBottom="8" verticalScrollPolicy="off">
+					<mx:Form includeIn="baseState" >
+						<mx:FormHeading textAlign="left" label="Search Twitter for tweets" fontWeight="bold"  />
+						<mx:FormItem label="Use this Keyword" >
+							<s:TextInput id="txtTwitterKeyword" text="{searchKeyword}" editable="true" enabled="true" width="200" height="20"/>
+						</mx:FormItem>
+						<mx:FormItem label="At this location" paddingTop="5" >
+							<s:Label id="lblTwitterLocation" text="{locationLabel}" />
+						</mx:FormItem>
+						<mx:FormItem label="Within this distance" paddingTop="2" >
+							<s:HGroup gap="4">
+								<s:HSlider id="sliderTwitterDistance" showDataTip="false" minimum="5" maximum="{maxTwitterSearchRadius}"
+										   value="20" width="120" verticalCenter="0" liveDragging="true" focusEnabled="false"/>
+								<s:Label id="lblTwitterDistance" text="{sliderTwitterDistance.value}" />
+								<s:Label text="Miles" />
+							</s:HGroup>
+						</mx:FormItem>
+						<mx:FormItem label="From the past" >
+							<s:DropDownList id="dropDownTwitterTime" width="120" height="20" dataProvider="{tweetArrLstdropDown}"   />
+						</mx:FormItem>
+
+					</mx:Form>
+					<mx:VBox id="mybox2" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off"  label="TweetSearch Data" includeIn="resultState">
+						<mx:Label text="Search Results :{tweetarrResult.length}"/>
+						<mx:List id="tweetlist" width="100%" height="100%" verticalScrollPolicy="auto" dataProvider="{tweetarrResult}" borderVisible="false" itemRenderer="widgets.SocialMedia.tweetItemRenderer" showDataTips="true"  itemClick="tweetSearchListData(event)" />
+					</mx:VBox>
+				</mx:VBox>
+			</mx:TabNavigator>
+			<s:HGroup gap="8" horizontalAlign="right" paddingTop="4" paddingRight="8">
+				<s:Button id="Statesbtn" label="Back" toolTip="Back To Initial State" visible="false" click="States_clickHandler(event)" />
+				<s:Button id="btnSeatchMedia" label="Search" toolTip="Search" click="startSearchMedia()" enabled="true"></s:Button>
+				<s:Button id="btnClearGraphics" label="Clear" toolTip="Clear " click="clearGraphics()"></s:Button>
+				<s:BorderContainer id="loadingFlag" visible="false" includeInLayout="false" cornerRadius="5" width="20" height="20">
+					<s:backgroundFill>
+						<s:SolidColor color="0x660000" alpha="1"/>
+					</s:backgroundFill>
+					<mx:SWFLoader source="assets/images/loader.swf" autoLoad="true" width="18" height="18" horizontalAlign="center" verticalAlign="middle" />
+				</s:BorderContainer>
+			</s:HGroup>
+		</s:VGroup>
+		<mx:DateChooser id="dateChooser" visible="false" focusEnabled="false" change="DateChooser_ChangeHandler(event)"
+						rollOut="dateChooser_rollOutHandler(event)"/>
+
+
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

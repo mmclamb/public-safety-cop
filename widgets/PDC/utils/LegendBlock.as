@@ -1,5 +1,5 @@
 ﻿/*
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2012 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,7 +47,7 @@ package widgets.PDC.utils {
 			format.bold=true;
 			format.size=10;
 
-			//new textContainer().getChildAt(
+
 			title_mc = addChild(new textContainer1());
 			title_mc.title_descrtxt.multiline = true;
 			title_mc.title_descrtxt.defaultTextFormat=format
@@ -87,9 +87,7 @@ package widgets.PDC.utils {
 					item.y = mc.height + 10 + i * 31;
 				addChild(item);
 			};
-			/*var delimiter:MovieClip = new legend_delimiter();
-				delimiter.y = item.y + item.height + 10;
-			addChild(delimiter);*/
+
 		};
 	};
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2012 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,50 +61,53 @@
 
     <fx:Script>
         <![CDATA[
-            import com.esri.ags.FeatureSet;
-            import com.esri.ags.Graphic;
-            import com.esri.ags.Map;
-            import com.esri.ags.SpatialReference;
-            import com.esri.ags.events.DrawEvent;
-            import com.esri.ags.events.GeometryServiceEvent;
-            import com.esri.ags.events.GeoprocessorEvent;
-            import com.esri.ags.events.QueryEvent;
-            import com.esri.ags.geometry.Extent;
-            import com.esri.ags.geometry.Geometry;
-            import com.esri.ags.geometry.MapPoint;
-            import com.esri.ags.geometry.Polygon;
-            import com.esri.ags.layers.GraphicsLayer;
-            import com.esri.ags.layers.Layer;
-            import com.esri.ags.symbols.PictureMarkerSymbol;
-            import com.esri.ags.tasks.GeometryService;
-            import com.esri.ags.tasks.Geoprocessor;
-            import com.esri.ags.tasks.QueryTask;
-            import com.esri.ags.tasks.supportClasses.ProjectParameters;
-            import com.esri.ags.tasks.supportClasses.Query;
-            import com.esri.ags.tools.DrawTool;
-            import com.esri.ags.tools.NavigationTool;
-            import com.esri.viewer.AppEvent;
-            import com.esri.viewer.IInfowindowTemplate;
-            import com.esri.viewer.ViewerContainer;
-            import com.esri.viewer.WidgetStates;
-            import com.esri.viewer.components.TitlebarButton;
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.Map;
+			import com.esri.ags.SpatialReference;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.GeometryServiceEvent;
+			import com.esri.ags.events.GeoprocessorEvent;
+			import com.esri.ags.events.QueryEvent;
+			import com.esri.ags.geometry.Extent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.layers.Layer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.tasks.GeometryService;
+			import com.esri.ags.tasks.Geoprocessor;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.ProjectParameters;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.ags.tools.NavigationTool;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.ViewerContainer;
+			import com.esri.viewer.WidgetStates;
+			import com.esri.viewer.components.TitlebarButton;
 
-            import flash.net.navigateToURL;
+			import flash.net.navigateToURL;
 
-            import mx.collections.ArrayCollection;
-            import mx.collections.ArrayList;
-            import mx.collections.ItemResponder;
-            import mx.controls.Alert;
-            import mx.controls.List;
-            import mx.core.FlexGlobals;
-            import mx.core.UIComponent;
-            import mx.events.CloseEvent;
-            import mx.rpc.AsyncResponder;
-            import mx.rpc.Fault;
-            import mx.rpc.events.FaultEvent;
-            import mx.rpc.events.ResultEvent;
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.collections.ItemResponder;
+			import mx.controls.Alert;
+			import mx.controls.List;
+			import mx.controls.TextInput;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.Fault;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
 
-            import spark.events.IndexChangeEvent;
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
 
             private const ICON_URL:String = "widgets/ERGChemical/assets/images/";
 
@@ -177,6 +180,10 @@
             private var glinfrastructure: GraphicsLayer;
             private var spillLocationGLayer: GraphicsLayer;
 
+			private var _chemicalGPJobParameter:String = "";
+			private var _placardGPJobParameter:String = "";
+
+
             //http://forums.adobe.com/message/4143789
             //https://issues.apache.org/jira/browse/FLEX-33052
             override public function get moduleFactory():IFlexModuleFactory
@@ -195,6 +202,9 @@
                 {
                     _gpERGChemical = configXML.gpERGChemical;
                     _gpERGPlacard = configXML.gpERGPlacard;
+
+					_chemicalGPJobParameter = configXML.chemicalGPJobParameter.toString();
+					_placardGPJobParameter = configXML.placardGPJobParameter.toString();
 
                     //Call gpService to get chemical names
                     gpChemicalService.url = _gpERGChemical + "?f=json";
@@ -514,7 +524,8 @@
                 }
                 else
                 {
-                    Alert.show("Unexpected fault:\n" + f.fault.faultString, "ERROR");
+                   // Alert.show("Unexpected fault:\n" + f.fault.faultString, "ERROR");
+					Alert.show(f.fault.faultString, "Error");
                 }
             }
 
@@ -631,11 +642,7 @@
                             }
                         }
 
-                        /* params = {incidentPoint: myFeatureSet,
-                            "Material_Type": chemical,
-                            "Wind_Bearing__direction_blowing_to__0_-_360_": dir,
-                            "Day_or_Night_incident": spilltime,
-                            "Large_or_Small_spill": spillsize};  */
+
                         gp.addEventListener(GeoprocessorEvent.JOB_COMPLETE,onChemicalSpillResult);
                         gp.addEventListener(FaultEvent.FAULT, ergFaultHandler);
                         gp.submitJob(params);
@@ -679,16 +686,11 @@
                             }
                         }
 
-                        /*
-                        params = {"Incident_Point": myFeatureSet,
-                            "Placard_ID": material,
-                            "Wind_Bearing__direction_blowing_to__0_-_360_": dir,
-                            "Day_or_Night_incident": spilltime,
-                            "Large_or_Small_spill": spillsize };  */
+
 
                         gp.addEventListener(GeoprocessorEvent.JOB_COMPLETE,onPlacardSpillResult);
                         gp.addEventListener(FaultEvent.FAULT, ergFaultHandler);
-                        gp.submitJob(params);
+                        gp.submitJob(placardParams);
                     }
                     else
                         return;
@@ -714,14 +716,14 @@
             private function onChemicalSpillResult(gpResult:GeoprocessorEvent,token:Object = null):void
             {
                 gp.addEventListener(GeoprocessorEvent.GET_RESULT_DATA_COMPLETE,onGetChemicalResult);
-                gp.getResultData(gpResult.jobInfo.jobId,"outerg");
+                gp.getResultData(gpResult.jobInfo.jobId,_chemicalGPJobParameter);
             }
 
             private function onGetChemicalResult(gpResult:GeoprocessorEvent,token:Object = null):void
             {
                 glinfrastructure.clear();
                 graphicsLayer.clear();
-                showInfoWindow(null);
+
                 var sharedPolygon:Polygon;
 
                 chartStatistics.dataProvider = null;
@@ -753,24 +755,35 @@
                     graphicsLayer.add(graphic);
                 }
 
-                if (cbZoomTo.selected)
+                if (cbZoomTo.selected){
                     map.extent = sharedPolygon.extent;
 
+				}
                 if (cbDemographics.selected)
                 {
                     queryFeatures(sharedPolygon);
                     this.currentState="ergDemographics";
                     wTemplate.selectedTitlebarButtonIndex = 1;
                 }
+				else
+				{
+					txtMessage.text="";
+				}
                 if(cbInfrastructure.selected)
                 {
+
                     queryInfrastructure(sharedPolygon);
                     if (!cbDemographics.selected)
                     {
+
                         this.currentState="ergInfrastructure";
                         wTemplate.selectedTitlebarButtonIndex = 2;
                     }
                 }
+				else
+				{
+					txtMessageinfra.text="";
+				}
                 this.cursorManager.removeBusyCursor();
                 setMapNavigation(NavigationTool.PAN,"Move Map");
             }
@@ -779,15 +792,15 @@
             private function onPlacardSpillResult(gpResult:GeoprocessorEvent,token:Object = null):void
             {
                 gp.addEventListener(GeoprocessorEvent.GET_RESULT_DATA_COMPLETE,onGetPlacardResult);
-                gp.getResultData(gpResult.jobInfo.jobId,"outergPlacard");
+                gp.getResultData(gpResult.jobInfo.jobId,_placardGPJobParameter);
             }
 
             private function onGetPlacardResult(gpResult:GeoprocessorEvent,token:Object = null):void
             {
                 glinfrastructure.clear();
                 graphicsLayer.clear();
-                showInfoWindow(null);
-                var sharedPolygon:Polygon;
+
+                var sharedPolygon:Polygon=new Polygon();
 
                 chartStatistics.dataProvider = null;
                 chartStatisticsInfra.dataProvider = null;
@@ -825,6 +838,10 @@
                     this.currentState="ergDemographics";
                     wTemplate.selectedTitlebarButtonIndex = 1;
                 }
+				if (cbZoomTo.selected){
+					map.extent = sharedPolygon.extent;
+
+				}
                 if(cbInfrastructure.selected)
                 {
                     queryInfrastructure(sharedPolygon);
@@ -847,10 +864,11 @@
 
             private function clearResults():void
             {
+				if(map.infoWindow)
+					map.infoWindow.hide();
                 graphicsLayer.clear();
                 glinfrastructure.clear();
                 spillLocationGLayer.clear();
-                showInfoWindow(null);
 
                 //clear wind direction tab...
                 windDirectionTo = -9999;
@@ -862,9 +880,11 @@
                 btnWindNo.visible=false;
                 btnWindYes.visible=false;
                 wsWindYesNo.visible=false;
-
-                chartStatistics.dataProvider=null;
-                chartStatisticsInfra.dataProvider=null;
+				showMessage("",false);
+				showMessageInfrastructure("",false);
+				_chartSeries.length = 0;
+				chartStatistics.dataProvider=new ArrayCollection();
+                chartStatisticsInfra.dataProvider=new ArrayCollection();
             }
 
             private function queryInfrastructure(geom:Geometry):void
@@ -897,13 +917,17 @@
                     }
                     catch (error:Error)
                     {
-                        Alert.show(error.message.toString());
+                        Alert.show(error.message.toString(),"Error");
                     }
                 }
                 //on fault
                 function onFault(info:Object, token:Object = null) : void
                 {
-                    Alert.show(info.toString());
+				/* 	issue */
+					swfMessage.visible=false;
+					swfMessageinfra.visible=false;
+					txtMessageinfra.text="";
+                    Alert.show(info.faultString.toString(),"Error");
                 }
             }
 
@@ -995,6 +1019,7 @@
             {
                 if (infoData)
                 {
+
                     infoTemplate.data = infoData;
                     map.infoWindow.content = infoTemplate as UIComponent;
                     map.infoWindow.label = infoData.title || "no title";
@@ -1079,18 +1104,20 @@
 
             private function chartClick(event:MouseEvent):void
             {
+
                 if (_currentChart < _chartSeries.length -1)
-                    _currentChart += 1;
+					_currentChart += 1;
                 else
                     _currentChart = 0;
                 chartStatistics.dataProvider  = _chartSeries[_currentChart];
+
             }
 
             private function clear():void
             {
                 graphicsLayer.clear();
                 glinfrastructure.clear();
-                showInfoWindow(null);
+
                 _chartSeries.length = 0;
                 _currentChart = 0;
                 chartStatistics.dataProvider = null;
@@ -1119,21 +1146,38 @@
             }
             private function widgetClosedHandler(event:Event):void
             {
-                clearResults();
+
                 setMapNavigation(NavigationTool.PAN,"Move Map");
-                spillLocationGLayer
+
                 clickERG();
-                //glinfrastructure.clear();
-                //showInfoWindow(null);
+
+				if (graphicsLayer)
+				{
+					graphicsLayer.visible = false;
+
+				}
+				if(glinfrastructure)
+					glinfrastructure.visible=false;
+				if(spillLocationGLayer)
+					spillLocationGLayer.visible=false;
             }
 
             private function widgetOpenedHandler(event:Event):void
             {
+				wTemplate.closeButton.toolTip="Close";
+				wTemplate.minimizeButton.toolTip="Minimize";
                 if (graphicsLayer)
                 {
                     graphicsLayer.visible = true;
-                    setMapNavigation(NavigationTool.PAN,"Move Map");
+
                 }
+				if(glinfrastructure)
+				glinfrastructure.visible=true;
+				if(spillLocationGLayer)
+				spillLocationGLayer.visible=true;
+
+
+
             }
 
             protected function cboChemicalOrPlacard_changeHandler(event:IndexChangeEvent):void
@@ -1152,25 +1196,44 @@
             }
 
 
-            protected function wTemplate_minimizedHandler(event:Event):void
-            {
-                // TODO Auto-generated method stub
-                graphicsLayer.visible = false;
-                glinfrastructure.visible=false;
-                spillLocationGLayer.visible=false;
-                showInfoWindow(null);
-                setMapNavigation(NavigationTool.PAN,"Move Map");
-            }
 
-        ]]>
+			private function _handleTextChanges(evt:Event):void{
+				var target:TextInput = evt.currentTarget as TextInput;
+				if(!target) return;
+
+				if(parseInt(target.text) > 100){
+					Alert.show("You can't enter a number grater than 100");
+					target.text = "100";
+				}
+				if(parseInt(target.text) < 0){
+					Alert.show("You can't enter a number smaller than 0");
+					target.text = "0";
+				}
+			}
+
+			protected function nsWindDir_initializeHandler(event:FlexEvent):void
+			{
+				nsWindDir.textDisplay.restrict="0-9";
+				nsWindDir.textDisplay.addEventListener(TextOperationEvent.CHANGE,_handleTextChanges);
+			}
+
+			protected function nsWindDir_changeHandler(event:Event):void
+			{
+				if(nsWindDir.value.toString()=="NaN")
+				{
+					nsWindDir.value=45;
+				}
+
+			}
+
+		]]>
     </fx:Script>
 
     <viewer:WidgetTemplate id="wTemplate"
                            closed="widgetClosedHandler(event)"
                            open="widgetOpenedHandler(event)"
-                           minimized="wTemplate_minimizedHandler(event)"
-                           height="285" width="400"
-                           minWidth="375" minHeight="270">
+                           height="300" width="430"
+                           minWidth="430" minHeight="300">
 
         <s:Group id="ergChemical"
                  height="100%"
@@ -1191,7 +1254,7 @@
                          paddingTop="7" paddingLeft="7"/>
                 <s:DropDownList id="cboChemicalOrPlacard" selectedIndex="0"
                                 height="25"
-                                width="30%"
+                                width="28.5%"
                                 change="cboChemicalOrPlacard_changeHandler(event)">
                     <s:ArrayList>
                         <fx:String>Chemical</fx:String>
@@ -1233,9 +1296,10 @@
             <s:VGroup paddingTop="5" width="100%" gap="10" paddingRight="5">
                 <s:Group width="100%">
                     <s:Label text="Wind Direction (blowing to):" paddingTop="7" left="0"/>
-                    <s:NumericStepper id="nsWindDir" minimum="0" maximum="360" value="45" width="50"
-                                      contentBackgroundColor="#CCCCCC" contentBackgroundAlpha="0.75"
+                    <s:NumericStepper  id="nsWindDir" minimum="0" maximum="360" value="45" width="50"  change="nsWindDir_changeHandler(event)"
+                                      contentBackgroundColor="#CCCCCC" contentBackgroundAlpha="0.75" initialize="nsWindDir_initializeHandler(event)"
                                       color="#FFFFFF" unfocusedTextSelectionColor="#000000" horizontalCenter="15"/>
+
                     <s:Button label="Lookup wind info" click="lookupWindDirection()" height="25" right="0"
                               toolTip="Get wind direction from the nearest weather station"
                               color="#FFFFFF"/>
@@ -1248,8 +1312,8 @@
                     <s:CheckBox id="cbZoomTo" label="Zoom To" selected="true" right="5"/>
                 </s:Group>
                 <s:Group width="100%" >
-                    <s:Button label="Run" click="runChemicalSpill()" left="5" />
-                    <s:Button label="Clear Results" click="clearResults()" right="5" />
+                    <s:Button label="Run" click="runChemicalSpill()" left="4" />
+                    <s:Button label="Clear Results" click="clearResults()" right="4" />
                 </s:Group>
             </s:VGroup>
         </s:Group>
@@ -1333,7 +1397,7 @@
             <s:layout>
                 <s:VerticalLayout gap="5" horizontalAlign="left" paddingTop="5"/>
             </s:layout>
-            <s:Label id="lnkERGGuide" text="Click to view Emergency Guide Book"
+            <s:Label id="lnkERGGuide" text="Click to view Emeregency Guide Book"
                      click="guideLinkClick(event)" verticalCenter="0" horizontalCenter="0"
                      textDecoration="underline" color="#FDD017" width="100%" textAlign="center"
                      useHandCursor="true" buttonMode="true"/>

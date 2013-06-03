@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2012 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -60,7 +60,6 @@
 			import com.esri.viewer.components.HTMLPopup;
 			import com.esri.viewer.components.HTMLPopupManager;
 			import com.esri.viewer.utils.ErrorMessageUtil;
-			import com.esri.viewer.utils.QueryString;
 
 			import mx.collections.ArrayCollection;
 			import mx.collections.ItemResponder;
@@ -371,8 +370,8 @@
 						eventObjs.eventId=events.@id[0].toString();
 						_dataParser.eventArr.push(eventObjs);
 					}
-					var qs:QueryString = new QueryString();
-					_dataParser.windowsUrl = qs._queryString;//ExternalInterface.call("function(){ return window.location.href;}");
+					//var qs:QueryString = new QueryString();
+					_dataParser.windowsUrl =ExternalInterface.call("function(){ return window.location.href;}");
 					/** Old Code for splash screen*/
 
 					/*HTMLPopup.show(content, btnLabel, txtareaWidth, txtareaHeight);
@@ -478,7 +477,7 @@
 				var msg:String = "Unable to connect to Locator Service:\n"
 					+ locator.url + "\n\n"
 					+ "Most likely cause:\n"
-					+ ErrorMessageUtil.getKnownErrorCauseMessage(fault.faultCode) + "\n\n"
+					+ ErrorMessageUtil.getKnownErrorCauseMessage(fault) + "\n\n"
 					+ "Details:\n"
 					+ makeHTMLSafe(fault.toString());
 				showError(msg);
@@ -527,6 +526,7 @@
 
 				else
 				{
+					StringUtil.trim(textInput.text);
 					Address_list.visible=false;
 					locateAddress(event);
 				}
@@ -568,7 +568,7 @@
 							}
 							else
 							{
-								value = txtInput.text;
+								value = StringUtil.trim(txtInput.text);
 							}
 						}
 						data[name] = value;
@@ -753,7 +753,7 @@
 				textArea.htmlText = htmlText;
 				map.infoWindow.content = textArea;
 				map.infoWindow.addEventListener(Event.CLOSE,clearGrapich);
-
+				map.infoWindow.closeButton.toolTip="Close"
 				map.infoWindow.show(datanew.location as MapPoint)
 
 
@@ -953,7 +953,7 @@
 				textArea.percentHeight =100;
 				textArea.editable=false;
 				textArea.htmlText = htmlText;
-
+				map.infoWindow.closeButton.toolTip="Close";
 				map.infoWindow.content = textArea;
 				map.infoWindow.label=datanew.value;
 				map.infoWindow.addEventListener(Event.CLOSE,clearGrapich);
@@ -1278,7 +1278,7 @@
 										  height="25"
 										  paddingTop="2"
 										  paddingRight="{_image.width+10}"
-										  width="230"
+										  width="195"
 										  fontSize="12"
 										  fontFamily="Arial" borderVisible="true"
 
@@ -1299,6 +1299,7 @@
 							 text="{labelText}"
 							 useHandCursor="true"
 							 paddingBottom="10"
+
 							 toolTip="{labelText}"
 							 verticalAlign="middle"
 							 visible="{labelVisible == 'true'}"/>

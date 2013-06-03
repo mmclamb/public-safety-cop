@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<configuration>
+
+<!-- <url>: tag Specifies WMS Layer url. -->
+	<url>http://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r.cgi</url>
+
+<!-- 	<version>: tag specifies version of Layer -->
+
+	<version>1.1.1</version>
+
+<!-- 	<imgFormat>: tag specifies image format of Layer -->
+
+	<imgFormat>png</imgFormat>
+
+	<!-- See http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/mx/formatters/DateFormatter.html#formatString -->
+	<dateFormatString>YYYY-MM-DD L:NN A</dateFormatString>
+
+<!-- 	<layersToRotate>: tag specifies offset minimum values of layer rotation. -->
+
+	<layersToRotate>
+		<layer offsetMins="-50">nexrad-n0r-900913-m50m</layer>
+		<layer offsetMins="-45">nexrad-n0r-900913-m45m</layer>
+		<layer offsetMins="-40">nexrad-n0r-900913-m40m</layer>
+		<layer offsetMins="-35">nexrad-n0r-900913-m35m</layer>
+		<layer offsetMins="-30">nexrad-n0r-900913-m30m</layer>
+		<layer offsetMins="-25">nexrad-n0r-900913-m25m</layer>
+		<layer offsetMins="-20">nexrad-n0r-900913-m20m</layer>
+		<layer offsetMins="-15">nexrad-n0r-900913-m15m</layer>
+		<layer offsetMins="-10">nexrad-n0r-900913-m10m</layer>
+		<layer offsetMins="-05">nexrad-n0r-900913-m05m</layer>
+		<layer offsetMins="0">nexrad-n0r-900913</layer>
+	</layersToRotate>
+	<!-- Milliseconds to display each image -->
+	<timerMsPerLayer>2000</timerMsPerLayer>
+	<!-- Allowable states include 'paused' or 'running' -->
+	<startUpState>running</startUpState>
+
+	<about>
+	<![CDATA[WMS radar reflectance service courtesy of Iowa State University. Click <u><a href="http://mesonet.agron.iastate.edu/ogc/" target="_blank">here</a></u> for details.]]>
+	</about>
+
+	<legend>
+		<!-- Visible: true or false -->
+		<visible>true</visible>
+		<imgURL>http://mesonet.agron.iastate.edu/docs/nexrad_composites/reflect_ramp.png</imgURL>
+		<imgRotationDegrees>-90</imgRotationDegrees>
+		<minLabel>min</minLabel>
+		<maxLabel>max</maxLabel>
+	</legend>
+</configuration>

@@ -1,0 +1,1072 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+				   preinitialize="basewidget_preinitializeHandler(event)"
+				   widgetConfigLoaded="basewidget_widgetConfigLoadedHandler(event)">
+
+	<viewer:states>
+		<s:State name="sttChart"/>
+		<s:State name="sttOption"/>
+		<s:State name="sttList"/>
+	</viewer:states>
+
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace viewer "com.esri.viewer.*";
+
+		mx|PieSeries
+		{
+			color: #FFFFFF;
+			fontSize : 11;
+		}
+
+		mx|LegendItem
+		{
+			fontSize : 11;
+		}
+	</fx:Style>
+
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.geometry.Extent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Multipoint;
+			import com.esri.ags.layers.FeatureLayer;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.layers.supportClasses.Field;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.ags.utils.JSONUtil;
+
+			import mx.charts.HitData;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.events.LegendMouseEvent;
+			import mx.charts.series.items.PieSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.CursorManager;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.Fault;
+			import mx.rpc.Responder;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+
+			import spark.events.IndexChangeEvent;
+			import spark.formatters.DateTimeFormatter;
+
+			import widgets.KPI.Utils.KPIParserUtil;
+
+
+			private var query:Query
+			private var queryTask:QueryTask;
+
+			[Bindable] private var fieldName:String;
+			[Bindable] private var pieChartHitItem:String;
+
+			[Bindable] private var pieChartDataProvider:ArrayCollection;
+
+			[Bindable] private var statusListDataProvider:ArrayCollection;
+			[Bindable] private var statusListDataGridColumn:Array
+
+			[Bindable] private var ddlLayersListDataProvider:ArrayCollection;
+
+			[Bindable] private var ddlFieldListDataProvider:ArrayCollection;
+
+			private var ftrLayer:FeatureLayer = new FeatureLayer();
+
+			private var grpLayerGlow:GraphicsLayer;
+
+
+			private var totalNumber:Number;
+			private var distinctValueNumber:Number;
+			private var isAlert:Boolean;
+
+			private var timer:Timer;
+			[Bindable] private var timerCount:Number = 0;
+
+			private var _refreshLayerURL:String;
+			private var _refreshLayerWhere:String;
+			private var _refreshLayerOutField:Array;
+			private var _refreshLayerReturnGeometry:Boolean;
+			private var _refreshLayerUseAMF:Boolean;
+
+
+			private var _refreshFieldWhere:String;
+			private var _refreshFieldOutField:Array;
+			private var _refreshFieldReturnGeometry:Boolean;
+			private var _refreshFieldUseAMF:Boolean;
+
+			private var saveLastSatate:String;
+
+			private var _strFieldType:String;
+
+			[Bindable] private var _kpiParserUtil:KPIParserUtil = KPIParserUtil.getKPIParserUtil();
+
+
+			private function basewidget_preinitializeHandler(event:FlexEvent):void
+			{
+				copyStyleFromParent("mx.charts.chartClasses.ChartBase");
+				copyStyleFromParent("mx.charts.chartClasses.CartesianChart");
+				copyStyleFromParent("mx.charts.chartClasses.PolarChart");
+				copyStyleFromParent("mx.charts.BarChart");
+				copyStyleFromParent("mx.charts.ColumnChart");
+				copyStyleFromParent("mx.charts.LineChart");
+				copyStyleFromParent("mx.charts.PieChart");
+				copyStyleFromParent("mx.charts.AxisRenderer");
+				copyStyleFromParent(".blockCategoryAxis");
+				copyStyleFromParent(".blockNumericAxis");
+				copyStyleFromParent(".linedNumericAxis");
+				copyStyleFromParent(".dashedNumericAxis");
+				copyStyleFromParent(".dashedCategoryAxis");
+				copyStyleFromParent(".hangingCategoryAxis");
+				copyStyleFromParent("mx.charts.GridLines");
+				copyStyleFromParent(".horizontalGridLines");
+				copyStyleFromParent("mx.charts.series.BarSeries");
+				copyStyleFromParent("mx.charts.series.ColumnSeries");
+				copyStyleFromParent("mx.charts.series.LineSeries");
+				copyStyleFromParent("mx.charts.series.PieSeries");
+			}
+
+			private function copyStyleFromParent(selector:String):void
+			{
+				var chartBaseStyle:CSSStyleDeclaration = styleManager.getStyleDeclaration(selector);
+				if (!chartBaseStyle && styleManager.parent)
+				{
+					var parentStyle:CSSStyleDeclaration = styleManager.parent.getStyleDeclaration(selector);
+					if (parentStyle)
+					{
+						styleManager.setStyleDeclaration(selector, parentStyle, false);
+					}
+				}
+			}
+
+
+			private function basewidget_widgetConfigLoadedHandler(event:Event):void
+			{
+				if(configXML)
+				{
+					cursorManager.setBusyCursor();
+					_kpiParserUtil.parseConfigXML(configXML);
+
+					if(_kpiParserUtil.refreshEnabled)
+					{
+						timerCount = _kpiParserUtil.refreshTime;
+						timer = new Timer(1000, timerCount + 1);
+						timer.addEventListener(TimerEvent.TIMER, onTimerTick);
+						timer.addEventListener(TimerEvent.TIMER_COMPLETE, onTimerComplete);
+						timer.start();
+					}
+
+					wTemplate.addTitlebarButton("widgets/KPI/assets/images/iGraph20x20.png",_kpiParserUtil.strGraph, onGraphClick);
+					wTemplate.addTitlebarButton("widgets/KPI/assets/images/iOption20x20.png",_kpiParserUtil.strOption, onOptionClick);
+
+					fieldName = _kpiParserUtil.defaultFieldAlias;
+
+					queryLayers(_kpiParserUtil.mapServerUrl, _kpiParserUtil.layerAttribute ,_kpiParserUtil.arrLayers, _kpiParserUtil.includeAllLayers);
+
+					_refreshLayerURL = _kpiParserUtil.defaultLayerUrl;
+					_refreshLayerWhere = "1=1";
+					_refreshLayerOutField = _kpiParserUtil.defaultField;
+					_refreshLayerReturnGeometry = false;
+					_refreshLayerUseAMF = false;
+
+					_strFieldType = _kpiParserUtil.defaultFieldType.type;
+
+					queryOnFieldExecute(_refreshLayerURL, _refreshLayerWhere,_refreshLayerOutField, _refreshLayerReturnGeometry, _refreshLayerUseAMF);
+
+					glow.color = _kpiParserUtil.glowColor;
+					glow.strength = _kpiParserUtil.glowStrength;
+					glow.quality = _kpiParserUtil.glowQuality;
+
+					ftrLayer.url = _kpiParserUtil.defaultLayerUrl;
+					ftrLayer.name = _kpiParserUtil.defaultLayerLabel;
+					currentState = "sttChart";
+					saveLastSatate = currentState;
+				}
+				else
+				{
+					Alert.show("Config data initialization error","Config Data Error");
+				}
+			}
+
+			private function onTimerTick(event:TimerEvent):void
+			{
+				timerCount --;
+			}
+
+			private function onTimerComplete(event:TimerEvent):void
+			{
+				if(!timer.running)
+				{
+					timer.reset()
+					timerCount = Number(timer.repeatCount) - 1;
+					timer.start();
+
+					if(pieChartDataProvider && currentState == "sttChart")
+					{
+						pieChartDataProvider.removeAll();
+					}
+
+					if(currentState == "sttChart")
+					{
+						queryOnFieldExecute(_refreshLayerURL, _refreshLayerWhere, _refreshLayerOutField, _refreshLayerReturnGeometry, _refreshLayerUseAMF)
+					}
+					else if(currentState == "sttList")
+					{
+						queryOnPieChartItemClick(_refreshLayerURL, _refreshFieldWhere, _refreshFieldOutField, _refreshFieldReturnGeometry, _refreshFieldUseAMF)
+					}
+				}
+			}
+
+			private function startTimer(event:CloseEvent):void
+			{
+				if(timer)
+					timer.start();
+			}
+
+			private function onGraphClick():void
+			{
+				wTemplate.selectedTitlebarButtonIndex = 0;
+
+				if(saveLastSatate)
+					currentState = saveLastSatate;
+				else
+					currentState = "sttChart";
+
+				if(pieChartDataProvider.length > 0)//pieChart dataprovider
+				{
+					resizeWidget(520,450,1000);
+				}
+			}
+
+			/** onOptionClick() is called on option-tab button click.
+			 */
+			private function onOptionClick():void
+			{
+				wTemplate.selectedTitlebarButtonIndex = 1;
+				currentState = "sttOption";
+				resizeWidget(245,350,500);
+			}
+
+
+			/** resizeWidget(h,w,d) is called to resize the widget.
+			 */
+			private function resizeWidget(height:Number, width:Number, duration:Number):void
+			{
+				resize.widthTo = width;
+				resize.heightTo = height;
+				resize.duration = duration;
+				resize.play([wTemplate]);
+
+				wTemplate.widgetHeight = height;
+				wTemplate.widgetWidth = width;
+				wTemplate.minWidth = width;
+				wTemplate.minHeight = height;
+			}
+
+
+			private function queryLayers(Url:String, attributeType:String, indexArray:Array, includeAll:Boolean):void
+			{
+				var queryHTTPService:HTTPService = new HTTPService();
+				queryHTTPService.url = Url + "?f=json&pretty=true";
+				queryHTTPService.method = URLRequestMethod.POST;
+				queryHTTPService.resultFormat = "text";
+				var token:AsyncToken = queryHTTPService.send();
+				token.attributeType = attributeType;
+				token.indexArray = indexArray;
+				token.includeAll = includeAll;
+				token.addResponder( new mx.rpc.Responder(HTTPService_ResultHandler, HTTPService_FaultHandler));
+			}
+
+			private function HTTPService_ResultHandler(event:ResultEvent):void
+			{
+				var i:int;
+				var strType:String;
+				var returnedObject:Object = new Object();
+				var rawData:String = event.result as String;
+				var attributes:Object = JSONUtil.decode(rawData);
+
+				returnedObject = dropDownListDataPreparation(attributes[event.token.attributeType] as Array, event.token.indexArray, event.token.attributeType, event.token.includeAll);
+
+				if(event.token.attributeType == _kpiParserUtil.layerAttribute)
+				{
+					strType = _kpiParserUtil.lblLayerList;
+					ddlLayersListDataProvider = returnedObject.dataProvider;
+				}
+				else if(event.token.attributeType == _kpiParserUtil.fieldAttribute)
+				{
+					strType = _kpiParserUtil.lblFieldList;
+					ddlFieldListDataProvider = returnedObject.dataProvider;
+					ddlFieldList.enabled = true;
+				}
+
+				if((returnedObject.notPresent as Array).length > 0)
+				{
+					Alert.show(strType + " index " + (returnedObject.notPresent as Array).join(", ") + " not present.","Alert");
+				}
+
+				cursorManager.removeBusyCursor();
+			}
+
+			private function HTTPService_FaultHandler(event:FaultEvent):void
+			{
+				cursorManager.removeBusyCursor();
+			}
+
+
+			private function queryOnFieldExecute(url:String, where:String, outField:Array, retunGeometry:Boolean, useAMF:Boolean):void
+			{
+				query = new Query();
+				queryTask = new QueryTask();
+
+				var token:Object = new Object();
+				token.url = url;
+				token.field = outField.toString();
+
+				query.where = where;
+				query.returnGeometry = retunGeometry;
+				query.outFields = outField;
+				queryTask.url = url;
+				queryTask.useAMF = useAMF;
+				queryTask.method = URLRequestMethod.POST;
+				queryTask.execute(query, new AsyncResponder(queryOnFieldExecute_ResultHandler, queryOnFieldExecute_FaultHandler, token));
+			}
+
+
+			private function queryOnFieldExecuteForCount(url:String, where:String, value:String):void
+			{
+				query = new Query();
+				queryTask = new QueryTask();
+
+				isAlert = false;
+
+				var token:Object = new Object();
+				token.value = value;
+
+				query.where = where
+				queryTask.url = url;
+				queryTask.method = URLRequestMethod.POST;
+				queryTask.executeForCount(query, new AsyncResponder(queryOnFieldExecuteForCount_ResultHanlder, queryOnFieldExecuteForCount_FaultHandler, token));
+			}
+
+
+			private function queryOnFieldExecute_ResultHandler(ftrSet:FeatureSet, token:Object = null):void
+			{
+				if(ftrSet.attributes.length > 0)
+				{
+					if(ftrSet.fields[0])
+					{
+						var distinctValueArray:Array;
+						var objDistinctValue:Object;
+						distinctValueArray = new Array();
+						for each(var objFtrSet:Object in ftrSet.attributes)
+						{
+							if(ftrSet.fields[0].type == Field.TYPE_DATE)
+							{
+								var dateTimeFormatter:DateTimeFormatter = new DateTimeFormatter();
+								var date:Date = new Date(objFtrSet[ftrSet.fields[0].name]);
+								dateTimeFormatter.dateTimePattern = "yyyy-MM-dd";
+								var strDate:String = dateTimeFormatter.format(date);
+							}
+							var isUpdated:Boolean = false;
+							for each(objDistinctValue in distinctValueArray)
+							{
+								if(ftrSet.fields[0].type == Field.TYPE_DATE)
+								{
+									if(strDate != null && (strDate == objDistinctValue.toString()))
+									{
+										isUpdated = true;
+										break;
+									}
+								}
+								else
+								{
+									if(objFtrSet[ftrSet.fields[0].name] != null && (objFtrSet[ftrSet.fields[0].name].toString().toLowerCase() == objDistinctValue.toString().toLowerCase()))
+									{
+										isUpdated = true;
+										break;
+									}
+								}
+
+							}
+
+							if(!isUpdated && objFtrSet[ftrSet.fields[0].name] != null)
+							{
+								if(ftrSet.fields[0].type == Field.TYPE_DATE && strDate != null)
+								{
+									distinctValueArray.push(strDate);
+								}
+								else
+								{
+									distinctValueArray.push(objFtrSet[ftrSet.fields[0].name]);
+								}
+							}
+						}
+
+						pieChartDataProvider = new ArrayCollection();
+
+						distinctValueNumber = distinctValueArray.length;
+						totalNumber = 0;
+						for each(objDistinctValue in distinctValueArray)
+						{
+							if(ftrSet.fields[0].type == Field.TYPE_DOUBLE || ftrSet.fields[0].type == Field.TYPE_INTEGER || ftrSet.fields[0].type == Field.TYPE_SINGLE
+								|| ftrSet.fields[0].type == Field.TYPE_SMALL_INTEGER)
+							{
+								var where:String = "";
+								where = token.field + "=" + objDistinctValue;
+							}
+							else
+							{
+								where = token.field + "=" + "'" + objDistinctValue +"'";
+							}
+							queryOnFieldExecuteForCount(token.url.toString(),where ,objDistinctValue.toString());
+						}
+						if(distinctValueArray.length > 0 )
+						{
+							wTemplate.selectedTitlebarButtonIndex = 0;
+							currentState = "sttChart";
+							saveLastSatate = currentState;
+							resizeWidget(520,450,1000);
+						}
+						else
+						{
+							wTemplate.selectedTitlebarButtonIndex = 1;
+							currentState = "sttOption";
+							Alert.show(_kpiParserUtil.alertNullDataMessage,_kpiParserUtil.alertNullDataHeader);
+							cursorManager.removeBusyCursor();
+						}
+					}
+					else
+					{
+						wTemplate.selectedTitlebarButtonIndex = 1;
+						currentState = "sttOption";
+						Alert.show("Field: "+ ddlFieldList.selectedItem[_kpiParserUtil.strFieldListLabelField] +" is not supported.","Error");
+						cursorManager.removeBusyCursor();
+					}
+				}
+				else
+				{
+					wTemplate.selectedTitlebarButtonIndex = 1;
+					currentState = "sttOption";
+					Alert.show("No results found.","Error");
+					cursorManager.removeBusyCursor();
+				}
+			}
+
+			private function queryOnFieldExecute_FaultHandler(fault:Fault, token:Object = null):void
+			{
+				cursorManager.removeBusyCursor();
+				if(timer)
+					timer.stop();
+				Alert.show(_kpiParserUtil.alertQueryFaultMessage, _kpiParserUtil.alertQueryFaultHeader
+					, mx.controls.Alert.OK, null, startTimer, null, mx.controls.Alert.OK);
+			}
+
+
+			private function queryOnFieldExecuteForCount_ResultHanlder(count:Number, token:Object = null):void
+			{
+				distinctValueNumber--;
+
+				if(boxLegend.visible == false)
+				{
+					boxLegend.visible = true;
+				}
+
+				if(count > 0)
+				{
+					var objChartData:Object = new Object();
+					objChartData.value = token.value;
+					objChartData.count = count;
+
+					totalNumber += count;
+					pieChartDataProvider.addItem(objChartData);
+				}
+				if(distinctValueNumber == 0)
+				{
+					cursorManager.removeBusyCursor();
+				}
+			}
+
+			private function queryOnFieldExecuteForCount_FaultHandler(fault:Fault, token:Object = null):void
+			{
+				if(!isAlert)
+				{
+					isAlert = true;
+					cursorManager.removeBusyCursor();
+					timer.stop();
+					Alert.show(_kpiParserUtil.alertQueryFaultMessage, _kpiParserUtil.alertQueryFaultHeader
+						, mx.controls.Alert.OK, null, startTimer, null, mx.controls.Alert.OK);
+				}
+			}
+
+			private function dropDownListDataPreparation(array:Array, indexArray:Array, attributeType:String, includeAll:Boolean = false):Object
+			{
+				var i:int;
+				var obj:Object;
+				var arrCollection:ArrayCollection = new ArrayCollection();
+				var arrNotPresent:Array = new Array();
+
+				if(includeAll)
+				{
+					if(array && attributeType)
+					{
+						for(i = 0; i< array.length; i++)
+						{
+							obj = new Object();
+							if(attributeType == _kpiParserUtil.layerAttribute && array[i].subLayerIds == null)
+							{
+								obj.id = array[i].id;
+								obj.url = _kpiParserUtil.mapServerUrl + "/" + obj.id;
+								obj[_kpiParserUtil.strLayerListLabelField] = array[i][_kpiParserUtil.strLayerListLabelField];
+								arrCollection.addItem(obj);
+							}
+							else if(attributeType == _kpiParserUtil.fieldAttribute)
+							{
+								obj[_kpiParserUtil.strFieldListLabelField] = array[i][_kpiParserUtil.strFieldListLabelField]
+								obj.name = array[i].name;
+								obj.type = array[i].type;
+								arrCollection.addItem(obj);
+							}
+						}
+					}
+				}
+				else
+				{
+					if(array && indexArray && attributeType)
+					{
+						for(i = 0; i < indexArray.length; i++)
+						{
+							if(array[indexArray[i]])
+							{
+								obj = new Object();
+								if(attributeType == _kpiParserUtil.layerAttribute)
+								{
+									obj.id = array[indexArray[i]].id;
+									obj.url = _kpiParserUtil.mapServerUrl + "/" + obj.id;
+									obj[_kpiParserUtil.strLayerListLabelField] = array[indexArray[i]][_kpiParserUtil.strLayerListLabelField];
+								}
+								else if(attributeType == _kpiParserUtil.fieldAttribute)
+								{
+									obj[_kpiParserUtil.strFieldListLabelField] = array[indexArray[i]][_kpiParserUtil.strFieldListLabelField]
+									obj.name = array[indexArray[i]].name;
+									obj.type = array[indexArray[i]].type;
+								}
+								arrCollection.addItem(obj);
+							}
+							else
+							{
+								arrNotPresent.push(indexArray[i]);
+							}
+						}
+					}
+				}
+				return {dataProvider:arrCollection, notPresent:arrNotPresent};
+			}
+
+			private function queryOnPieChartItemClick(url:String, where:String, outField:Array, returnGeomtry:Boolean, useAMF:Boolean):void
+			{
+				query = new Query();
+				queryTask = new QueryTask();
+				if(timer && _kpiParserUtil.refreshEnabled)
+				{
+					timer.reset()
+					timerCount = Number(timer.repeatCount) - 1;
+					timer.start();
+				}
+				statusListDataProvider = new ArrayCollection();
+				statusListDataGridColumn = new Array();
+				var token:Object = new Object();
+				token = outField;
+
+				query.where = where;
+				query.returnGeometry = returnGeomtry;
+				query.outFields = ['*'];
+
+				queryTask.url = url;
+				queryTask.useAMF = useAMF;
+				queryTask.execute(query, new AsyncResponder(queryOnPieChartItemClick_ResultHandler, queryOnPieChartItemClick_FaultHandler, token));
+			}
+
+			private function queryOnPieChartItemClick_ResultHandler(ftrSet:FeatureSet, token:Object = null):void
+			{
+				var fieldsPresent:Array = new Array();
+
+				for(var j:int = 0; j < _kpiParserUtil.tableColumn.length; j++)
+				{
+					if(ftrSet.fieldAliases[_kpiParserUtil.tableColumn[j]])
+					{
+						var dataGridColumn:DataGridColumn = new DataGridColumn(ftrSet.fieldAliases[_kpiParserUtil.tableColumn[j]]);
+						dataGridColumn.width = dataGridColumn.headerText.length;
+						statusListDataGridColumn.push(dataGridColumn);
+					}
+				}
+				if(statusListDataGridColumn.length > 0)
+				{
+					statusList.columns = statusListDataGridColumn;
+
+					for each(var objFields:Object in ftrSet.fields)
+					{
+						for each(var xmlFields:Object in _kpiParserUtil.tableColumn)
+						{
+							if(objFields.name == xmlFields)
+							{
+								fieldsPresent.push(xmlFields);
+								break;
+							}
+						}
+					}
+
+					for each(var objFtrSet:Object in ftrSet.features)
+					{
+
+						var objFeature:Object = new Object();
+						for(var i:int = 0; i < fieldsPresent.length; i++)
+						{
+							if(objFtrSet.attributes[fieldsPresent[i]] != null)
+							{
+								objFeature[ftrSet.fieldAliases[fieldsPresent[i]]] = objFtrSet.attributes[fieldsPresent[i]];
+							}
+							else
+								objFeature[ftrSet.fieldAliases[fieldsPresent[i]]] = _kpiParserUtil.nullValue;
+						}
+						objFeature.geometry = objFtrSet.geometry;
+						statusListDataProvider.addItem(objFeature);
+					}
+				}
+				else
+				{
+					if(timer)
+						timer.stop();
+					Alert.show(_kpiParserUtil.alertTableColumnMismatchMessage, _kpiParserUtil.alertTableColumnMismatchHeader, mx.controls.Alert.OK, null, startTimer, null, mx.controls.Alert.OK);
+				}
+
+				CursorManager.removeBusyCursor();
+			}
+
+			private function queryOnPieChartItemClick_FaultHandler(fault:Fault, token:Object = null):void
+			{
+				if(timer)
+					timer.stop();
+				Alert.show(_kpiParserUtil.alertQueryFaultMessage, _kpiParserUtil.alertQueryFaultHeader, mx.controls.Alert.OK, null, startTimer, null, mx.controls.Alert.OK);
+				cursorManager.removeBusyCursor();
+			}
+
+			private function pieChart_itemClickHandler(event:ChartItemEvent):void
+			{
+				chartAndLegend_clickHandler(event.hitData.item.value);
+			}
+
+
+			private function legend_itemClickHandler(event:LegendMouseEvent):void
+			{
+				chartAndLegend_clickHandler(event.item.label);
+			}
+
+			private function chartAndLegend_clickHandler(value:Object):void
+			{
+				CursorManager.setBusyCursor();
+				currentState = "sttList";
+				saveLastSatate = currentState;
+
+				var where:String = "";
+
+				pieChartHitItem = value.toString();
+				if(_strFieldType == Field.TYPE_STRING || _strFieldType == Field.TYPE_GLOBAL_ID || _strFieldType == Field.TYPE_DATE)
+				{
+					where = _refreshLayerOutField.toString();
+					where = where + "=" + "'" + value +"'"
+				}
+				else
+				{
+					where = _refreshLayerOutField.toString();
+					where = where + "=" + value;
+				}
+				ftrLayer.definitionExpression = where;
+
+				_refreshFieldWhere = where;
+				_refreshFieldOutField = _kpiParserUtil.tableColumn;
+				_refreshFieldReturnGeometry = true;
+				_refreshFieldUseAMF = false;
+
+				queryOnPieChartItemClick(_refreshLayerURL, _refreshFieldWhere, _refreshFieldOutField, _refreshFieldReturnGeometry, _refreshFieldUseAMF);
+
+				imgGraphForward.visible = true;
+				imgListBackward.visible = true;
+			}
+
+			/** dataTipDistrictPieChart(item) is called to display custom data tip on pie chart.
+			 */
+			private function dataTipPieChart(item:HitData):String
+			{
+				var strPieChartDataTip:String = "";
+				var pieSeriesItemDataTip:PieSeriesItem = item.chartItem as PieSeriesItem;
+				strPieChartDataTip = pieSeriesItemDataTip.item.value;
+				return strPieChartDataTip + ": " +pieSeriesItemDataTip.item.count+" Records."+"<br/>"+
+					pieSeriesItemDataTip.percentValue.toFixed(2)+ "% of " +
+					totalNumber+" records."  ;
+			}
+
+			/** imgDistrictForward_clickHandler(event) is called to change the state from chart state to list state.
+			 */
+			private function imgGraphForward_clickHandler(event:MouseEvent):void
+			{
+					currentState = "sttList";
+					saveLastSatate = currentState;
+			}
+
+			private function imgListBackward_clickHandler(event:MouseEvent):void
+			{
+				currentState = "sttChart";
+				pieChart
+				pieChartDataProvider
+				saveLastSatate = currentState;
+			}
+
+			private function wTemplate_openHandler(event:Event):void
+			{
+				if(ftrLayer)
+				{
+					ftrLayer.visible = true;
+					map.addLayer(ftrLayer);
+				}
+
+				if(timer)
+					timer.start();
+
+			}
+
+			private function wTemplate_minimizedHandler(event:Event):void
+			{
+				cursorManager.removeBusyCursor();
+			}
+
+			private function wTemplate_closedHandler(event:Event):void
+			{
+				cursorManager.removeBusyCursor();
+				if(timer)
+					timer.stop();
+
+				if(ftrLayer)
+					map.removeLayer(ftrLayer);
+
+			}
+
+			private function statusList_itemRollOverHandler(event:ListEvent):void
+			{
+				if(grpLayerGlow)
+				{
+					grpLayerGlow.remove(tempGrap)
+					map.removeLayer(grpLayerGlow);
+				}
+				if(event.itemRenderer.data.geometry)
+				{
+					var tempGrap:Graphic = new Graphic();
+					grpLayerGlow = new GraphicsLayer();
+					var envi:Extent;
+
+					switch(event.itemRenderer.data.geometry.type)
+					{
+						case Geometry.MAPPOINT:
+						{
+							tempGrap.geometry = event.itemRenderer.data.geometry as MapPoint;
+							tempGrap.symbol = new PictureMarkerSymbol("widgets/KPI/assets/images/white_glow.swf", 40, 40);
+							grpLayerGlow.add(tempGrap);
+
+							map.centerAt(tempGrap.geometry as MapPoint);
+							map.level = 18;
+							break;
+						}
+						case Geometry.POLYLINE:
+						{
+							var multiPoint:Multipoint = new Multipoint();
+							for each(var objPoint:Object in event.itemRenderer.data.geometry.paths[0])
+							{
+								multiPoint.addPoint(objPoint as MapPoint);
+							}
+
+							map.extent = multiPoint.extent;
+							map.level = map.level - 1;
+							tempGrap.geometry = event.itemRenderer.data.geometry;
+							glow.knockout = false;
+							glow.inner = false;
+							tempGrap.filters = [glow];
+							grpLayerGlow.add(tempGrap);
+							break;
+						}
+						case Geometry.POLYGON:
+						{
+							envi = new Extent();
+							envi.spatialReference = map.spatialReference;
+							envi.xmax= event.itemRenderer.data.geometry.extent.xmax+10000; //arrDataGrid[event.rowIndex].geometry.extent.xmax+10000;
+							envi.xmin= event.itemRenderer.data.geometry.extent.xmin-10000;
+							envi.ymax= event.itemRenderer.data.geometry.extent.ymax+10000;
+							envi.ymin= event.itemRenderer.data.geometry.extent.ymin-10000;
+							map.extent = envi;
+
+							tempGrap.geometry = event.itemRenderer.data.geometry;
+							glow.knockout = false;
+							glow.inner = false;
+							tempGrap.filters  = [glow];
+							grpLayerGlow.add(tempGrap);
+							grpLayerGlow.refresh();
+							break;
+						}
+					}
+					map.addLayer(grpLayerGlow);
+				}
+
+			}
+
+			private function statusList_itemRollOutHandler(event:ListEvent):void
+			{
+				statusList.selectedIndex = -1;
+				if(grpLayerGlow)
+				{
+					map.removeLayer(grpLayerGlow);
+				}
+
+			}
+
+
+			private function ddlLayersList_changeHandler(event:IndexChangeEvent):void
+			{
+				cursorManager.setBusyCursor();
+				queryLayers(ddlLayersList.selectedItem.url, _kpiParserUtil.fieldAttribute, _kpiParserUtil.arrFields, _kpiParserUtil.includeAllFields)
+			}
+
+
+			private function btnSearch_clickHandler(event:MouseEvent):void
+			{
+				if(ddlLayersList.selectedIndex >= 0 ) // Check whether layer is selected.
+				{
+					if(ddlFieldList.selectedIndex >= 0)
+					{
+						if(ddlFieldList.selectedItem.type != Field.TYPE_GEOMETRY)
+						{
+							cursorManager.setBusyCursor();
+							ftrLayer.url = ddlLayersList.selectedItem.url;
+							ftrLayer.name = ddlLayersList.selectedItem[_kpiParserUtil.strLayerListLabelField];
+							boxLegend.visible = false;
+							imgGraphForward.visible = false;
+							var outField:Array = new Array(ddlFieldList.selectedItem.name);
+
+							_refreshLayerURL = ddlLayersList.selectedItem.url;
+							_refreshLayerWhere = "1=1";
+							_refreshLayerOutField = outField;
+							_refreshLayerReturnGeometry = false;
+							_refreshLayerUseAMF = false;
+
+							_strFieldType = ddlFieldList.selectedItem.type;
+
+							fieldName = ddlFieldList.selectedItem[_kpiParserUtil.strFieldListLabelField].toString();
+
+							if(timer && _kpiParserUtil.refreshEnabled)
+							{
+								timer.reset()
+								timerCount = Number(timer.repeatCount) - 1;
+								timer.start();
+							}
+
+							queryOnFieldExecute(_refreshLayerURL, _refreshLayerWhere, _refreshLayerOutField, _refreshLayerReturnGeometry, _refreshLayerUseAMF);
+						}
+						else
+						{
+							Alert.show("Field: "+ ddlFieldList.selectedItem[_kpiParserUtil.strFieldListLabelField] +" is not supported.","Error");
+						}
+					}
+					else
+					{
+						Alert.show("Please select field.", "Error");
+					}
+				}
+				else
+				{
+					Alert.show("Please select layer.", "Error");
+				}
+			}
+
+			private function btnClear_clickHandler(event:MouseEvent):void
+			{
+
+				cursorManager.setBusyCursor();
+				ddlLayersList.selectedIndex=-1;
+				ddlFieldList.selectedIndex=-1;
+				//ddlFieldList.enabled = false;
+
+				pieChartDataProvider.removeAll();
+
+				_refreshLayerURL = _kpiParserUtil.defaultLayerUrl;
+				_refreshLayerWhere = "1=1";
+				_refreshLayerOutField = _kpiParserUtil.defaultField;
+				_refreshLayerReturnGeometry = false;
+				_refreshLayerUseAMF = false;
+
+				queryOnFieldExecute(_refreshLayerURL, _refreshLayerWhere,_refreshLayerOutField, _refreshLayerReturnGeometry, _refreshLayerUseAMF)
+
+				ftrLayer.url = _refreshLayerURL;
+				ftrLayer.name = _kpiParserUtil.defaultLayerLabel;
+
+				imgGraphForward.visible = false
+				if(timer && _kpiParserUtil.refreshEnabled)
+				{
+					timer.reset()
+					timerCount = Number(timer.repeatCount) - 1;
+					timer.start();
+				}
+				currentState = "sttChart";
+				saveLastSatate = currentState;
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:Resize id="resize"/>
+		<s:GlowFilter id="glow"/> <!--66F2B1-->
+	</fx:Declarations>
+
+	<viewer:WidgetTemplate id="wTemplate"
+						   height="200" width="350"
+						   minHeight="200" minWidth="350"
+						   open="wTemplate_openHandler(event)"
+						   minimized="wTemplate_minimizedHandler(event)"
+						   closed="wTemplate_closedHandler(event)">
+
+		<s:VGroup id="pieChartVGroup" includeIn="sttChart"
+				  width="100%" height="300" horizontalAlign="center">
+			<mx:VBox width="100%" horizontalAlign="left" verticalAlign="middle" paddingLeft="5" visible="{boxLegend.visible}">
+				<mx:Label id="lblChart" paddingLeft="3"  width="100%" fontWeight="bold" truncateToFit="true"
+						  toolTip="{_kpiParserUtil.lblPieChartHeader + ': ' + fieldName}"
+						  text="{_kpiParserUtil.lblPieChartHeader + ': ' + fieldName}"/>
+				<mx:Label fontWeight="bold"
+							 text=" Refresh in: {timerCount} sec" visible="{_kpiParserUtil.refreshEnabled}"/>
+			</mx:VBox>
+			<mx:PieChart id="pieChart" width="400" height="300"
+						 dataProvider="{pieChartDataProvider}"
+						 dataTipFunction="dataTipPieChart"
+						 selectionMode="none"
+						 showDataTips="true"
+						 buttonMode="true"
+						 itemClick="pieChart_itemClickHandler(event)">
+				<mx:series>
+					<mx:PieSeries field="count"
+								  renderDirection="clockwise"
+								  nameField="value"
+								  startAngle="-90"
+								  labelField="value"
+								  explodeRadius="0.02"
+								  labelPosition="insideWithCallout"/>
+				</mx:series>
+			</mx:PieChart>
+			<mx:Box id="boxLegend"
+					backgroundColor="{_kpiParserUtil.legendBackgroundColor}"
+					horizontalAlign="center"
+					verticalAlign="middle"
+					width="100%" height="80"
+					visible="false" horizontalScrollPolicy="auto">
+				<s:Scroller/>
+				<mx:Legend  id="legend" width="350"
+							dataProvider="{pieChart}"
+							horizontalAlign="center" verticalAlign="middle"
+							markerHeight="10" markerWidth="10"
+							buttonMode="true" useHandCursor="true"
+							fontSize="17"
+							labelPlacement="right"
+							direction="horizontal"
+							itemClick="legend_itemClickHandler(event)"/>
+			</mx:Box>
+
+			<s:HGroup width="100%"  paddingBottom="20" horizontalAlign="right">
+				<s:Image id="imgGraphForward" left="20"
+						 source="widgets/KPI/assets/images/i_forward-64.png"
+						 click="imgGraphForward_clickHandler(event)" height="30" visible="false"
+						 buttonMode="true" toolTip="To List View"/>
+			</s:HGroup>
+		</s:VGroup>
+
+		<s:VGroup id="listVGroup" includeIn="sttList"
+				  width="100%" height="100%"
+				  horizontalAlign="center">
+			<mx:VBox width="100%" horizontalAlign="left" verticalAlign="middle" paddingLeft="5">
+				<mx:Label id="lblList" width="{wTemplate.width - 40}" fontWeight="bold" truncateToFit="true"
+						  toolTip="{_kpiParserUtil.lblTableHeader + ': ' + fieldName + ' => ' + pieChartHitItem}"
+						  text="{_kpiParserUtil.lblTableHeader + ': ' + fieldName + ' => ' + pieChartHitItem}"/>
+				<s:Label fontWeight="bold"
+						 text=" Refresh in: {timerCount} sec" visible="{_kpiParserUtil.refreshEnabled}"/>
+
+			</mx:VBox>
+			<mx:DataGrid id="statusList"
+						 width="100%" height="385"
+						 dataProvider="{statusListDataProvider}"
+						 itemRollOver="statusList_itemRollOverHandler(event)"
+						 itemRollOut="statusList_itemRollOutHandler(event)"/>
+
+			<s:HGroup width="100%" paddingBottom="20">
+				<s:Image id="imgListBackward" source="widgets/KPI/assets/images/i_backward-64.png"
+						 click="imgListBackward_clickHandler(event)" height="30" visible="false"
+						 buttonMode="true" toolTip="To Graph View"/>
+			</s:HGroup>
+		</s:VGroup>
+
+		<s:VGroup horizontalAlign="center"
+				  verticalAlign="middle"
+				  height="100%" width="100%"
+				  includeIn="sttOption">
+			<s:HGroup width="100%" gap="{_kpiParserUtil.numLayerListGap}" verticalAlign="middle">
+				<s:Label text="{_kpiParserUtil.lblLayerList}"/>
+				<s:DropDownList id="ddlLayersList" width="{_kpiParserUtil.numDdlLayersListWidth}"
+								dataProvider="{ddlLayersListDataProvider}"
+								prompt="{_kpiParserUtil.strLayerListPrompt}"
+								labelField="{_kpiParserUtil.strLayerListLabelField}"
+								change="ddlLayersList_changeHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup width="100%" gap="{_kpiParserUtil.numFieldListGap}" verticalAlign="middle">
+				<s:Label text="{_kpiParserUtil.lblFieldList}"/>
+				<s:DropDownList id="ddlFieldList" width="{_kpiParserUtil.numDdlFieldListWidth}"
+								dataProvider="{ddlFieldListDataProvider}" enabled="false"
+								prompt="{_kpiParserUtil.strFieldListPrompt}"
+								labelField="{_kpiParserUtil.strFieldListLabelField}">
+					<s:layout>
+						<s:VerticalLayout gap="0"
+										  horizontalAlign="contentJustify"
+										  verticalAlign="middle"
+										  requestedRowCount="4"/>
+					</s:layout>
+				</s:DropDownList>
+			</s:HGroup>
+			<s:HGroup width="100%" verticalAlign="middle"
+					  paddingLeft="{_kpiParserUtil.numButtonPaddingLeft}"
+					  gap="{_kpiParserUtil.numButtonGap}">
+				<s:Button id="btnSearch" label="{_kpiParserUtil.btnSearchLabel}" click="btnSearch_clickHandler(event)"/>
+				<s:Button id="btnClear" label="{_kpiParserUtil.btnClearLabel}" click="btnClear_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

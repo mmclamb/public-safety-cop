@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2010 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,7 @@
     <fx:Script>
         <![CDATA[
 			import com.esri.viewer.components.HTMLPopupManager;
-			import com.esri.viewer.utils.QueryString;
+			//import com.esri.viewer.utils.QueryString;
 
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
@@ -70,9 +70,9 @@
 						eventObjs.eventId=events.@id[0].toString();
 						_dataParser.eventArr.push(eventObjs);
 					}
-					var qs:QueryString = new QueryString();
+					//var qs:QueryString = new QueryString();
 
-					_dataParser.windowsUrl = qs._queryString//ExternalInterface.call("function(){ return window.location.href;}");
+					_dataParser.windowsUrl = ExternalInterface.call("function(){ return window.location.href;}");
                    /** Old Code for splash screen*/
 
 					/*HTMLPopup.show(content, btnLabel, txtareaWidth, txtareaHeight);

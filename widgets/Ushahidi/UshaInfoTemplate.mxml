@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" >
+	<fx:Script>
+		<![CDATA[
+
+	[Bindable]
+			public var location:String;
+	[Bindable]
+			public var title:String;
+	[Bindable]
+			public var description:String;
+	[Bindable]
+			public var date:String;
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+
+	<s:BorderContainer id="image" width="30" height="30" backgroundColor="red" cornerRadius="5" backgroundAlpha="1.0" />
+	<s:VGroup>
+		<s:HGroup>
+			<s:Label id="labT" text="Title                :" fontWeight="bold" />
+			<s:RichText id="rtt" text="{title}" width="200" fontStyle="italic"  />
+		</s:HGroup>
+
+		<s:HGroup>
+			<s:Label id="lab1" text="Location        :" fontWeight="bold" />
+			<s:RichText id="rtlc" text="{location}" width="200" fontStyle="italic" />
+		</s:HGroup>
+		<s:HGroup>
+		<s:Label id="labde" text="Description   :" fontWeight="bold" />
+
+		<s:RichText id="rides" text="{description}" width="200" fontStyle="italic" />
+		</s:HGroup>
+		<s:HGroup>
+			<s:Label id="labda" text="PublishDate  :" fontWeight="bold" />
+
+			<s:RichText id="rcda" text="{date}"  fontStyle="italic"/>
+		</s:HGroup>
+
+	</s:VGroup>
+</s:HGroup>

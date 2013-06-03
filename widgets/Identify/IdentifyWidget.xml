@@ -1,0 +1,135 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+
+<!-- NOTE:This new Identify Widget by default takes all the layers and all the fields. It works with Multiple Layers
+     // This works with ArcGIS Server 10.01 and above //-->
+<configuration>
+
+	<betareturngeometryfix>true</betareturngeometryfix>
+
+
+<!-- 	<identifylayeroption>: The “identifylayeroption” specifies which method to use when using Identify. -->
+<!--     •	"top": Only the topmost visible layer is identified (for the whole map, not each map service as in previous versions). -->
+<!--     •	"visible": All visible layers are identified. -->
+<!--     •	"all": All layers are identified, even if they are not visible. -->
+
+
+	<identifylayeroption>visible</identifylayeroption>
+
+<!--  <identifytolerance>: The “identifytolerance” specifies the distance in screen pixels from the specified geometry within which the identify should be performed. -->
+
+	<identifytolerance>5</identifytolerance>
+<!-- <defaultzoomscale>: The “defaultzoomscale” specifies the zoom scale that will be applied when clicking on the widget results if the specific layer does not have a zoomscale specified. -->
+	<defaultzoomscale>5000</defaultzoomscale>
+
+<!-- <keepidentifyactive>: The “keepidentifyactive” specifies whether or not the identify tool stays active after a mouse click on the map or reverts back to navigation after the map click. -->
+
+	<keepidentifyactive>true</keepidentifyactive>
+
+<!-- <returngeometryforzoom>: The “returngeometryforzoom” specifies whether or not the identify tool returns the geometry for the identified feature(s) to use for zooming. -->
+
+	<returngeometryforzoom>true</returngeometryforzoom>
+
+<!-- <enablelineselect>: The “enablelineselect” specifies whether or not the line select tool is visible and enabled in the identify widgets UI. -->
+
+	<enablelineselect>true</enablelineselect>
+
+<!-- <enableextentselect>: The “enableextentselect” specifies whether or not the extent select tool is visible and enabled in the identify widgets UI. -->
+
+	<enableextentselect>true</enableextentselect>
+
+<!-- <enablepolyselect>: The “enablepolyselect” specifies whether or not the polygon select tool is visible and enabled in the identify widgets UI. -->
+
+	<enablepolyselect>true</enablepolyselect>
+
+<!-- <enablemouseovergraphicsinfo>: The “enablemouseovergraphicsinfo” specifies whether or not hovering over a result graphic on the map will display the map info window. -->
+
+	<enablemouseovergraphicsinfo>true</enablemouseovergraphicsinfo>
+
+<!-- <enablemouseoverrecordinfo>: The “enablemouseoverrecordinfo” specifies whether or not hovering over a result record in the widget will display the map info window. -->
+
+	<enablemouseoverrecordinfo>true</enablemouseoverrecordinfo>
+<!-- <usemaptime>: The “usemaptime” specifies whether or not to take into account the maps time extent when identifying features.	 -->
+
+	<usemaptime>false</usemaptime>
+
+<!-- <infoautoclosemilliseconds>: The “infoautoclosemilliseconds” specifies the number of milliseconds that the map info window stays open before closing when it or the id results item looses focus. -->
+
+	<infoautoclosemilliseconds>2000</infoautoclosemilliseconds><!-- 2 seconds -->
+
+<!-- <autoactivatedtool>: The “autoactivatedtool” option specifies that the identify tool will automatically activate upon widget activation using the provided geometry type. The default for this element is blank. Possible values are extent or polygon or mappoint or polyline or nothing. -->
+
+	<autoactivatedtool>mappoint</autoactivatedtool><!-- possible values are extent or polygon or mappoint or polyline or nothing -->
+
+<!-- <excludebasemaps>: The “excludebasemaps” specifies if all the basemaps in your map will be excluded from the identify widgets results. The default is false unless this tag is included and set to true. -->
+
+	<excludebasemaps>true</excludebasemaps>
+
+<!-- <disablepopuplinks>: The “disablepopuplinks” specifies if url links will be added to the identify popups or not. -->
+
+	<disablepopuplinks>true</disablepopuplinks>
+
+<!-- <linkicon>: The “linkicon” is icon for result if there is any url image and required only if “allfields” attribute value false in layer tag. -->
+
+	<linkicon>http://help.arcgis.com/en/webapps/flexviewer/live/assets/images/i_camera.png</linkicon>
+	<zoomscale>15000</zoomscale>
+
+<!-- label tags -->
+	<labels>
+		<zoom2message>Click to Zoom to Point</zoom2message>
+		<identifylabel>Identify</identifylabel>
+		<resultslabel>Results</resultslabel>
+		<descriptionlabel>Use the identify tool to identify features on the map:</descriptionlabel>
+		<pointlabel>Identify by Point</pointlabel>
+		<linelabel>Identify by Polyline</linelabel>
+		<rectlabel>Identify by Rectangle</rectlabel>
+		<polylabel>Identify by Polygon</polylabel>
+		<clearlabel>Clear</clearlabel>
+		<loadinglabel>Loading...</loadinglabel>
+		<removeresultmessage>Remove Result</removeresultmessage>
+		<idfrom>Identify From</idfrom>
+		<noresultsfoundlabel>No Results Found</noresultsfoundlabel>
+		<resultsfoundlabel>Results Found</resultsfoundlabel>
+		<resulttype>Type</resulttype>
+		<resultdescription>Description</resultdescription>
+	</labels>
+	<useproxy>
+		<!-- Enter the label of the MapService from the main config.xml -->
+		<!--<proxymapservice label="Imagery" />
+		<proxymapservice label="Streets" />-->
+	</useproxy>
+
+	<!-- allfields = "false" specifies fields from layer
+	"true" specifies fields from xml -->
+
+	<layers  >
+		<!-- <excludelayer name="Zoning"/Optional > -->
+		<excludelayer name="Parcels"/>
+	</layers>
+
+	<symbols>
+    	<simplefillsymbol color="0x448ccb" alpha="0.4" style="solid">
+    		<outline color="0x448ccb" alpha="0.8" width="2"/>
+    	</simplefillsymbol>
+    	<simplemarkersymbol style="circle" size="12" color="0x448ccb" alpha="0.8" xoffset="0" yoffset="0" angle="0">
+    		<outline style="solid" color="0xffffff" alpha="0.8" width="1"/>
+    	</simplemarkersymbol>
+    	<picturemarkersymbol url="assets/images/i_info.png" height="30" width="30" xoffset="0" yoffset="0" />
+		<simplelinesymbol color="0x448ccb" alpha="0.8" width="2"/>
+    </symbols>
+</configuration>

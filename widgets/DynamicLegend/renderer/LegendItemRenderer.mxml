@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				dataChange="itemrenderer_dataChangeHandler(event)" horizontalScrollPolicy="off" verticalScrollPolicy="off"
+				styleName="RecordCanvas" width="100%" height="100%">
+				<!--visible="{iVisible}"
+				includeInLayout="{iVisible}">-->
+
+	<fx:Metadata>
+
+	</fx:Metadata>
+
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Map;
+			import com.esri.ags.events.ZoomEvent;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
+			import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
+			import com.esri.ags.layers.FeatureLayer;
+			import com.esri.ags.layers.Layer;
+			import com.esri.ags.layers.supportClasses.LayerInfo;
+			import com.esri.ags.symbols.*;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.ViewerContainer;
+
+			import flash.display.BitmapData;
+			import flash.display.Loader;
+
+			import mx.binding.utils.ChangeWatcher;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Image;
+			import mx.core.UIComponent;
+			import mx.events.CollectionEvent;
+			import mx.events.FlexEvent;
+			import mx.graphics.ImageSnapshot;
+			import mx.graphics.SolidColorStroke;
+			import mx.utils.Base64Decoder;
+
+			import spark.primitives.BitmapImage;
+
+			import widgets.DynamicLegend.event.LegendEvent;
+			import widgets.DynamicLegend.util.NewDynamicLegendUtil;
+			import widgets.DynamicLegend.vo.LegendData;
+
+			[Bindable]
+			public var vlabel:String;
+
+			private var _loader:Loader;
+
+			[Bindable]
+			private var iVisible:Boolean = false;
+
+			private var iminscale:Number = 0;
+
+			private var imaxscale:Number = 0;
+
+			private var lScale:Number = 0;
+
+			private var map:Map;
+
+			private var layer:Layer;
+
+			private var lId:int;
+
+			private var visArr:ArrayCollection;
+
+			private var base64Dec:Base64Decoder;
+			private var _newUtil:NewDynamicLegendUtil = NewDynamicLegendUtil.getNewInstance();
+
+
+			private function updateVisibilty(evt:Event):void
+			{
+
+				layer = map.getLayer(data.lname);
+
+				lId = data.id;
+
+				 if (layer is ArcGISDynamicMapServiceLayer){
+					if(!ArcGISDynamicMapServiceLayer(layer).visibleLayers){
+						visArr = buildVisibleLayers(ArcGISDynamicMapServiceLayer(layer).layerInfos);
+					}else{
+						visArr = ArcGISDynamicMapServiceLayer(layer).visibleLayers as ArrayCollection;
+					}
+				}else  if (layer is FeatureLayer){
+					visArr = new ArrayCollection([lId]);
+				}
+				 if(visArr==null)
+				 {
+					 visArr = new ArrayCollection([]);
+
+				 }
+
+				 if(imaxscale == 0 && iminscale == 0 && layer.visible && visArr.contains(lId)){
+					iVisible = true;
+				}else if(((iminscale == 0 || map.scale <= iminscale) && map.scale >= imaxscale) && layer.visible && visArr.contains(lId)){
+					iVisible = true;
+				}else{
+					iVisible = false;
+				}
+			}
+
+			private function buildVisibleLayers(value:Array):ArrayCollection
+			{
+				var ac:ArrayCollection = new ArrayCollection();
+				var li:LayerInfo
+				for each( li in value){
+					if(li.defaultVisibility)
+						ac.addItem(li.layerId);
+				}
+				return ac;
+			}
+
+			private function itemrenderer_dataChangeHandler(event:FlexEvent):void
+			{
+
+				map = ViewerContainer.getInstance().mapManager.map;
+				lScale = map.scale;
+				iminscale = data.minscale;
+				imaxscale = data.maxscale;
+				lId = data.id;
+
+				layer = map.getLayer(data.lname);
+
+				if (layer is ArcGISDynamicMapServiceLayer){
+					layer.addEventListener(FlexEvent.SHOW,updateVisibilty);
+					layer.addEventListener(FlexEvent.HIDE,updateVisibilty);
+					if(!ArcGISDynamicMapServiceLayer(layer).visibleLayers){
+						visArr = buildVisibleLayers(ArcGISDynamicMapServiceLayer(layer).layerInfos);
+					}else{
+
+						visArr = ArcGISDynamicMapServiceLayer(layer).visibleLayers as ArrayCollection;
+
+					}
+					ChangeWatcher.watch(ArcGISDynamicMapServiceLayer(layer), "visibleLayers", updateVisibilty);
+				}else if (layer is FeatureLayer){
+					layer.addEventListener(FlexEvent.SHOW,updateVisibilty);
+					layer.addEventListener(FlexEvent.HIDE,updateVisibilty);
+					visArr = new ArrayCollection([lId]);
+				}else{
+					visArr = new ArrayCollection([]);
+
+				}
+				if(visArr==null)
+				{
+					visArr = new ArrayCollection([]);
+
+				}
+
+				if(imaxscale == 0 && iminscale == 0 && layer.visible && visArr.contains(lId)){
+					iVisible = true;
+				}else if(((iminscale == 0 || map.scale <= iminscale) && map.scale >= imaxscale) && layer.visible && visArr.contains(lId)){
+					iVisible = true;
+				}else{
+					iVisible = false;
+				}
+
+				map.addEventListener(ZoomEvent.ZOOM_END, updateVisibilty);
+
+				var uic:UIComponent;
+				if (data){
+					if(data.otype && data.label && data.imageData == null){
+						vlabel = data.label;
+						tLabel.left = 5;
+
+						tLabel.mouseEnabled=false;
+						tLabel.setStyle("fontWeight","bold");
+						tLabel.setStyle("textDecoration","underline");
+						hg.setStyle("paddingLeft",0);
+						pic.includeInLayout = false;
+						pic.visible = false;
+
+						_newUtil.arrCollSelected.addItem(data);
+					}
+					if((data.label && !data.otype)||(data.imageData)){
+						vlabel = data.label;
+						tLabel.left = 45;
+						tLabel.setStyle("textDecoration","");
+						tLabel.setStyle("fontWeight","normal");
+
+						hg.setStyle("paddingLeft",30);
+						var byteArr:ByteArray;
+						hg.buttonMode=true;
+						this.buttonMode=true;
+						base64Dec = new Base64Decoder();
+						base64Dec.decode(data.imageData);
+						byteArr = base64Dec.toByteArray();
+
+						_loader  = new Loader();
+						var lc:LoaderContext = new LoaderContext(false);
+						_loader.contentLoaderInfo.addEventListener(Event.COMPLETE,function(e:Event):void
+						{
+							pic.source = e.currentTarget.content;
+							pic.includeInLayout = true;
+							pic.visible = true;
+						}
+						);
+						_loader.loadBytes(byteArr);
+					}else if((data.label && !data.otype)||(data.rend)){
+						vlabel = data.rend.label;
+						tLabel.left = 45;
+						if(data.rend.symbol is com.esri.ags.symbols.TextSymbol){
+							//Not implmented
+						}
+						if(data.rend.symbol is com.esri.ags.symbols.SimpleMarkerSymbol){
+							if(data.rend.symbol.style == "circle"){
+								var crSMSline:SimpleLineSymbol = new SimpleLineSymbol("solid",data.rend.symbol.outline.color?data.rend.symbol.outline.color:0x000000,data.rend.symbol.outline.alpha?data.rend.symbol.outline.alpha:1,data.rend.symbol.outline.width);
+								var SMSCircle:SimpleMarkerSymbol = new SimpleMarkerSymbol(data.rend.symbol.style, data.rend.symbol.size, data.rend.symbol.color?data.rend.symbol.color:0x000000, data.rend.symbol.alpha?data.rend.symbol.alpha:1, data.rend.symbol.xoffset, data.rend.symbol.yoffset, data.rend.symbol.angle, crSMSline);
+								uic = SMSCircle.createSwatch(30,18);
+								hg.addElementAt(uic,1);
+							}
+							if(data.rend.symbol.style == "cross"){
+								var cSMSline:SimpleLineSymbol = new SimpleLineSymbol("solid",data.rend.symbol.outline.color?data.rend.symbol.outline.color:0x000000,data.rend.symbol.outline.alpha?data.rend.symbol.outline.alpha:1,data.rend.symbol.outline.width);
+								var SMSCross:SimpleMarkerSymbol = new SimpleMarkerSymbol(data.rend.symbol.style,data.rend.symbol.size,data.rend.symbol.color?data.rend.symbol.color:0x000000, data.rend.symbol.alpha?data.rend.symbol.alpha:1,
+									data.rend.symbol.xoffset, data.rend.symbol.yoffset,data.rend.symbol.angle,cSMSline);
+								uic = SMSCross.createSwatch(30,18);
+								hg.addElementAt(uic,1);
+							}
+							if(data.rend.symbol.style == "diamond"){
+								var dSMSline:SimpleLineSymbol = new SimpleLineSymbol("solid",data.rend.symbol.outline.color?data.rend.symbol.outline.color:0x000000,data.rend.symbol.outline.alpha?data.rend.symbol.outline.alpha:1,data.rend.symbol.outline.width);
+								var SMSDiamond:SimpleMarkerSymbol = new SimpleMarkerSymbol(data.rend.symbol.style,data.rend.symbol.size,data.rend.symbol.color?data.rend.symbol.color:0x000000, data.rend.symbol.alpha?data.rend.symbol.alpha:1,
+									data.rend.symbol.xoffset, data.rend.symbol.yoffset,data.rend.symbol.angle,dSMSline);
+								uic = SMSDiamond.createSwatch(30,18);
+								hg.addElementAt(uic,1);
+							}
+							if(data.rend.symbol.style == "square"){
+								var sSMSline:SimpleLineSymbol = new SimpleLineSymbol("solid",data.rend.symbol.outline.color?data.rend.symbol.outline.color:0x000000,data.rend.symbol.outline.alpha?data.rend.symbol.outline.alpha:1,data.rend.symbol.outline.width);
+								var SMSSquare:SimpleMarkerSymbol = new SimpleMarkerSymbol(data.rend.symbol.style,data.rend.symbol.size,data.rend.symbol.color?data.rend.symbol.color:0x000000, data.rend.symbol.alpha?data.rend.symbol.alpha:1,
+									data.rend.symbol.xoffset, data.rend.symbol.yoffset,data.rend.symbol.angle,sSMSline);
+								uic = SMSSquare.createSwatch(30,18);
+								hg.addElementAt(uic,1);
+							}
+							if(data.rend.symbol.style == "triangle"){
+								var tSMSline:SimpleLineSymbol = new SimpleLineSymbol("solid",data.rend.symbol.outline.color?data.rend.symbol.outline.color:0x000000,data.rend.symbol.outline.alpha?data.rend.symbol.outline.alpha:1,data.rend.symbol.outline.width);
+								var SMSTri:SimpleMarkerSymbol = new SimpleMarkerSymbol(data.rend.symbol.style,data.rend.symbol.size,data.rend.symbol.color?data.rend.symbol.color:0x000000, data.rend.symbol.alpha?data.rend.symbol.alpha:1,
+									data.rend.symbol.xoffset, data.rend.symbol.yoffset,data.rend.symbol.angle,tSMSline);
+								uic = SMSTri.createSwatch(30,18);
+								hg.addElementAt(uic,1);
+							}
+							if(data.rend.symbol.style == "x"){
+								var xSMSline:SimpleLineSymbol = new SimpleLineSymbol("solid",data.rend.symbol.outline.color?data.rend.symbol.outline.color:0x000000,data.rend.symbol.outline.alpha?data.rend.symbol.outline.alpha:1,data.rend.symbol.outline.width);
+								var SMSX:SimpleMarkerSymbol = new SimpleMarkerSymbol(data.rend.symbol.style,data.rend.symbol.size,data.rend.symbol.color?data.rend.symbol.color:0x000000, data.rend.symbol.alpha?data.rend.symbol.alpha:1,
+									data.rend.symbol.xoffset, data.rend.symbol.yoffset,data.rend.symbol.angle,xSMSline);
+								uic = SMSX.createSwatch(30,18);
+								hg.addElementAt(uic,1);
+							}
+						}
+						if(data.rend.symbol is com.esri.ags.symbols.SimpleLineSymbol){
+							var line:SimpleLineSymbol = new SimpleLineSymbol(data.rend.symbol.style,data.rend.symbol.color?data.rend.symbol.color:0x000000, data.rend.symbol.alpha?data.rend.symbol.alpha:1,data.rend.symbol.width);
+							uic = line.createSwatch(30, 18);
+							hg.addElementAt(uic,1);
+						}
+						if(data.rend.symbol is com.esri.ags.symbols.SimpleFillSymbol){
+							var sSFSline:SimpleLineSymbol;
+							if(data.rend.symbol.outline)
+								sSFSline = new SimpleLineSymbol(data.rend.symbol.outline.style,data.rend.symbol.outline.color?data.rend.symbol.outline.color:0x000000,data.rend.symbol.outline.alpha?data.rend.symbol.outline.alpha:1,data.rend.symbol.outline.width);
+							var SFSRect:SimpleFillSymbol = new SimpleFillSymbol(data.rend.symbol.style,data.rend.symbol.color?data.rend.symbol.color:0x000000, data.rend.symbol.alpha?data.rend.symbol.alpha:1,sSFSline?sSFSline:null);
+							uic = SFSRect.createSwatch(30,18);
+							hg.addElementAt(uic,1);
+						}
+						if(data.rend.symbol is com.esri.ags.symbols.PictureMarkerSymbol){
+							var bmp:BitmapImage = new BitmapImage();
+							_loader  = new Loader();
+							var lc2:LoaderContext = new LoaderContext(false);
+							_loader.contentLoaderInfo.addEventListener(Event.COMPLETE,function(e:Event):void
+							{
+								bmp.smooth = true;
+								bmp.source = e.currentTarget.content;
+								bmp.top = 1;
+								bmp.bottom = 1;
+								bmp.rotation = data.rend.symbol.angle;
+							}
+							);
+							_loader.loadBytes(data.rend.symbol.source,lc2);
+							hg.addElementAt(bmp,2);
+							if(data.rend.symbol.width > tLabel.left)
+								tLabel.left = data.rend.symbol.width + 15;
+						}
+					}
+				}
+			}
+
+			protected function chkBox_clickHandler(event:MouseEvent):void
+			{
+
+				 var _legendData:LegendData = new LegendData();
+
+				_legendData.selectedName = vlabel;
+				_legendData.data = data;
+				_legendData.selectedData = data;
+				ViewerContainer.dispatchEvent(new LegendEvent(LegendEvent.CHECK_BOX_SELECTED,_legendData))
+			}
+
+			override public function set data(value:Object):void {
+				super.data = value;
+
+			}
+		]]>
+	</fx:Script>
+
+	<!-- background fill -->
+	<s:Group>
+		<s:Rect bottom="0"
+			left="0"
+			right="2"
+			top="0">
+		<s:fill>
+			<s:SolidColor alpha="1" color="0xffffff"/>
+		</s:fill>
+	</s:Rect>
+	</s:Group>
+	<mx:HBox id="hg" height="50" horizontalScrollPolicy="off" verticalScrollPolicy="off" width="100%" verticalAlign="middle" horizontalAlign="left" paddingBottom="2" >
+		<!--<s:CheckBox id="chkBox" includeInLayout="false" visible="false" click="chkBox_clickHandler(event)" selected="{data.selected}"/>-->
+		<mx:Image id="pic" smoothBitmapContent="true" verticalAlign="top" includeInLayout="false" visible="false"/>
+		<mx:Label id="tLabel"  truncateToFit="true"
+				 fontWeight="normal"
+				 color="#FFFFFF"
+				 text="{vlabel}"/>
+
+	</mx:HBox>
+</mx:VBox>

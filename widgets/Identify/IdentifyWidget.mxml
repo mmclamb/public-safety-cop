@@ -1,0 +1,2040 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+
+<!-- NOTE:This new Identify Widget by default takes all the layers and all the fields. It works with Multiple Layers
+     // This works with ArcGIS Server 10.01 and above //-->
+<!--
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//
+	// Developed initially by esri and continually enhanced by Robert Scheitlin. Further enhancements done in current version by ESRI.
+	//
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:esri="http://www.esri.com/2008/ags"
+				   xmlns:viewer="com.esri.viewer.*"
+				   xmlns:Ident="widgets.Identify.*"
+				   layout="absolute"
+				   widgetConfigLoaded="init()"
+				   currentState="StateIdentify">
+
+	<fx:Declarations>
+		<s:GlowFilter id="glowFilter"
+					  alpha="1"
+					  color="{getStyle('focusColor')}"
+					  inner="true"
+					  strength="2"/>
+		<esri:GeometryService id="geometryService"
+							  fault="geometryService_faultHandler(event)"
+							  url="http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer"/>
+	</fx:Declarations>
+
+	<viewer:states>
+		<s:State  name="StateIdentify"/>
+		<s:State name="resultsList"/>
+	</viewer:states>
+	<viewer:transitions>
+		<s:Transition autoReverse="true" toState="*">
+			<s:Fade targets="{[StateIdentify,resultsList]}"/>
+		</s:Transition>
+	</viewer:transitions>
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.Map;
+			import com.esri.ags.SpatialReference;
+			import com.esri.ags.TimeExtent;
+			import com.esri.ags.events.DetailsEvent;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.ExtentEvent;
+			import com.esri.ags.events.GeometryServiceEvent;
+			import com.esri.ags.events.IdentifyEvent;
+			import com.esri.ags.events.MapEvent;
+			import com.esri.ags.geometry.Extent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
+			import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
+			import com.esri.ags.layers.FeatureLayer;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.layers.Layer;
+			import com.esri.ags.layers.supportClasses.LayerDetails;
+			import com.esri.ags.layers.supportClasses.LayerInfo;
+			import com.esri.ags.portal.PopUpRenderer;
+			import com.esri.ags.portal.supportClasses.PopUpFieldInfo;
+			import com.esri.ags.portal.supportClasses.PopUpInfo;
+			import com.esri.ags.portal.supportClasses.PopUpMediaInfo;
+			import com.esri.ags.renderers.UniqueValueRenderer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.symbols.SimpleFillSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.symbols.SimpleMarkerSymbol;
+			import com.esri.ags.symbols.Symbol;
+			import com.esri.ags.tasks.GeometryServiceSingleton;
+			import com.esri.ags.tasks.IdentifyTask;
+			import com.esri.ags.tasks.supportClasses.ExecuteResult;
+			import com.esri.ags.tasks.supportClasses.IdentifyParameters;
+			import com.esri.ags.tasks.supportClasses.IdentifyResult;
+			import com.esri.ags.tasks.supportClasses.ParameterValue;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.ags.tools.NavigationTool;
+			import com.esri.ags.utils.GeometryUtil;
+			import com.esri.ags.utils.JSONUtil;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.ViewerContainer;
+			import com.esri.viewer.components.toc.utils.MapUtil;
+
+			import flash.filters.GlowFilter;
+
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.CurrencyFormatter;
+			import mx.formatters.DateFormatter;
+			import mx.formatters.NumberBaseRoundType;
+			import mx.formatters.NumberFormatter;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.Fault;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+			import mx.utils.ObjectUtil;
+			import mx.utils.StringUtil;
+
+			import spark.components.supportClasses.ItemRenderer;
+			import spark.events.IndexChangeEvent;
+
+			//labels
+			private var identifyLabel:String;
+
+			private var resultsLabel:String;
+
+			[Bindable] private var descriptionLabel:String;
+
+			private var identifyLayerOption:String;
+
+			private var identifyTolerance:Number = 3;
+
+			[Bindable] private var pointLabel:String;
+
+			[Bindable] private var lineLabel:String;
+
+			[Bindable] private var rectLabel:String;
+
+			[Bindable] private var polyLabel:String;
+
+			[Bindable] private var clearLabel:String;
+
+			[Bindable] private var idFromLabel:String;
+
+			[Bindable] private var noResultsFoundLbl:String;
+
+			[Bindable] private var resultsFoundLbl:String;
+
+			private var loadingLabel:String;
+
+			private var gra:Graphic;
+
+			private var lastTool:String;
+
+			[Bindable] private var msgVisible:Boolean = false;
+
+			[Bindable] private var enableLine:Boolean = false;
+
+			[Bindable] private var enableExtent:Boolean = false;
+
+			[Bindable] private var enablePoly:Boolean = false;
+
+			[Bindable] private var enableMoverGra:Boolean = false;
+
+			[Bindable] private var enableMoverRec:Boolean = false;
+
+			private var zoomScale:Number = 5000;
+
+			private var keepActive:Boolean;
+
+			private var returnGeomForZoom:Boolean;
+
+			private var onlylistedlayers:Boolean;
+
+			private var zoom2Msg:String;
+
+			private var removeMsg:String;
+
+			private var graphicsLayer:GraphicsLayer;
+
+			private var identMarkerSymbol:Symbol;
+
+			private var identLineSymbol:Symbol;
+
+			private var identFillSymbol:Symbol;
+
+			private var glowLineSymbol:Symbol;
+
+			private var glowFillSymbol:Symbol;
+
+			private var identPicSymbol:Symbol;
+
+			private var identifyGeom:Geometry;
+
+			[Bindable]private var identifyArrayCollection:ArrayCollection= new ArrayCollection();
+
+			private var arrIdentifyCopy:Array = new Array()
+
+			private var configIdentFields:Array;
+
+			private var configIdentProxyMS:Array;
+
+			private const ICON_URL:String = "assets/images/";
+
+			private var proxyURL:String;
+
+			private var selectedDrawingIcon:Image;
+
+			private var popUpRenderer:PopUpRenderer = new PopUpRenderer();
+
+			private var betaReturnGeometryFix:Boolean;
+
+			[Bindable] private var autoActivatedTool:String;
+
+			private var drawSymbol:Symbol;
+
+			private var useMapTime:Boolean;
+
+			private var excludeBasemaps:Boolean;
+
+			private var excludeLayers:Array;
+
+			private var AutoCloseNum:Number = 2000;
+
+			private var resultFound:Boolean;
+
+			private var configLayers:Array;
+			private var arrAllLyerData:ArrayCollection;
+
+			private var gid:Number = 1;
+
+			private var DisablePopUpLinks:Boolean;
+
+			private var numServicesIdent:int;
+
+			private var dateFormatter:DateFormatter = new DateFormatter();
+			private var numFormatter:NumberFormatter = new NumberFormatter();
+			private var currFormatter:CurrencyFormatter = new CurrencyFormatter();
+
+			private var gf:flash.filters.GlowFilter;
+
+			//Build Constants
+			protected const VERSION:String = "3.0.2";
+			protected const BUILDDATE:String = "11/28/2012";
+
+			//Resources
+			[Embed(source="assets/images/i_about.png")]
+			private var iconClass:Class;
+
+
+			private var _linkIcon:String = "";
+			private var _zoomScale:Number = 0;
+			private var _arrColl:ArrayCollection = new ArrayCollection();
+			private var arrLayerData:Array  = new Array();
+			[Bindable] private var identifyParserUtil:IdentifyParserUtil = IdentifyParserUtil.getIdentifyParseUtil();
+
+			private function init():void
+			{
+				if (configXML){
+					wTemplate.minimizeButton.toolTip="Minimize";
+					wTemplate.closeButton.toolTip="Close";
+
+					if (GeometryServiceSingleton.instance.url){ // using GeometryServiceSingleton
+						geometryService.url = GeometryServiceSingleton.instance.url;
+						geometryService.token = GeometryServiceSingleton.instance.token;
+						geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
+					};
+
+					identifyParserUtil.parseConfigXml(configXML);
+					//labels
+					resultsFoundLbl = configXML.labels.resultsfoundlabel || "Results Found";
+					noResultsFoundLbl = configXML.labels.noresultsfoundlabel || "No Results Found";
+					idFromLabel = configXML.labels.idfrom || "Identify From";
+					zoom2Msg = configXML.labels.zoom2message || "Click to Zoom to Point";
+					removeMsg = configXML.labels.removeresultmessage || "Remove Result";
+					identifyLabel = configXML.labels.identifylabel || "Identify";
+					resultsLabel = configXML.labels.resultslabel || "Results";
+
+					descriptionLabel = configXML.labels.descriptionlabel || "Use the identify tool to identify features on the map:";
+					pointLabel = configXML.labels.pointlabel || "Identify Point";
+					lineLabel = configXML.labels.linelabel || "Identify Polyline";
+					rectLabel = configXML.labels.rectlabel || "Identify Rectangle";
+					polyLabel = configXML.labels.polylabel || "Identify Polygon";
+					clearLabel = configXML.labels.clearlabel || "Clear";
+					loadingLabel = configXML.labels.loadinglabel || "Loading...";
+					excludeBasemaps = configXML.excludebasemaps && configXML.excludebasemaps == "true";
+					enableMoverRec = configXML.enablemouseoverrecordinfo && configXML.enablemouseoverrecordinfo == "true";
+					enableMoverGra = configXML.enablemouseovergraphicsinfo && configXML.enablemouseovergraphicsinfo == "true";
+					enableLine = configXML.enablelineselect && configXML.enablelineselect == "true";
+					enableExtent = configXML.enableextentselect && configXML.enableextentselect == "true";
+					enablePoly = configXML.enablepolyselect && configXML.enablepolyselect == "true";
+					keepActive = configXML.keepidentifyactive && configXML.keepidentifyactive == "true";
+
+					_linkIcon = configXML.linkicon.toString();
+					_zoomScale = configXML.zoomscale;
+
+					identifyLayerOption = configXML.identifylayeroption || IdentifyParameters.LAYER_OPTION_VISIBLE;
+					returnGeomForZoom = configXML.returngeometryforzoom && configXML.returngeometryforzoom == "true";
+					autoActivatedTool = configXML.autoactivatedtool || "";
+					betaReturnGeometryFix = configXML.betareturngeometryfix && configXML.betareturngeometryfix == "true";
+					DisablePopUpLinks =  configXML.disablepopuplinks && configXML.disablepopuplinks == "true";
+					if (Number(configXML.identifytolerance) > 0){
+						identifyTolerance = Number(configXML.identifytolerance);
+					};
+					if (Number(configXML.defaultzoomscale) > 0){
+						zoomScale = Number(configXML.defaultzoomscale);
+					};
+					useMapTime = configXML.usemaptime && configXML.usemaptime == "true";
+					AutoCloseNum = configXML.infoautoclosemilliseconds;
+
+					proxyURL = configData.proxyUrl;
+					var proxyMSList:XMLList = configXML..proxymapservice;
+					configIdentProxyMS = [];
+					for (var j:Number = 0; j < proxyMSList.length(); j++){
+						var identProxyMapService:Object={
+							label: proxyMSList[j].@label
+						};
+						configIdentProxyMS.push(identProxyMapService);
+					};
+
+					configIdentFields = [];
+					configLayers = [];
+					excludeLayers = [];
+					var elyrList:XMLList = configXML..excludelayer;
+					for (var el:int = 0; el < elyrList.length(); el++) {
+						excludeLayers.push(elyrList[el].@name);
+					};
+
+
+						var idLayer:Object = {
+							label: "All Layers",
+							id: null,
+							lname: null
+						};
+						_arrColl.addItemAt(idLayer,0);
+						registerAllMapLayers();
+
+
+				};
+
+				//marker symbol
+				const identPicSymbolURL:String = configXML.symbols.picturemarkersymbol.@url || widgetIcon;
+				const identPicSymbolHeight:Number = (configXML.symbols.picturemarkersymbol.@height[0] != null) ? configXML.symbols.picturemarkersymbol.@height : 30;
+				const identPicSymbolWidth:Number = (configXML.symbols.picturemarkersymbol.@width[0] != null) ? configXML.symbols.picturemarkersymbol.@width : 30;
+				const identPicSymbolXOffset:Number = configXML.symbols.picturemarkersymbol.@xoffset || 0;
+				const identPicSymbolYOffset:Number = configXML.symbols.picturemarkersymbol.@yoffset || 0;
+				identPicSymbol = new PictureMarkerSymbol(identPicSymbolURL, identPicSymbolWidth, identPicSymbolHeight, identPicSymbolXOffset, identPicSymbolYOffset);
+
+				const identMarkerSymbolStyle:String = configXML.symbols.simplemarkersymbol.@style || "circle";
+				const identMarkerSymbolSize:Number = (configXML.symbols.simplemarkersymbol.@size[0] != null) ? configXML.symbols.simplemarkersymbol.@size : 12;
+				const identMarkerSymbolColor:uint = (configXML.symbols.simplemarkersymbol.@color[0] != null) ? configXML.symbols.simplemarkersymbol.@color : 0x448ccb;
+				const identMarkerSymbolAlpha:Number = (configXML.symbols.simplemarkersymbol.@alpha[0] != null) ? configXML.symbols.simplemarkersymbol.@alpha : 0.8;
+				const identMarkerSymbolXOffset2:Number = configXML.symbols.simplemarkersymbol.@xoffset || 0;
+				const identMarkerSymbolYOffset2:Number = configXML.symbols.simplemarkersymbol.@yoffset || 0;
+				const identMarkerSymbolAngle:Number = configXML.symbols.simplemarkersymbol.@angle || 0;
+				const identMarkerSymbolOutlineStyle:String = configXML.symbols.simplemarkersymbol.outline.@style || "solid";
+				const identMarkerSymbolOutlineColor:uint = (configXML.symbols.simplemarkersymbol.outline.@color[0] != null) ? configXML.symbols.simplemarkersymbol.outline.@color : 0xffffff;
+				const identMarkerSymbolOutlineAlpha:Number = (configXML.symbols.simplemarkersymbol.outline.@alpha[0] != null) ? configXML.symbols.simplemarkersymbol.outline.@alpha : 0.8;
+				const identMarkerSymbolOutlineWidth:Number = (configXML.symbols.simplemarkersymbol.outline.@width[0] != null) ? configXML.symbols.simplemarkersymbol.outline.@width : 2;
+				identMarkerSymbol = new SimpleMarkerSymbol(identMarkerSymbolStyle,identMarkerSymbolSize,identMarkerSymbolColor,identMarkerSymbolAlpha,identMarkerSymbolXOffset2,identMarkerSymbolYOffset2,identMarkerSymbolAngle,new SimpleLineSymbol(identMarkerSymbolOutlineStyle, identMarkerSymbolOutlineColor, identMarkerSymbolOutlineAlpha, identMarkerSymbolOutlineWidth));
+
+				//line symbol
+				const identLineSymbolColor:uint = (configXML.symbols.simplelinesymbol.@color[0] != null) ? configXML.symbols.simplelinesymbol.@color : 0x448ccb;
+				const identLineSymbolAlpha:Number = (configXML.symbols.simplelinesymbol.@alpha[0] != null) ? configXML.symbols.simplelinesymbol.@alpha : 0.8;
+				const identLineSymbolWidth:Number = (configXML.symbols.simplelinesymbol.@width[0] != null) ? configXML.symbols.simplelinesymbol.@width : 2;
+				identLineSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, identLineSymbolColor, identLineSymbolAlpha, identLineSymbolWidth);
+				glowLineSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, identLineSymbolColor, 0.9, (identLineSymbolWidth + (identLineSymbolWidth / 2)));
+
+				// fill symbol
+				const identFillSymbolColor:uint = (configXML.symbols.simplefillsymbol.@color[0] != null) ? configXML.symbols.simplefillsymbol.@color : 0x448ccb;
+				const identFillSymbolAlpha:Number = (configXML.symbols.simplefillsymbol.@alpha[0] != null) ? configXML.symbols.simplefillsymbol.@alpha : 0.5;
+				const identFillSymbolOutlineColor:uint = (configXML.symbols.simplefillsymbol.outline.@color[0] != null) ? configXML.symbols.simplefillsymbol.outline.@color : 0x448ccb;
+				const identFillSymbolOutlineAlpha:Number = (configXML.symbols.simplefillsymbol.outline.@alpha[0] != null) ? configXML.symbols.simplefillsymbol.outline.@alpha : 0.8;
+				const identFillSymbolOutlineWidth:Number = (configXML.symbols.simplefillsymbol.outline.@width[0] != null) ? configXML.symbols.simplefillsymbol.outline.@width : 2;
+				identFillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, identFillSymbolColor, identFillSymbolAlpha, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, identFillSymbolOutlineColor, identFillSymbolOutlineAlpha, identFillSymbolOutlineWidth));
+				glowFillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, identFillSymbolColor, 0.9, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, identFillSymbolOutlineColor, 0.9, identFillSymbolOutlineWidth));
+
+				graphicsLayer = new GraphicsLayer();
+				graphicsLayer.symbol = identPicSymbol;
+				graphicsLayer.id = graphicsLayer.name = "hiddenLayer_IDWidgetGL";
+				map.addLayer(graphicsLayer);
+
+				wTemplate.addTitlebarButton(ICON_URL + "i_info.png", identifyLabel, showStateIdentify);
+				wTemplate.addTitlebarButton(ICON_URL + "i_table.png", resultsLabel, showStateResults);
+				wTemplate.header.addEventListener(MouseEvent.CLICK, DisplayVersion);
+				AppEvent.addListener(AppEvent.DATA_PUBLISH, sharedDataUpdated);
+				if (autoActivatedTool != "" ){
+					activateIdentifyTool(null, autoActivatedTool);
+				};
+
+				function getGlowColor():uint
+				{
+					var retClr:uint = 0x448ccb;
+					if(identMarkerSymbolColor){
+						retClr = identMarkerSymbolColor;
+					}
+					if(identLineSymbolColor){
+						retClr = identLineSymbolColor;
+					}
+					if(identFillSymbolColor){
+						retClr = identFillSymbolColor;
+					}
+					return retClr;
+				}
+				gf = new flash.filters.GlowFilter;
+				gf.color = getGlowColor();
+				gf.alpha = 1;
+				gf.strength = 2;
+				gf.blurX = 8;
+				gf.blurY = 8;
+			}
+
+			private function addListener():void
+			{
+				if(map)
+				{
+					map.addEventListener(MapEvent.LAYER_ADD, onLayerAdd, false, 0, true);
+				}
+			}
+
+			private function removeListener():void
+			{
+				if (map) {
+					map.removeEventListener(MapEvent.LAYER_ADD, onLayerAdd);
+				}
+			}
+
+			/**
+			 * Registers the new map layer in the TOC tree.
+			 */
+			private function onLayerAdd(event:MapEvent):void
+			{
+				registerMapLayer(event.layer);
+			}
+
+			private function registerMapLayer(layer:*):void
+			{
+				var httpServ:HTTPService = new HTTPService();
+				var lname:String
+				if (layer is ArcGISDynamicMapServiceLayer){
+					if(layer.version >= 10.01){
+						httpServ.url = ArcGISDynamicMapServiceLayer(layer).url + "?f=json";;
+						httpServ.resultFormat = "text";
+						lname = ArcGISDynamicMapServiceLayer(layer).id;
+						httpServ.addEventListener(ResultEvent.RESULT,function(event:ResultEvent):void{processLegend(event,lname)});
+						httpServ.send();
+					}else{
+						lname = ArcGISDynamicMapServiceLayer(layer).id;
+						ArcGISDynamicMapServiceLayer(layer).addEventListener(DetailsEvent.GET_ALL_DETAILS_COMPLETE,function(event:DetailsEvent):void{getAllDetailsResult(event,lname)});
+						ArcGISDynamicMapServiceLayer(layer).getAllDetails();
+					}
+
+				}else if (layer is FeatureLayer){
+					var FeatServId:Number = Number.NaN;
+					var msName:String = FeatureLayer(layer).url.replace("FeatureServer","MapServer");
+					var x:String = msName.substring(msName.length - 9);
+					if(msName.substring(msName.length - 9) != "MapServer"){
+						httpServ.url = msName.substring(0,msName.lastIndexOf("/")) + "?f=json";
+						FeatServId = parseInt(msName.substring(msName.lastIndexOf("/")+ 1));
+					}else{
+						httpServ.url = msName + "?f=json";
+					}
+					if(layer.layerDetails && layer.layerDetails.version >= 10.01){
+						httpServ.resultFormat = "text";
+						lname = FeatureLayer(layer).id;
+						httpServ.addEventListener(ResultEvent.RESULT,function(event:ResultEvent):void{processLegend(event,lname,FeatServId,true)});
+						httpServ.send();
+					}else{
+						lname = FeatureLayer(layer).id;
+						getFeatureResult(FeatureLayer(layer).layerDetails,lname);
+					}
+				}
+			}
+
+			private function processLegend(event:ResultEvent,lname:String,inconlythisid:Number = Number.NaN,isFeat:Boolean=false):void
+			{
+				var layerData:ArrayCollection = new ArrayCollection();
+
+				var rawData:String = String(event.result);
+				var data:Object = JSONUtil.decode(rawData);
+				for each (var lDetails:* in data.layers)
+				{
+					if (!filterOutSubLayer(map.getLayer(lname),lDetails.layerId))
+					{
+						if(isFeat)
+						{
+							if(!isNaN(inconlythisid) && lDetails.id == inconlythisid)
+							{
+								var layName:Object = {
+									lname: lname,
+									id: lDetails.id,
+										label: lDetails.name
+								}
+								arrLayerData.push(layName);
+								layerData.addItem(layName);
+							}
+						}
+						if(!isNaN(inconlythisid) && lDetails.layerId != inconlythisid)
+							continue;
+						//Add the layers name
+						var layName:Object = {
+							lname: lname,
+							id: lDetails.id,
+								label: lDetails.name
+						}
+						arrLayerData.push(layName);
+						layerData.addItem(layName);
+					}
+				}
+				_arrColl.addAll(layerData);
+				 ddMapService.width = determineDropDownWidth(arrLayerData);
+				ddlAllLayer.width=determineDropDownWidth(arrLayerData);
+				ddMapService.dataProvider = _arrColl;
+				ddMapService.selectedIndex = 0;
+				ddlAllLayer.dataProvider=_arrColl;
+				ddlAllLayer.selectedIndex = 0;
+				if(ddMapService.width + (idfromlbl.measureText(idFromLabel).width + 37) > (wTemplate.width - 57)){
+					ddMapService.width = (wTemplate.width - (57 + idfromlbl.measureText(idFromLabel).width + 37));
+				};
+				if(ddlAllLayer.width + (idfromlbl.measureText(idFromLabel).width + 37) > (wTemplate.width - 57)){
+					ddlAllLayer.width = (wTemplate.width - (57 + idfromlbl.measureText(idFromLabel).width + 37));
+				};
+
+
+			}
+
+			protected function determineDropDownWidth(arr:Object):Number
+			{
+				var maxLength:Number = 0;
+				var i:int=0;
+
+				for ( i = 0; i < arr.length; i++ ) {
+					var o:Object = arr[i];
+					if ( ObjectUtil.isSimple(o["label"]) ) {
+						var cellMetrics:TextLineMetrics = idfromlbl.measureText(o["label"]+"");
+						if ( cellMetrics.width + 40 > maxLength ) {
+							maxLength = cellMetrics.width + 40;
+						};
+					};
+				};
+				return maxLength;
+			}
+
+
+			private function getFeatureResult(event:LayerDetails,lname:String):void
+			{
+				var lDetails:LayerDetails = event;
+				if (!filterOutSubLayer(map.getLayer(lname),lDetails.id))
+				{
+
+				}
+			}
+
+
+			private function getAllDetailsResult(event:DetailsEvent,lname:String):void
+			{
+				for each (var lDetails:LayerDetails in event.allDetails.layersDetails)
+				{
+					if (!filterOutSubLayer(map.getLayer(lname),lDetails.id))
+					{
+
+					}
+				}
+
+			}
+
+			private function filterOutSubLayer(layer:Layer, id:int):Boolean
+			{
+				var exclude:Boolean = false;
+				if (!exclude && excludeLayers) {
+					exclude = false;
+					for each (var item:* in excludeLayers) {
+						if (item.toString() == layer.name){
+							exclude = true;
+							break;
+						}
+					}
+				}
+				return exclude;
+			}
+
+			private function registerAllMapLayers():void
+			{
+
+
+				MapUtil.forEachMapLayer(map, function( layer:Layer ):void {
+					registerMapLayer(layer);
+				});
+			}
+
+
+			private function activateIdentifyTool(event:MouseEvent, lTool:String = ""):void
+			{
+				addSharedData("Deactivate_DrawTool", null); // to be able to deactivate drawTool on other widgets
+
+				// apply glow
+				if(event){
+					//Allow button to act as toggle buttons
+					if(lastTool == Image(event.currentTarget).name){
+						clearSelectionFilter();
+						setMapAction(null, null, null, null);
+						hideInfoWindow();
+						setMapNavigation(null, null);
+						lastTool = "";
+						return;
+					}else{
+						selectedDrawingIcon = Image(event.currentTarget);
+					};
+				}else{
+					switch(lTool){
+						case DrawTool.EXTENT :{
+							selectedDrawingIcon = iDrawExt;
+							break;
+						};
+						case DrawTool.POLYGON :{
+							selectedDrawingIcon = iDrawPoly;
+							break;
+						};
+						case DrawTool.MAPPOINT :{
+							selectedDrawingIcon = iDrawPnt;
+							break;
+						};
+						case DrawTool.POLYLINE :{
+							selectedDrawingIcon = iDrawLine;
+							break;
+						};
+						default:{
+							selectedDrawingIcon = iDrawPnt;
+						};
+					};
+
+				};
+				clearSelectionFilter();
+				selectedDrawingIcon.filters = [ glowFilter ];
+
+				var status:String;
+				var value:String = selectedDrawingIcon.name;
+
+				lastTool = selectedDrawingIcon.name;
+				switch (value){
+					case DrawTool.MAPPOINT:{
+						status = pointLabel;
+
+						setMapAction(DrawTool.MAPPOINT, status, identMarkerSymbol, drawEnd,null, false, true);
+						break;
+					};
+					case DrawTool.POLYLINE:{
+						status = lineLabel;
+						setMapAction(DrawTool.POLYLINE, status, identLineSymbol, drawEnd,null, false, true);
+						break;
+					};
+					case DrawTool.EXTENT:{
+						status = rectLabel;
+						setMapAction(DrawTool.EXTENT, status, identFillSymbol, drawEnd,null, false, true);
+						break;
+					};
+					case DrawTool.POLYGON:{
+						status = polyLabel;
+						setMapAction(DrawTool.POLYGON, status, identFillSymbol, drawEnd,null, false, true);
+						break;
+					};
+				};
+			}
+
+			private function drawEnd(event:DrawEvent):void
+			{
+				map.infoWindow.hide();
+				if(graphicsLayer)
+				{
+					graphicsLayer.clear();
+				}
+
+
+				lblSelectedLayerCount.text="";
+
+
+				if(keepActive){
+					activateIdentifyTool(null, lastTool);
+				}else{
+					event.target.deactivate();
+					if (selectedDrawingIcon){
+						selectedDrawingIcon.filters = [];
+						selectedDrawingIcon = null;
+					};
+					lastTool = "";
+				};
+				identifyGeom = event.graphic.geometry;
+				ddlAllLayer.selectedIndex=ddMapService.selectedIndex;
+				 if(identifyArrayCollection){
+				identifyArrayCollection=new ArrayCollection();;
+				};
+
+				 arrIdentifyCopy = new Array();
+				identifyFeatures(identifyGeom);
+
+
+
+			}
+
+			//get geom center
+			private function getGeomCenter(geometry:Geometry):MapPoint
+			{
+				var point:MapPoint;
+				if (geometry){
+					switch (geometry.type){
+						case Geometry.MAPPOINT:{
+							point = geometry as MapPoint;
+							break;
+						};
+						case Geometry.POLYLINE:{
+							const pl:Polyline = geometry as Polyline;
+							pl.spatialReference =  map.spatialReference;
+							const pathCount:Number = pl.paths.length;
+							const pathIndex:int = int((pathCount / 2) - 1);
+							const midPath:Array = pl.paths[pathIndex];
+							const ptCount:Number = midPath.length;
+							const ptIndex:int = int((ptCount / 2) - 1);
+							point = pl.getPoint(pathIndex, ptIndex);
+							break;
+						};
+						case Geometry.POLYGON:{
+							const poly:Polygon = geometry as Polygon;
+							point = poly.extent.center;
+							break;
+						};
+						case Geometry.EXTENT:{
+							const ext:Extent = geometry as Extent;
+							point = ext.center;
+							break;
+						};
+					};
+				};
+				return point;
+			}
+
+			//identify features
+			private function identifyFeatures(geom:Geometry):void
+			{
+				numServicesIdent = 0;
+				var arcL:*;
+				resultFound = false;
+				var identifyParams:IdentifyParameters = new IdentifyParameters();
+				identifyParams.returnGeometry = returnGeomForZoom;
+				identifyParams.tolerance = identifyTolerance;
+				identifyParams.geometry = geom;
+				identifyParams.width = map.width;
+				identifyParams.height = map.height;
+				identifyParams.mapExtent = map.extent;
+				if (useMapTime && map.timeExtent != null){
+					identifyParams.timeExtent = new TimeExtent(map.timeExtent.endTime, map.timeExtent.endTime);
+				};
+				if(betaReturnGeometryFix){
+					var geomString:String = JSONUtil.encode(geom).replace(',"spatialReference":{"wkid":' + geom.spatialReference.wkid + '}','');
+					var idURL:String = "?geometryType=" + geom.type + "&geometry=" + geomString;
+					idURL += "&sr=" + map.spatialReference.wkid.toString() + "&layers="
+					var idURL2:String = "&tolerance=" + identifyTolerance.toString() + "&mapExtent=" + map.extent.xmin.toString() + "," + map.extent.ymin.toString() + "," +  map.extent.xmax.toString() + "," +  map.extent.ymax.toString();
+					idURL2 += "&imageDisplay=" + map.width.toString() + "," + map.height.toString() + ",96" + "&returnGeometry=" + returnGeomForZoom.valueOf().toString() + "&f=json";
+				};
+				for (var i:Number = map.layerIds.length -1; i >= 0; i--){
+					arcL = null;
+					identifyParams.layerOption = identifyLayerOption;
+					var layer:Layer = map.getLayer(map.layerIds[i]);
+					identifyParams.layerIds = null;
+					var url:String = "";
+					var useProxy:Boolean = false;
+					for(var p:int=0; p<configIdentProxyMS.length; p++){
+						if (layer.name == configIdentProxyMS[p].label){
+							useProxy = true;
+						};
+					};
+					var isBaseMap:Boolean;
+					if(excludeBasemaps){
+						if (configData && configData.basemaps){
+							for (var b:int = 0; b < configData.basemaps.length; b++){
+								if(layer.id == configData.basemaps[b].label){
+									isBaseMap = true;
+									break;
+								};
+							};
+						};
+					};
+					if(isBaseMap && excludeBasemaps){
+						continue;
+					}
+					if (layer is ArcGISDynamicMapServiceLayer){
+						arcL = layer as ArcGISDynamicMapServiceLayer;
+						url = arcL.url;
+						if(arcL.layerDefinitions){
+							identifyParams.layerDefinitions = arcL.layerDefinitions;
+						};
+						if(identifyLayerOption == "visible"){
+							if(arcL.visible == false){
+								url="";
+							}else{
+								if(arcL.visibleLayers){
+									identifyParams.layerIds = getActualVisibleLayers(arcL.visibleLayers.toArray(), arcL.layerInfos.slice());
+									identifyParams.layerOption = "all";
+									if(identifyParams.layerIds.length == 0){
+										url="";
+									}
+								};
+							};
+						};
+					}else if (layer is ArcGISTiledMapServiceLayer){
+						var tiledLayer:ArcGISTiledMapServiceLayer = layer as ArcGISTiledMapServiceLayer;
+						url = tiledLayer.url;
+						if(identifyLayerOption == "visible"){
+							if(tiledLayer.visible == false){
+								url="";
+							};
+						};
+						arcL = tiledLayer;
+					}else if (layer is FeatureLayer){
+						var featLayer:FeatureLayer = layer as FeatureLayer;
+						url = featLayer.url;
+						if(featLayer.definitionExpression){
+							identifyParams.layerDefinitions = [featLayer.definitionExpression];
+						};
+						var layId:int = -1;
+
+						if( url.indexOf("FeatureServer") > -1){
+							var msName:String = url.replace("FeatureServer","MapServer");
+							arcL = new ArcGISDynamicMapServiceLayer(msName.substring(0,msName.lastIndexOf("/")));
+							url = arcL.url;
+							layId = parseInt(msName.substring(msName.lastIndexOf("/")+ 1));
+						}else{
+							arcL = new ArcGISDynamicMapServiceLayer(url.substring(0,url.lastIndexOf("/")));
+							layId = parseInt(url.substring(url.lastIndexOf("/")+ 1));
+							url = arcL.url;
+						};
+
+						if(layId != -1){
+							identifyParams.layerIds = [layId];
+						};
+						if(identifyLayerOption == "visible"){
+							if(featLayer.visible == false){
+								url="";
+							};
+						};
+					};
+
+					if(url){
+						numServicesIdent++;
+						if(betaReturnGeometryFix){
+							var visString:String = "";
+							if(identifyParams.layerIds){
+								visString += ":";
+								for(var v:int=0; v<identifyParams.layerIds.length; v++){
+									if(v>0){
+										visString += ","
+									};
+									visString += identifyParams.layerIds[v].toString();
+								};
+							};
+							var cIdURL:String;
+							if (identifyParams.layerOption){
+								cIdURL = url + "/identify" + idURL + identifyParams.layerOption + visString + idURL2;
+							}else{
+								cIdURL= url + "/identify" + idURL + identifyLayerOption + visString + idURL2;
+							}
+							var iService:HTTPService = new HTTPService();
+							iService.url = cIdURL;
+							iService.resultFormat = "text";
+							var token:AsyncToken = iService.send();
+							token.addResponder(new AsyncResponder(buildIdResults, onFault, arcL));
+							showMessage(loadingLabel, true);
+							showStateResults();
+						}else{
+							var identifyTask:IdentifyTask = new IdentifyTask(url);
+							if(useProxy)identifyTask.proxyURL = proxyURL;
+
+							if(identifyArrayCollection){
+								identifyArrayCollection=new ArrayCollection();;
+							};
+							identifyTask.execute(identifyParams,new AsyncResponder(onResult, onFault, arcL));
+							showMessage(loadingLabel, true);
+							showStateResults();
+						};
+					};
+				};
+			}
+
+			private function buildIdResults(event:ResultEvent, token:Object = null):void
+			{
+				var rawData:String = String(event.result);
+				var data:Object = JSONUtil.decode(rawData);
+				var retArray:Array = [];
+				if(data.error){
+					//do nothing;
+				}else{
+					for each( var idObj:Object in data.results){
+						var idResult:IdentifyResult = new IdentifyResult();
+						idResult.displayFieldName = idObj.displayFieldName;
+						idResult.layerId = idObj.layerId;
+						idResult.layerName = idObj.layerName;
+						idResult.feature = buildGra(idObj);
+						retArray.push(idResult);
+					};
+				};
+				function buildGra(obj:Object):Graphic
+				{
+					var gra:Graphic;
+					switch(obj.geometryType){
+						case Geometry.MAPPOINT:{
+							var mp:MapPoint = new MapPoint(obj.geometry.x, obj.geometry.y, new SpatialReference(obj.geometry.spatialReference.wkid));
+							gra = new Graphic(mp);
+							gra.attributes = obj.attributes;
+							break;
+						};
+						case Geometry.POLYGON:{
+							var mPoly:Polygon = new Polygon(null);
+							for (var i2:int = obj.geometry.rings.length - 1; i2 >= 0; i2--){
+								var ringArray:Array = [];
+								for (var j1:int = 0; j1 < obj.geometry.rings[i2].length; j1++){
+									var mpStr:String = obj.geometry.rings[i2][j1];
+									var xyArr:Array = mpStr.split(",")
+									var mp2:MapPoint = new MapPoint(xyArr[0], xyArr[1]);
+									mp2.spatialReference = new SpatialReference(obj.geometry.spatialReference.wkid);
+									ringArray.push(mp2);
+								};
+								mPoly.addRing(ringArray);
+							};
+							mPoly.spatialReference = new SpatialReference(obj.geometry.spatialReference.wkid);
+
+							gra = new Graphic(mPoly);
+							gra.attributes = obj.attributes;
+							break;
+						};
+						case Geometry.EXTENT:{
+							var ext:Extent = new Extent(obj.geometry.xmin, obj.geometry.ymin, obj.geometry.xmax, obj.geometry.ymax, new SpatialReference(obj.geometry.spatialReference.wkid));
+							gra = new Graphic(ext);
+							gra.attributes = obj.attributes;
+							break;
+						};
+						case Geometry.POLYLINE:{
+							var pLine:Polyline = new Polyline(null);
+							for (var i3:int = obj.geometry.paths.length - 1; i3 >= 0; i3--){
+								var pathArray:Array = [];
+								for (var j2:int = 0; j2 < obj.geometry.paths[i3].length; j2++){
+									var mpStr2:String = obj.geometry.paths[i3][j2];
+									var xyArr2:Array = mpStr2.split(",")
+									var mp3:MapPoint = new MapPoint(xyArr2[0], xyArr2[1]);
+									mp3.spatialReference = new SpatialReference(obj.geometry.spatialReference.wkid);
+									pathArray.push(mp3);
+								};
+								pLine.addPath(pathArray);
+							};
+							gra = new Graphic(pLine);
+							gra.attributes = obj.attributes;
+							break;
+						};
+					};
+					return gra;
+				};
+				onResult(retArray,null);
+			}
+
+			private function onResult(identifyResults:Array, arcL:* = null):void
+			{
+
+				hideInfoWindow();
+
+
+
+				numServicesIdent--;
+				//if top is chosen and a result is already forund than bail out of all other returns.
+				if(identifyLayerOption == "top" && resultFound){
+					return;
+				};
+				if(!identifyArrayCollection){
+					identifyArrayCollection = new ArrayCollection();
+				};
+
+
+				for each (var identifyResult:IdentifyResult in identifyResults){
+
+					arrIdentifyCopy.push(identifyResult)
+					var excludeLayer:Boolean = false;
+					for (var el:int=0; el < excludeLayers.length; el++){
+						if (identifyResult.layerName == excludeLayers[el]){
+							excludeLayer = true;
+							break;
+						};
+					};
+					if (excludeLayer){
+						continue;
+					};
+
+
+					/* *******Test****** */
+
+					if(ddMapService.selectedIndex > 0){
+						if(identifyResult.layerName != ddMapService.selectedItem.label){
+							continue;
+						};
+					};
+					var title:String = identifyResult.layerName;
+					var obj:Object = identifyResult.feature.attributes;
+					var content:String = "";
+					var rsltContent:String = "";
+					var fld:String;
+					var value:String;
+					var identFields:XMLList;
+					var identLinks:Array = [];
+					var lyrIdLinks:Array = [];
+					var identZoom:Number = 0;
+					var identForceScale:Boolean = false;
+					var idResult:IdResult = new IdResult();
+
+					for(var i:int=0; i<configIdentFields.length; i++){
+						identFields = null;
+						if (identifyResult.layerName == configIdentFields[i].label){
+							identLinks = configIdentFields[i].links;
+							identFields = configIdentFields[i].fields;
+							identZoom = configIdentFields[i].zoomscale;
+							identForceScale = configIdentFields[i].forcescale;
+							break;
+						};
+					};
+
+					if(arcL){
+						if(checkIfLayerVisible(arcL, identifyResult.layerId)){
+							continue;
+						};
+					};
+
+
+
+
+						/////////////////////
+					var link:String="";
+
+						var lyrIdLinks:Array = new Array();
+						link = ""
+						for (var str:String in obj){
+
+							var strLink:String = obj[str];
+							var pos:Number = strLink.length - 4;
+							var sfx:String = strLink.substr(pos, 4).toLowerCase();
+							if ((sfx == ".jpg") || (sfx == ".png") || (sfx == ".gif")){
+								link = strLink;
+								var lObj:Object ={
+									link: strLink,
+									icon: _linkIcon,
+									alias: "",
+									tooltip: ""
+								};
+								lyrIdLinks.push(lObj);
+							}
+							else
+							{
+								content += "    <b>" + str + ":  </b>"+ obj[str] + "<br>";
+							}
+						}
+
+
+						idResult.icon = widgetIcon;
+						idResult.title = identifyResult.layerName;
+						idResult.content = content;
+						idResult.rsltcontent = content;
+						idResult.links = lyrIdLinks;
+						idResult.zoomScale = _zoomScale;
+						if(identifyGeom is MapPoint){
+							idResult.point = identifyGeom as MapPoint
+						}else{
+							idResult.point = (returnGeomForZoom) ? getGeomCenter(identifyResult.feature.geometry) : getGeomCenter(identifyGeom);
+						};
+						idResult.geometry = (returnGeomForZoom) ? identifyResult.feature.geometry : identifyGeom;
+
+
+						var iGra2:Graphic = new Graphic();
+						iGra2.geometry = identifyResult.feature.geometry;
+						switch (identifyResult.feature.geometry.type){
+							case Geometry.MAPPOINT:{
+								iGra2.symbol = identMarkerSymbol;
+								break;
+							};
+							case Geometry.POLYLINE:{
+								iGra2.symbol = identLineSymbol;
+								break;
+							};
+							case Geometry.POLYGON:
+							case Geometry.EXTENT:{
+								iGra2.symbol = identFillSymbol;
+								break;
+							};
+						};
+
+						idResult.graphic = iGra2;
+						idResult.gid = gid;
+
+
+							identifyArrayCollection.addItem(idResult);
+
+
+						if(enableMoverGra){
+							iGra2.addEventListener(MouseEvent.ROLL_OVER, mouseOverGraphic);
+							iGra2.addEventListener(MouseEvent.ROLL_OUT, mouseOutGraphic);
+						};
+						 var Atts2:Object = {
+							gid: gid,
+							content: content,
+							title: title,
+							icon: "",
+							link: link
+						};
+						iGra2.attributes = Atts2;
+						if(returnGeomForZoom){
+							graphicsLayer.add(iGra2);
+						};
+						var popUpInfo2 : PopUpInfo = new PopUpInfo();
+						popUpInfo2.title = "{title}";
+						popUpInfo2.description = "{content}";
+						var infoWindowRenderer2:ClassFactory = new ClassFactory(PopUpRenderer);
+						infoWindowRenderer2.properties = { popUpInfo: popUpInfo2};
+						iGra2.infoWindowRenderer = infoWindowRenderer2;
+						gid ++;
+
+
+
+
+				}
+				if(identifyArrayCollection.length == 0 && numServicesIdent <= 0){
+					showMessage(noResultsFoundLbl, false);
+					timedClose2();
+				}else if(identifyArrayCollection.length > 0 && numServicesIdent <= 0){
+					showMessage(resultsFoundLbl + " " + identifyArrayCollection.length, false);
+
+
+					timedClose2();
+				}else{
+					showMessage(loadingLabel + " layers remaining: " + numServicesIdent, true);
+				};
+			}
+
+
+
+
+
+
+			private function getResultByGID(gid:Number):IdResult
+			{
+				var retResult:IdResult
+				for (var i:Number = 0; i < identifyArrayCollection.length; i++){
+					var sr:IdResult = identifyArrayCollection[i];
+					if(sr.gid == gid){
+						retResult = sr;
+						break;
+					}
+				}
+
+				return retResult;
+			}
+
+			private var timer3:Timer;
+			private function timedClose2():void
+			{
+				var rate:Number = AutoCloseNum;
+				stopTimer2();
+				timer3 = new Timer(rate);
+				timer3.addEventListener(TimerEvent.TIMER,timerTick2);
+				timer3.start();
+			}
+
+			//stop timer
+			private function stopTimer2():void
+			{
+				if (timer3 != null){
+					if (timer3.running){
+						timer3.stop();
+					};
+				};
+			}
+
+			private function disableTimer2(evt:Event):void
+			{
+				stopTimer2();
+			}
+
+			private function reEnableTimer2(evt:Event):void
+			{
+				timedClose2();
+			}
+
+			//timer tick
+			private function timerTick2(event:TimerEvent):void
+			{
+				stopTimer2();
+				if(identifyArrayCollection.length == 0){
+					showStateIdentify();
+				};
+			}
+
+			private function msToDate(ms:Number, dateFormat:String, useUTC:Boolean):String
+			{
+				var date:Date = new Date(ms);
+				if (date.milliseconds == 999){ // workaround for REST bug
+					date.milliseconds++;
+				};
+				if (useUTC){
+					date.minutes += date.timezoneOffset;
+				};
+				if (dateFormat){
+					dateFormatter.formatString = dateFormat;
+					var result:String = dateFormatter.format(date);
+					if (result){
+						return result;
+					}else{
+						return dateFormatter.error;
+					};
+				}else{
+					return date.toLocaleString();
+				};
+			}
+
+			private function checkIfLayerVisible(arcL:*, lid:Number):Boolean
+			{
+				var isThisLayerVisible:Boolean = true;
+				var maxScale:Number = 0;
+				var minScale:Number = 0;
+
+				if(arcL){
+					var liArr:Array = arcL.layerInfos;
+					if(liArr)
+					var li:LayerInfo = findInCollection(liArr, findId(lid));
+
+					if(!li){
+						return false;
+					}
+					maxScale = li.maxScale;
+					minScale = li.minScale;
+
+					if(maxScale > 0 && minScale > 0){
+						if ((map.scale >= maxScale) &&
+							(map.scale <= minScale)){
+							isThisLayerVisible = false;
+						};
+					}else if (maxScale > 0 ){
+						if ((map.scale >= maxScale)){
+							isThisLayerVisible = false;
+						};
+					}else if (minScale > 0 ){
+						if ((map.scale <= minScale)){
+							isThisLayerVisible = false;
+						};
+					}else{
+						isThisLayerVisible = false;
+					};
+				}
+
+				function findId(id:int):Function {
+					return function(element:*, index:int, array:Array):Boolean
+					{
+						return element.layerId == id;
+					};
+				}
+
+				function findInCollection(a:Array, find:Function):Object {
+					var matches:Array = a.filter(find);
+					return (matches.length > 0 ? matches[0] : null);
+				}
+
+				return isThisLayerVisible;
+			}
+
+			//on fault
+			private function onFault(fault:Fault, token:Object = null):void
+			{
+
+				hideInfoWindow();
+				if(fault.faultDetail != "Identify operation not supported on this service") {
+					showMessage(fault.faultDetail, false);
+				}else{
+					if(identifyArrayCollection && identifyArrayCollection.length == 0){
+						showMessage("No Results", false);
+					};
+				};
+			}
+
+			private function applyGlowSymbolorFilter(gra:Graphic):void
+			{
+				if(gra.geometry.type == Geometry.MAPPOINT || gra.geometry.type == Geometry.MULTIPOINT){
+					gra.filters = [gf];
+				}else if(gra.geometry.type == Geometry.POLYLINE){
+					gra.symbol = glowLineSymbol;
+				}else if(gra.geometry.type == Geometry.POLYGON || gra.geometry.type == Geometry.EXTENT){
+					gra.symbol = glowFillSymbol;
+				}
+			}
+
+			private function removeGlowSymbolorFilter(gra:Graphic):void
+			{
+				if(gra.geometry.type == Geometry.MAPPOINT || gra.geometry.type == Geometry.MULTIPOINT){
+					gra.filters = null;
+				}else if(gra.geometry.type == Geometry.POLYLINE){
+					gra.symbol = identLineSymbol;
+				}else if(gra.geometry.type == Geometry.POLYGON || gra.geometry.type == Geometry.EXTENT){
+					gra.symbol = identFillSymbol;
+				}
+			}
+
+			//mouse over graphic
+			private function mouseOverGraphic(event:MouseEvent):void
+			{
+				stopTimer();
+				var gra:Graphic = event.currentTarget as Graphic;
+				applyGlowSymbolorFilter(gra);
+
+				if (map.infoWindow.visible && map.infoWindow.contentOwner &&
+					((map.infoWindow.contentOwner is Graphic && map.infoWindow.contentOwner === gra) || map.infoWindow.contentOwner is Map)){
+					return;
+				};
+
+				var idResult:IdResult = getResultByGID(gra.attributes.gid);
+				if(idResult == null)
+				{
+					Alert.show("Previous request is in process.\nPlease try again in few moments.","Alert");
+				}
+				else
+				{
+					clearTimeout(hitimer);
+					if (map.extent.containsXY(idResult.point.x, idResult.point.y)){
+						hitimer = setTimeout(showHighlight, 300, [idResult]);
+					}
+					else
+					{
+						hideInfoWindow();
+					}
+				}
+			}
+
+			private function mouseOutGraphic(event:MouseEvent):void
+			{
+				var gra:Graphic = event.currentTarget as Graphic;
+				removeGlowSymbolorFilter(gra);
+				timedClose();
+				clearSelectedGrapics(null);
+			}
+
+			private function clear():void
+			{
+				if(arrAllLyerData)
+				{
+				arrAllLyerData.removeAll();
+				}
+				if(arrIdentifyCopy)
+				{
+				arrIdentifyCopy=new Array();
+				}
+				lblSelectedLayerCount.text="";
+				showStateIdentify();
+				hideInfoWindow();
+				if(graphicsLayer)
+				{
+					graphicsLayer.clear();
+				}
+				clearMessage();
+				if(identifyArrayCollection){
+					identifyArrayCollection.removeAll();
+					boxMessage.visible=false;
+				};
+			}
+
+			private var hitimer:uint;
+
+			private function mouseOverRecord(event:Event):void
+			{
+				var idResult:IdResult = ItemRenderer(event.target).data as IdResult;
+				stopTimer();
+
+				if(idResult.graphic){
+					var iG:Number = (graphicsLayer.graphicProvider as ArrayCollection).getItemIndex(idResult.graphic);
+					if(iG > -1){
+						applyGlowSymbolorFilter((graphicsLayer.graphicProvider as ArrayCollection).getItemAt(iG) as Graphic);
+					};
+				};
+				clearTimeout(hitimer);
+				if (map.extent.containsXY(idResult.point.x, idResult.point.y)){
+					if(enableMoverRec){
+						hitimer = setTimeout(showHighlight, 300, [idResult]);
+					};
+				}else{
+					hideInfoWindow();
+				};
+			}
+
+			private function mouseOutRecord(event:Event):void
+			{
+				var idResult:IdResult = ItemRenderer(event.target).data as IdResult;
+				if(idResult.graphic){
+					var iG:Number = (graphicsLayer.graphicProvider as ArrayCollection).getItemIndex(idResult.graphic);
+					if(iG > -1){
+						removeGlowSymbolorFilter((graphicsLayer.graphicProvider as ArrayCollection).getItemAt(iG) as Graphic);
+					}
+				}
+				clearTimeout(hitimer);
+				hitimer = setTimeout(timedClose, 100);
+			}
+
+			private var timer2:Timer;
+			private function timedClose():void
+			{
+				var rate:Number = AutoCloseNum;
+				stopTimer();
+				timer2 = new Timer(rate);
+				timer2.addEventListener(TimerEvent.TIMER,timerTick);
+				timer2.start();
+			}
+
+			//stop timer
+			private function stopTimer():void
+			{
+				if (timer2 != null){
+					if (timer2.running){
+						timer2.stop();
+					};
+				};
+			}
+
+			private function disableTimer(evt:Event):void
+			{
+				stopTimer();
+			}
+
+			private function reEnableTimer(evt:Event):void
+			{
+				timedClose();
+			}
+
+			//timer tick
+			private function timerTick(event:TimerEvent):void
+			{
+				stopTimer();
+				hideInfoWindow();
+				clearSelectedGrapics(null);
+			}
+
+			private function clearSelectedGrapics(evt:Event):void
+			{
+
+				if(!returnGeomForZoom){
+					for (var i:int = 0; i < graphicsLayer.numGraphics; ){
+						if (Graphic(graphicsLayer.getChildAt(i)).name == "Selected"){
+							graphicsLayer.remove(Graphic(graphicsLayer.getChildAt(i)));
+							break;
+						}else{
+							i++;
+						};
+					};
+				}
+			}
+
+			private function clickRecord(event:Event):void
+			{
+
+				var idResult:IdResult = ItemRenderer(event.target).data as IdResult;
+				if(idResult.geometry.type == Geometry.MAPPOINT){
+					if(idResult.forceScale.valueOf() == true){
+						map.scale = idResult.zoomScale;
+					}else{
+						if (map.scale > idResult.zoomScale){
+							map.scale = idResult.zoomScale;
+
+						};
+					};
+					map.centerAt(idResult.point as MapPoint);
+					map.zoomOut()
+				}else{
+					if (returnGeomForZoom) {
+						map.extent = idResult.geometry.extent.expand(1.2);
+					}else{
+						if(idResult.forceScale.valueOf() == true){
+							map.scale = idResult.zoomScale;
+						}else{
+							if (map.scale > idResult.zoomScale){
+								map.scale = idResult.zoomScale;
+							};
+						};
+						map.centerAt(idResult.point as MapPoint);
+						map.zoomOut()
+					};
+				}
+				hideInfoWindow();
+				if(enableMoverRec){
+					showHighlight([idResult]);
+				};
+			}
+
+			private function showHighlight(params:Array):void
+			{
+				stopTimer();
+				var idrslt:IdResult = params[0];
+				var showHighlightPoint:MapPoint = idrslt.point as MapPoint;
+				popUpRenderer.popUpInfo = configurePopUpInfo(idrslt.links);
+				popUpRenderer.graphic = idrslt.graphic;
+				map.infoWindow.content = popUpRenderer;
+				map.infoWindow.contentOwner = popUpRenderer.graphic;
+
+				map.infoWindow.addEventListener(Event.CLOSE, clearSelectedGrapics);
+				map.infoWindow.addEventListener(MouseEvent.MOUSE_OVER,disableTimer);
+				map.infoWindow.addEventListener(MouseEvent.MOUSE_OUT,reEnableTimer);
+				clearSelectedGrapics(null);
+				if(!returnGeomForZoom){
+					if(idrslt.point !== idrslt.geometry){
+						var sGra:Graphic = new Graphic(idrslt.geometry);
+						switch (idrslt.geometry.type){
+							case Geometry.MAPPOINT:{
+								sGra.symbol = identPicSymbol;
+								break;
+							};
+							case Geometry.POLYLINE:{
+								sGra.symbol = identLineSymbol;
+								break;
+							};
+							case Geometry.POLYGON:
+							case Geometry.EXTENT:{
+								sGra.symbol = identFillSymbol;
+								break;
+							};
+						};
+						sGra.name = "Selected";
+						graphicsLayer.add(sGra);
+						map.infoWindow.contentOwner = sGra;
+						map.infoWindow.show(showHighlightPoint);
+					}else{
+						var sGra2:Graphic = new Graphic(idrslt.point, identPicSymbol, null);
+						sGra2.name = "Selected";
+						graphicsLayer.add(sGra2);
+						map.infoWindow.contentOwner = sGra2;
+						map.infoWindow.show(showHighlightPoint);
+					};
+				}else{
+					map.infoWindow.show(showHighlightPoint);
+				};
+			}
+
+			private function configurePopUpInfo(links:Array):PopUpInfo
+			{
+				var popUpInfo:PopUpInfo = new PopUpInfo;
+				var strType:String = "<b>"+identifyParserUtil.strType+"</b>";
+				var strDescription:String = "<b>"+identifyParserUtil.strDescription+"</b>";
+				popUpInfo.title = "Point of Interest";
+				popUpInfo.description =  strType +": {title} \n "+ strDescription + ": \n{content}";
+				var pminfos:Array = [];
+
+				for(var l:int=0; l<links.length; l++){
+					if (links[l].link){
+						var pos:Number = links[l].link.length - 4;
+						var sfx:String = String(links[l].link).substr(pos, 4).toLowerCase();
+						if ((sfx == ".jpg") || (sfx == ".png") || (sfx == ".gif")){ // use PopUpMediaInfo if it is an image
+							var popUpMediaInfo:PopUpMediaInfo = new PopUpMediaInfo;
+							popUpMediaInfo.type = PopUpMediaInfo.IMAGE;
+							popUpMediaInfo.imageLinkURL = links[l].link;
+							popUpMediaInfo.imageSourceURL = links[l].link;
+							pminfos.push(popUpMediaInfo);
+						}else{
+							if(!DisablePopUpLinks){
+								var lText:String = (links[l].alias != "") ? links[l].alias : links[l].link;
+								popUpInfo.description += "<br /><a href='" + links[l].link + "'>" + lText + "</a>";
+							};
+						};
+					};
+				};
+
+				popUpInfo.popUpMediaInfos = pminfos;
+				return popUpInfo;
+			}
+
+			private function showMessage(msg:String, swfVisible:Boolean):void
+			{
+
+				lblSelectedLayerCount.text=msg;
+
+				msgVisible = true;
+			}
+
+			private function clearMessage():void
+			{
+				msgVisible = false;
+			}
+
+			private function widgetClosedHandler(event:Event):void
+			{
+				clear();
+				setMapAction(null, null, null, null);
+				graphicsLayer.visible = false;
+				hideInfoWindow();
+				map.infoWindow.hide();
+				setMapNavigation(null, null);
+
+				if (selectedDrawingIcon){
+					selectedDrawingIcon = null;
+				};
+			}
+
+			private function widgetMinimizedHandler(event:Event):void
+			{
+				map.infoWindow.hide();
+				if(graphicsLayer){
+					graphicsLayer.visible = false;
+				}
+			}
+
+			private function widgetOpenedHandler(event:Event):void
+			{
+				if(graphicsLayer){
+					graphicsLayer.visible = true;
+				};
+				if(configXML){
+					if (autoActivatedTool != null && autoActivatedTool != "" ){
+						activateIdentifyTool(null, autoActivatedTool);
+					};
+				};
+			}
+
+			private function showStateIdentify():void
+			{
+				map.infoWindow.hide();
+				currentState = "StateIdentify";
+				wTemplate.selectedTitlebarButtonIndex = 0;
+			}
+
+			private function showStateResults():void
+			{
+				currentState = "resultsList";
+				wTemplate.selectedTitlebarButtonIndex = 1;
+			}
+
+			private function hideInfoWindow():void
+			{
+				if (map.infoWindow.contentOwner &&
+				((map.infoWindow.contentOwner is Graphic &&
+				Graphic(map.infoWindow.contentOwner).graphicsLayer === graphicsLayer) ||
+				map.infoWindow.contentOwner is Map)){
+					map.infoWindow.hide();
+				};
+			}
+
+			private function sharedDataUpdated(event:AppEvent):void
+			{
+				var data:Object = event.data;
+				if (data.key == "Deactivate_DrawTool"){
+					setMapAction(null, null, null, null);
+					if (selectedDrawingIcon){
+						selectedDrawingIcon.filters = [];
+						selectedDrawingIcon = null;
+					};
+				};
+			}
+
+			private function geometryService_faultHandler(event:FaultEvent):void
+			{
+				Alert.show(event.fault.toString(), wTemplate.widgetTitle);
+			}
+
+			private function iconRollOverHandler(event:MouseEvent):void
+			{
+				clearSelectionFilter();
+				event.target.filters = [ glowFilter ];
+			}
+
+			private function iconRollOutHandler(event:MouseEvent):void
+			{
+				clearSelectionFilter();
+			}
+
+			private function clearSelectionFilter():void
+			{
+				for (var i:int = 0; i < imageGroup.numChildren; i++){
+					if (imageGroup.getChildAt(i).filters && imageGroup.getChildAt(i).filters.length > 0){
+						if (!(selectedDrawingIcon && imageGroup.getChildAt(i) === selectedDrawingIcon)){
+							imageGroup.getChildAt(i).filters = [];
+						};
+					};
+				};
+			}
+
+			private function getActualVisibleLayers(layerIds:Array, layerInfos:Array):Array
+			{
+				var result:Array = [];
+
+				layerIds = layerIds ? layerIds.concat() : null;
+				var layerInfo:LayerInfo;
+				var layerIdIndex:int;
+
+				if (layerIds){
+					// replace group layers with their sub layers
+					for each (layerInfo in layerInfos){
+						layerIdIndex = layerIds.indexOf(layerInfo.layerId);
+						if (layerInfo.subLayerIds && layerIdIndex != -1){
+							layerIds.splice(layerIdIndex, 1); // remove the group layer id
+							for each (var subLayerId:Number in layerInfo.subLayerIds){
+								//only add subLayerId if it does not already exist
+								if(layerIds.indexOf(subLayerId)== -1){
+									layerIds.push(subLayerId); // add subLayerId
+								};
+							};
+						};
+					};
+
+					//copying layerInfos as Array#reverse() is destructive.
+					var reversedLayerInfos:Array = layerInfos.concat();
+					reversedLayerInfos.reverse();
+
+					result = layerIds;
+				};
+				result.sort(Array.NUMERIC);
+				return result;
+			}
+
+			private function removeRecord(event:Event):void
+			{
+
+				hideInfoWindow();
+				var idResult:IdResult = ItemRenderer(event.target).data as IdResult;
+				identifyArrayCollection.removeItemAt(identifyArrayCollection.getItemIndex(idResult));
+				identifyArrayCollection.refresh();
+				graphicsLayer.remove(idResult.graphic);
+				showMessage(resultsFoundLbl + " " + identifyArrayCollection.length, false);
+				 if(identifyArrayCollection.length == 0){
+
+				};
+				 clearTimeout(hitimer);
+				 hitimer = setTimeout(timedClose, 100);
+			}
+
+			/*
+			* Display the current version and build date of the eSearch Widget when holding the ALT key
+			* and clcicking on the widget title
+			*/
+			private function DisplayVersion(evt:MouseEvent):void
+			{
+				if(evt.altKey){
+					Alert.show("Identify Widget Version: " + VERSION + "\nBuild Date: " + BUILDDATE,
+						wTemplate.widgetTitle, 4, null, null, iconClass);
+				}
+			}
+
+			protected function ddlAllLayer_changeHandler(event:IndexChangeEvent):void
+			{
+
+				hideInfoWindow();
+				graphicsLayer.clear();
+
+				identifyArrayCollection=new ArrayCollection();
+
+
+						for each (var identifyResult:IdentifyResult in arrIdentifyCopy){
+
+							var excludeLayer:Boolean = false;
+							for (var el:int=0; el < excludeLayers.length; el++){
+								if (identifyResult.layerName == excludeLayers[el]){
+									excludeLayer = true;
+									break;
+								};
+							};
+							if (excludeLayer){
+								continue;
+							};
+
+
+							/* *******Test****** */
+							if(ddlAllLayer.selectedIndex > 0){
+								if(identifyResult.layerName != ddlAllLayer.selectedItem.label){
+									continue;
+								};
+							};
+
+							var title:String = identifyResult.layerName;
+							var obj:Object = identifyResult.feature.attributes;
+							var content:String = "";
+							var rsltContent:String = "";
+							var fld:String;
+							var value:String;
+							var identFields:XMLList;
+							var identLinks:Array = [];
+							var lyrIdLinks:Array = [];
+							var identZoom:Number = 0;
+							var identForceScale:Boolean = false;
+							var idResult:IdResult = new IdResult();
+
+							for(var i:int=0; i<configIdentFields.length; i++){
+								identFields = null;
+								if (identifyResult.layerName == configIdentFields[i].label){
+									identLinks = configIdentFields[i].links;
+									identFields = configIdentFields[i].fields;
+									identZoom = configIdentFields[i].zoomscale;
+									identForceScale = configIdentFields[i].forcescale;
+									break;
+								};
+							};
+
+
+
+
+
+
+								/////////////////////
+							var link:String="";
+
+								var lyrIdLinks:Array = new Array();
+								link = ""
+								for (var str:String in obj){
+
+									var strLink:String = obj[str];
+									var pos:Number = strLink.length - 4;
+									var sfx:String = strLink.substr(pos, 4).toLowerCase();
+									if ((sfx == ".jpg") || (sfx == ".png") || (sfx == ".gif")){
+										link = strLink;
+										var lObj:Object ={
+											link: strLink,
+											icon: _linkIcon,
+											alias: "",
+											tooltip: ""
+										};
+										lyrIdLinks.push(lObj);
+									}
+									else
+									{
+										content += "<b>" + str + ":  </b>"+ obj[str] + "<br>";
+									}
+								}
+
+
+
+								idResult.icon = widgetIcon;
+								idResult.title = identifyResult.layerName;
+								idResult.content = content;
+								idResult.rsltcontent = content;
+								idResult.links = lyrIdLinks;
+								idResult.zoomScale = _zoomScale;
+								if(identifyGeom is MapPoint){
+									idResult.point = identifyGeom as MapPoint
+								}else{
+									idResult.point = (returnGeomForZoom) ? getGeomCenter(identifyResult.feature.geometry) : getGeomCenter(identifyGeom);
+								};
+								idResult.geometry = (returnGeomForZoom) ? identifyResult.feature.geometry : identifyGeom;
+
+
+								var iGra2:Graphic = new Graphic();
+								iGra2.geometry = identifyResult.feature.geometry;
+								switch (identifyResult.feature.geometry.type){
+									case Geometry.MAPPOINT:{
+										iGra2.symbol = identMarkerSymbol;
+										break;
+									};
+									case Geometry.POLYLINE:{
+										iGra2.symbol = identLineSymbol;
+										break;
+									};
+									case Geometry.POLYGON:
+									case Geometry.EXTENT:{
+										iGra2.symbol = identFillSymbol;
+										break;
+									};
+								};
+
+								idResult.graphic = iGra2;
+								idResult.gid = gid;
+
+								identifyArrayCollection.addItem(idResult);
+								if(enableMoverGra){
+									iGra2.addEventListener(MouseEvent.ROLL_OVER, mouseOverGraphic);
+									iGra2.addEventListener(MouseEvent.ROLL_OUT, mouseOutGraphic);
+								};
+								var Atts2:Object = {
+									gid: gid,
+									content: content,
+									title: title,
+									icon: "",
+									link: link
+								};
+								iGra2.attributes = Atts2;
+								if(returnGeomForZoom){
+									graphicsLayer.add(iGra2);
+								};
+								var popUpInfo2 : PopUpInfo = new PopUpInfo();
+								popUpInfo2.title = "{title}";
+								popUpInfo2.description = "{content}";
+								var infoWindowRenderer2:ClassFactory = new ClassFactory(PopUpRenderer);
+								infoWindowRenderer2.properties = { popUpInfo: popUpInfo2};
+								iGra2.infoWindowRenderer = infoWindowRenderer2;
+								gid ++;
+
+
+
+
+						}
+
+
+
+					if(identifyArrayCollection.length>0)
+					{
+						idResultDG.visible=true;
+						scroller.visible = true;
+						lblSelectedLayerCount.text="Results Found "+identifyArrayCollection.length.toString();
+					}
+					else
+					{
+						lblSelectedLayerCount.text="No Results Found";
+					}
+
+
+
+
+			}
+
+
+
+
+
+		]]>
+	</fx:Script>
+	<viewer:WidgetTemplate id="wTemplate"
+		closed="widgetClosedHandler(event)"
+		open="widgetOpenedHandler(event)"
+	    minimized="widgetMinimizedHandler(event)"
+		height="210" width="400" minWidth="400" minHeight="210">
+		<s:Group id="StateIdentify" height="100%" width="100%" visible="false" visible.StateIdentify="true">
+			<s:layout>
+				<s:VerticalLayout gap="6" horizontalAlign="center"/>
+			</s:layout>
+			<s:Spacer height="3"/>
+			<s:Label id="txtLabel"
+					 width="100%"
+					 text="{descriptionLabel}"
+					 textAlign="center"/>
+			<s:HGroup gap="12" verticalAlign="middle">
+				<s:Label id="idfromlbl" text="{idFromLabel}" />
+				<s:DropDownList id="ddMapService"  width="60%"/>
+			</s:HGroup>
+
+			<s:HGroup id="imageGroup"
+					  width="100%"
+					  gap="10"
+					  horizontalAlign="center">
+				<s:Image id="iDrawPnt"
+						  name="{DrawTool.MAPPOINT}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="{activateIdentifyTool(event)}"
+						  rollOut="iconRollOutHandler(event)"
+						  rollOver="iconRollOverHandler(event)"
+						  source="assets/images/i_draw_point.png"
+						  toolTip="{pointLabel}"
+						  useHandCursor="true"/>
+				<s:Image id="iDrawLine"
+						  name="{DrawTool.POLYLINE}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="{activateIdentifyTool(event)}"
+						  rollOut="iconRollOutHandler(event)"
+						  rollOver="iconRollOverHandler(event)"
+						  source="assets/images/i_draw_line.png"
+						  toolTip="{lineLabel}"
+						  useHandCursor="true"
+						  visible="{enableLine}"
+						  includeInLayout="{enableLine}"/>
+				<s:Image id="iDrawExt"
+						  name="{DrawTool.EXTENT}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="{activateIdentifyTool(event)}"
+						  rollOut="iconRollOutHandler(event)"
+						  rollOver="iconRollOverHandler(event)"
+						  source="assets/images/i_draw_rect.png"
+						  toolTip="{rectLabel}"
+						  useHandCursor="true"
+						  visible="{enableExtent}"
+						  includeInLayout="{enableExtent}"/>
+				<s:Image id="iDrawPoly"
+						  name="{DrawTool.POLYGON}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="{activateIdentifyTool(event)}"
+						  rollOut="iconRollOutHandler(event)"
+						  rollOver="iconRollOverHandler(event)"
+						  source="assets/images/i_draw_poly.png"
+						  toolTip="{polyLabel}"
+						  useHandCursor="true"
+						  visible="{enablePoly}"
+						  includeInLayout="{enablePoly}"/>
+			</s:HGroup>
+			<s:HGroup width="100%"
+					  horizontalAlign="right"
+					  paddingRight="10"
+					  paddingTop="2">
+				<s:Label buttonMode="true"
+						 click="clear()"
+						 fontWeight="bold"
+						 text="{clearLabel}"
+						 textDecoration="underline"/>
+			</s:HGroup>
+		</s:Group>
+		<s:Group id="resultsList" height="100%" width="100%"  visible.resultsList="true" visible="false">
+			<s:layout>
+				<s:VerticalLayout gap="1"/>
+			</s:layout>
+			<s:HGroup id="boxMessage"
+
+					  visible="{msgVisible}"
+					  width="100%" verticalAlign="middle">
+				<s:DropDownList id="ddlAllLayer"  change="ddlAllLayer_changeHandler(event)"/>
+				<s:Label verticalAlign="middle" id="lblSelectedLayerCount" width="50%"  />
+
+
+				<s:Label buttonMode="true" textAlign="right"
+						 click="clear()"
+						 fontWeight="bold"
+						 text="{clearLabel}"
+						 visible="{idResultDG.dataProvider.length &gt; 0}"
+						 includeInLayout="{idResultDG.dataProvider.length &gt; 0}"
+						 textDecoration="underline"/>
+			</s:HGroup>
+
+			<s:Spacer height="2"/>
+
+			<s:Scroller id="scroller" width="100%" height="100%"   >
+				<Ident:IdResultDataGroup id="idResultDG"
+										      dataProvider="{identifyArrayCollection}"
+											  idResultClick="clickRecord(event)"
+											  idResultOver="mouseOverRecord(event)"
+											  idResultOut="mouseOutRecord(event)"
+											  idResultDelete="removeRecord(event)">
+					<Ident:layout>
+						<s:VerticalLayout gap="2"
+										  horizontalAlign="justify"
+										  useVirtualLayout="true"/>
+					</Ident:layout>
+				</Ident:IdResultDataGroup>
+			</s:Scroller>
+		</s:Group>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

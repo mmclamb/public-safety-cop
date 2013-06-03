@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<configuration>
+
+<!--	Pop-up for a feature layer using a free-flow description with HTML and multiple fields. -->
+<!--<field>—Which fields to display (or not) and how to label and format them. -->
+<!--    name—Name of the field to use. Required. Case-sensitive.-->
+<!--    alias —Alias to display instead of the name. Optional.-->
+<!--    visible—Boolean. Default value is false. Optional.-->
+
+	<title>Name : {event}</title>
+    <fields>
+         <!-- Used in title, do not repeat in content -->
+        <field name="objectid"  alias="OBJECTID" visible="true"/>  <!-- Overwrite alias specified in Map Service -->
+        <field name="fips" alias="fips" visible="true"/>
+        <field name="effective" alias="effective" visible="true"/>
+        <field name="expires" alias="expires" visible="true"/>
+    </fields>
+
+</configuration>
+
+<!--
+    Pop-up configuration file for:
+    http://server.arcgisonline.com/ArcGIS/rest/services/Demographics/USA_Median_Household_Income/MapServer/3
+    See pop-up documentation at
+    http://links.esri.com/flexviewer/popups
+-->

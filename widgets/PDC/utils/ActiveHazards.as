@@ -1,5 +1,5 @@
 ﻿/*
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2012 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -89,7 +89,7 @@ package widgets.PDC.utils{
 			aboutPanel.y = 60;
 			aboutPanel.visible = false;
 			aboutPanel.addEventListener(About.STATUS, handleAboutStatus, false, 0, true);
-			//addChild(aboutPanel);
+
 		};
 
 		public function showAbout():void {

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2008 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,13 @@
  | limitations under the License.
 -->
 <configuration>
+
+<!-- The graticule specify details for graticule layer. -->
+<!-- <numberOfGrids> Specify the number of grid line to be visible on map -->
+<!-- <line> Specify the color of line, alpha between(0-1),width, dash array of the graticule line (this allows you to create any type dashed line) . -->
+<!-- <text> Specify the text color, size, alpha, background color to be visible. -->
+
+
 	<graticule>
 		<numberOfGrids>4</numberOfGrids>
 		<line>
@@ -36,6 +43,12 @@
 		<useDMM>true</useDMM>
 	</graticule>
 
+
+<!-- The mgrsLayer tag defines the USNG/MGRS grid designing standards. It allows to create refine gird line for UTM,MGRS 1KM and MGRS 100Km and more this.	 -->
+<!-- The maxScale specify the maximum scale at which to show the large UTM grids and MGRS grid.	 -->
+<!-- The minScale specify the minimum scale at which to show the large UTM grids and MGRS grid.	 -->
+<!-- The line Specify the color of line, alpha between(0-1),width, dash array of the graticule line (this 	allows you to create any type dashed line) . -->
+<!-- The text Specify the text color, size, alpha, background color to be visible. -->
 
 
 	<mgrsLayer>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.2
+ | Version 10.2
  | Copyright 2012 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,7 @@
  | limitations under the License.
 -->
 <project name="Flash" default="build" basedir=".">
-    <property name="flexviewer" value="__arcgis-viewer-flex-3.0-src" />
+    <property name="flexviewer" value="__arcgis-viewer-flex-3.3-src" />
     <property name="widgets" value="widgets" />
     <property name="distrib" value="__distrib" />
 
@@ -32,17 +32,25 @@
         <mkdir dir="${distrib}"/>
 
         <!-- Insert widget sources -->
+        <antcall target="-addWidgetSource"><param name="widget" value="AdvanceDraw" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="BombThreat" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="CI" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="ClosestFacility" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="DynamicLegend" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="EMHeaderController" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="EMSearch" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="EMSplash" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="ERGChemical" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="Identify" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="KPI" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="LivelayerByException" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="NationalGrid" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="PDC" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="ReportByException" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="SocialMedia" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="Swipe" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="Ushahidi" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="WMSLooping" /></antcall>
 
         <!-- Insert customizations -->
         <copy todir="${flexviewer}\libs" overwrite="true">
@@ -76,17 +84,25 @@
         </exec>
 
         <!-- Retrieve results -->
+        <antcall target="-getWidgetResults"><param name="widget" value="AdvanceDraw" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="BombThreat" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="CI" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="ClosestFacility" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="DynamicLegend" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="EMHeaderController" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="EMSearch" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="EMSplash" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="ERGChemical" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="Identify" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="KPI" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="LivelayerByException" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="NationalGrid" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="PDC" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="ReportByException" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="SocialMedia" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="Swipe" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="Ushahidi" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="WMSLooping" /></antcall>
     </target>
 
     <target name="-addWidgetSource">

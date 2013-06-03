@@ -1,5 +1,5 @@
 ﻿/*
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2012 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,7 @@ package widgets.PDC.ui.checkbox {
 
 
 		public function WidgetCheckBox(id:int, status:Boolean=false, title:String="", titleColor:int=0x000000, icon:MovieClip=null):void {
+
 			bg_mc = addChild(new checkBoxBG());
 
 			title_mc = addChild(new textContainer());

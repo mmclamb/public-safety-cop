@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2012 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +15,9 @@
  | See the License for the specific language governing permissions and
  | limitations under the License.
 -->
+<!--
+     Credit: Adapted and customized by:  Gaetan LAVENU - ESRI France
+-->
 <viewer:BaseWidget xmlns:esri="http://www.esri.com/2008/ags"
 				   xmlns:fx="http://ns.adobe.com/mxml/2009"
 				   xmlns:s="library://ns.adobe.com/flex/spark"
@@ -28,7 +31,7 @@
 	</fx:Declarations>
 	<fx:Script>
 		<![CDATA[
-
+			import com.esri.ags.tools.NavigationTool;
 			import com.esri.ags.FeatureSet;
 			import com.esri.ags.Graphic;
 			import com.esri.ags.Map;
@@ -197,13 +200,13 @@
 					descriptionLabel = configXML.labels.descriptionlabel || "Use a tool to define an area on the map";
 					pointLabel = configXML.labels.pointlabel || getDefaultString("drawPointLabel");
 					lineLabel = configXML.labels.linelabel || getDefaultString("drawLineLabel");
-					freehandLineLabel = configXML.labels.freehandlinelabel || getDefaultString("drawFreehandLineLabel");
-					rectangleLabel = configXML.labels.rectanglelabel || getDefaultString("drawRectangleLabel");
-					circleLabel = configXML.labels.circlelabel || getDefaultString("drawCircleLabel");
-					polygonLabel = configXML.labels.polygonlabel || getDefaultString("drawPolygonLabel");
-					ellipseLabel = configXML.labels.ellipseLabel || getDefaultString("drawellipseLabel");
-					freehandPolygonLabel = configXML.labels.freehandpolygonlabel || getDefaultString("drawFreehandPolygonLabel");
-					//clearLabel = configXML.labels.clearlabel || getDefaultString("clearLabel");
+					freehandLineLabel = configXML.chartlabels.freehandlinelabel || getDefaultString("drawFreehandLineLabel");
+					rectangleLabel = configXML.chartlabels.rectangleLabel.@label  || getDefaultString("drawRectangleLabel");
+					circleLabel = configXML.chartlabels.circleLabel.@label  || getDefaultString("drawCircleLabel");
+					polygonLabel = configXML.chartlabels.polygonlabel. @label || getDefaultString("drawPolygonLabel");
+					ellipseLabel = configXML.chartlabels.ellipseLabel.@label || getDefaultString("drawellipseLabel");
+					freehandPolygonLabel = configXML.chartlabels.freehandpolygonlabel.@label  || getDefaultString("drawFreehandPolygonLabel");
+
 					loadingLabel = configXML.labels.loadinglabel || "Loading...";
 					chartLabel = configXML.labels.chartlabel || "Total for selected area";
 					definesearchdistanceLabel  = configXML.labels.definesearchdistancelabel || "Define search distance: ";
@@ -247,7 +250,7 @@
 					var resultObj:Object = decoder.decodeXML(xmlDoc);
 					chartLabels = resultObj.chartlabels;
 
-					ellipseLabel=chartLabels.ellipsetooltip.label.toString();
+					//ellipseLabel=chartLabels.ellipsetooltip.label.toString();
 					clearLabel=chartLabels.thrashtooltip.label.toString();
 					var chartList:XMLList = configXML..series;
 					for (var i:Number = 0; i < chartList.length(); i++)
@@ -264,12 +267,9 @@
 				}
 				var ICON_URL:String = "widgets/Chart/assets/images/";
 
-				//wTemplate.addTitlebarButton(ICON_URL + "i_selectfeatures.png",configXML.labels.selectfeaturelabel , showStateSelectFeature);
-				//wTemplate.addTitlebarButton(ICON_URL + "i_displaystatistics.png", configXML.labels.displaystatisticslabel ,showStateDisplayStatistics );
 
 				graphicsLayer = new GraphicsLayer();
 				map.addLayer(graphicsLayer);
-				//Label_units.text=map.units.toString().replace("esri","");
 				geom_service = new GeometryService(geometryserviceURL);
 
 			}
@@ -454,8 +454,7 @@
 							}
 							CV_Loading.visible=false;
 							map.extent=ext.expand(2);
-							/* currentState = "DisplayStatistics"
-							wTemplate.selectedTitlebarButtonIndex = 1; */
+
 							ColumnSelectedIndex=-1;
 
 							calculateStatistics(featureSet);
@@ -518,8 +517,6 @@
 				PieChartStatistics.visible=true;
 				PieChartStatistics.dataProvider  = chartSeries[0];
 
-				//var msg:String = chartLabel + " [" + featureSet.features.length + " " + entitiesLabel + "]: " + numFormatter.format(summaryValue);
-				//showMessage(msg, false);
 			}
 
 			private function chartItemClick(event:ChartItemEvent):void
@@ -576,8 +573,7 @@
 
 			private function showMessage(msg:String, swfVisible:Boolean):void
 			{
-				//txtMessage.text = msg;
-				//swfMessage.visible = swfVisible;
+
 				msgVisible = true;
 			}
 
@@ -640,8 +636,10 @@
 
 			private function widgetClosedHandler(event:Event):void
 			{
+				if(map.infoWindow)
+				map.infoWindow.visible= false;
 				graphicsLayer.visible = false;
-				setMapNavigation(null, null);
+				setMapNavigation(NavigationTool.PAN,"Move Map");
 				ColumnChartStatistics.dataProvider=null;
 				PieChartStatistics.visible=false;
 				if (selectedDrawingIcon)
@@ -654,11 +652,13 @@
 
 			private function widgetOpenedHandler(event:Event):void
 			{
+				wTemplate.minimizeButton.toolTip="Minimize"
+				wTemplate.closeButton.toolTip="Close"
 				if (graphicsLayer)
 					graphicsLayer.visible = true;
 
 				PieChartStatistics.visible=true;
-				loading_Label.visible=false;
+
 				clearSelectionFilter();
 
 
@@ -683,7 +683,7 @@
 			{
 
 				setMapAction(null, null, null, null);
-				clearSelectionFilter();
+
 			}
 
 		]]>
@@ -698,13 +698,12 @@
 				  strength="2"/>
 	</fx:Declarations>
 
-	<viewer:WidgetTemplate width="420" height="400" closed="widgetClosedHandler(event)" open="widgetOpenedHandler(event)" minimized="widgettemplate1_minimizedHandler(event)" minWidth="420" minHeight="400">
+	<viewer:WidgetTemplate id="wTemplate" width="420" height="400" closed="widgetClosedHandler(event)" open="widgetOpenedHandler(event)" minimized="widgettemplate1_minimizedHandler(event)" minWidth="420" minHeight="400">
 
 		<s:VGroup id="SelectFeature"
 				  width="100%" height="100%"
-				  visible="true" horizontalAlign="left"
-				  >
-
+				  visible="true" horizontalAlign="left">
+<s:Spacer height="3"/>
 			<s:Label text="{descriptionLabel}"  paddingLeft="35" width="100%" textAlign="left"/>
 			<s:HGroup id="imageGroup"
 					  width="47%"

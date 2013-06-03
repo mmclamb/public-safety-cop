@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2012 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -69,8 +69,6 @@
 		</searchlayers>
 
 <!--	 Splash widget -->
-
-
 	<splashwidth>400</splashwidth>
 	<splashheight>200</splashheight>
 	<splashtitle>Emergency Management Common Operational Picture</splashtitle>
@@ -78,7 +76,6 @@
 	</eventtitle>
 	<!-- Specify the emergency management common operations event names  and id-->
 	<events>
-
 		<event id="1" name='Fire' />
 		<event id="2" name='Flood' />
 		<event id="3" name='Earthquakes' />
@@ -89,25 +86,29 @@
 	<!-- @esfname: specify the title or name of ESF
 		 @configfile: specify config file name of ESF
 		 @imagesrc: specify the source for ESF image
-
 	-->
 
 	<esfroles>
-        <esfrole  esfname="ESF #1 - Transportation" configfile="config-ESF01.xml"  imagesrc='widgets/EMHeaderController/assets/images/esf/esf1.png' />
-        <esfrole  esfname="ESF #2 - Communications" configfile="config-ESF02.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf2.png' />
-        <esfrole  esfname="ESF #3 - Public Works" configfile="config-ESF03.xml"  imagesrc='widgets/EMHeaderController/assets/images/esf/esf3.png'/>
-        <esfrole  esfname="ESF #4 - Fire Fighting" configfile="config-ESF04.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf4.png' />
-        <esfrole  esfname="ESF #5 - Emergency Management" configfile="config-ESF05.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf5.png' />
-        <esfrole  esfname="ESF #6 - Mass Care" configfile="config-ESF06.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf6.png' />
-        <esfrole  esfname="ESF #7 - Logistics" configfile="config-ESF07.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf7.png' />
-        <esfrole  esfname="ESF #8 - Public Health" configfile="config-ESF08.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf8.png' />
-        <esfrole  esfname="ESF #9 - Search  And  Rescue" configfile="config-ESF09.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf9.png' />
-        <esfrole  esfname="ESF #10 - Hazmat" configfile="config-ESF10.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf10.png' />
-        <esfrole  esfname="ESF #11 - Natural Resources" configfile="config-ESF11.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf11.png'/>
-        <esfrole  esfname="ESF #12 - Energy" configfile="config-ESF12.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf12.png' />
-        <esfrole  esfname="ESF #13 - Public Safety" configfile="config-ESF13.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf13.png' />
-        <esfrole  esfname="ESF #14 - Long Term Recovery" configfile="config-ESF14.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf14.png' />
-        <esfrole  esfname="ESF #15 - External Affairs" configfile="config-ESF15.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf15.png' />
+		<esfrole  esfname="Command" configfile="config-Command.xml"  imagesrc='widgets/EMHeaderController/assets/images/esf/command.png' />
+		<esfrole  esfname="Operations" configfile="config-Operations.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/operations.png' />
+		<esfrole  esfname="Plans" configfile="config-Plans.xml"  imagesrc='widgets/EMHeaderController/assets/images/esf/planning.png'/>
+		<esfrole  esfname="Logistics" configfile="config-Logistics.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/logistics.png' />
+		<esfrole  esfname="Public Information" configfile="config-PublicInformation.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/publicinformation.png' />
+		<esfrole  esfname="ESF #1 - Transportation" configfile="config-ESF01.xml"  imagesrc='widgets/EMHeaderController/assets/images/esf/esf1.png' />
+		<esfrole  esfname="ESF #2 - Communications" configfile="config-ESF02.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf2.png' />
+		<esfrole  esfname="ESF #3 - Public Works" configfile="config-ESF03.xml"  imagesrc='widgets/EMHeaderController/assets/images/esf/esf3.png'/>
+		<esfrole  esfname="ESF #4 - Fire Fighting" configfile="config-ESF04.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf4.png' />
+		<esfrole  esfname="ESF #5 - Emergency Management" configfile="config-ESF05.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf5.png' />
+		<esfrole  esfname="ESF #6 - Mass Care" configfile="config-ESF06.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf6.png' />
+		<esfrole  esfname="ESF #7 - Logistics" configfile="config-ESF07.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf7.png' />
+		<esfrole  esfname="ESF #8 - Public Health" configfile="config-ESF08.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf8.png' />
+		<esfrole  esfname="ESF #9 - Search  And  Rescue" configfile="config-ESF09.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf9.png' />
+		<esfrole  esfname="ESF #10 - Hazmat" configfile="config-ESF10.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf10.png' />
+		<esfrole  esfname="ESF #11 - Natural Resources" configfile="config-ESF11.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf11.png'/>
+		<esfrole  esfname="ESF #12 - Energy" configfile="config-ESF12.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf12.png' />
+		<esfrole  esfname="ESF #13 - Public Safety" configfile="config-ESF13.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf13.png' />
+		<esfrole  esfname="ESF #14 - Long Term Recovery" configfile="config-ESF14.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf14.png' />
+		<esfrole  esfname="ESF #15 - External Affairs" configfile="config-ESF15.xml" imagesrc='widgets/EMHeaderController/assets/images/esf/esf15.png' />
 	</esfroles>
 	<savebtnlabel>Save Event Type and Role</savebtnlabel>
 

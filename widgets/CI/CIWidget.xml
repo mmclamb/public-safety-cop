@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2008 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,8 +14,9 @@
  | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  | See the License for the specific language governing permissions and
  | limitations under the License.
-
- Adapted and customized by:  Gaetan LAVENU - ESRI France
+-->
+<!--
+	Credit: Adapted and customized by:  Gaetan LAVENU - ESRI France
 -->
 <configuration>
 	<layer>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer/0</layer>
@@ -36,7 +37,11 @@
 	</chart>
 	<chartlabels>
 	<nofeatures label="No Features Found"/>
-	<ellipsetooltip label="Draw Ellipse"/>
+	<ellipseLabel label="Draw Ellipse"/>
+	<circleLabel label="Draw Circle"/>
+	<polygonlabel label="Draw Polygon"/>
+	<rectangleLabel label="Draw Rectangle"/>
+	<freehandpolygonlabel label="Draw FreeHand Polygon"/>
 	<thrashtooltip label="Clear Selection"/>
 	</chartlabels>
 </configuration>

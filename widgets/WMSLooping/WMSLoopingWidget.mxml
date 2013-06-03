@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+				   xmlns:esri="http://www.esri.com/2008/ags"
+				   layout="absolute"
+				   widgetConfigLoaded="configLoaded(event)"
+				   currentState="paused"
+					>
+	<viewer:states>
+		<s:State name="paused" enterState="onStatePaused(event)"/>
+		<s:State name="running" enterState="onStateRunning(event)"/>
+	</viewer:states>
+	<fx:Script>
+	<![CDATA[
+		import com.esri.ags.events.ExtentEvent;
+		import com.esri.ags.layers.WMSLayer;
+
+		import flash.net.navigateToURL;
+
+		import flashx.textLayout.conversion.TextConverter;
+
+		import mx.collections.ArrayList;
+		import mx.events.FlexEvent;
+		import mx.formatters.DateFormatter;
+
+		import spark.utils.TextFlowUtil;
+
+		/*===== VARS =====*/
+		[Bindable]
+		private var	m_cfg:XML;
+
+		/** List of visible WMS sublayers **/
+		private var m_aVisLyrs:ArrayList;
+
+		/**
+		 * List of WMS sublayer time offsets (for displaying the local time represented
+		 * by the layer that's on screen)
+		 **/
+		private var m_aOffsetMins:ArrayList;
+
+		[Bindable]
+		/**
+		 * This date/time is the basis to which the sub-layer offsets (from the config file)
+		 * are added for the display time.
+		 **/
+		private var m_lastQueryTime:Date = new Date();
+
+		private var m_loopTimer:Timer;
+
+		[Bindable]
+		/**
+		 * Unfortunately, the Timer's currentCount property isn't bindable, so we keep
+		 * independent track here of the number times the Timer has fired.
+		 **/
+		private var m_iTimerTicks:int = 0;
+
+		/*===== CODE =====*/
+		protected function configLoaded(event:Event):void
+		{
+
+			wt.minimizeButton.toolTip="Minimize";
+			wt.closeButton.toolTip="Close";
+
+			m_cfg = configXML;
+
+			m_loopTimer = new Timer( m_cfg.timerMsPerLayer.valueOf() );
+			m_loopTimer.addEventListener( TimerEvent.TIMER, onTimerTick );
+
+			// Construct list of cycling layers
+			var aLyrs:XMLList = m_cfg.layersToRotate.layer;
+			m_aVisLyrs = new ArrayList();
+			m_aOffsetMins = new ArrayList();
+
+			for each ( var xmlLayer:XML in aLyrs ) {
+				m_aVisLyrs.addItem( xmlLayer.text().toString() );
+				m_aOffsetMins.addItem( Number(xmlLayer.attribute( "offsetMins" ).valueOf()) );
+			}
+
+			// Set startup state as paused or running depending on config file contents
+			currentState = m_cfg.startUpState.valueOf().toString();
+			map.addLayer( wmsLyr );
+		}
+
+		protected function onOpen(event:Event):void
+		{
+			wmsLyr.visible = true;
+		}
+
+
+		protected function onClose(event:Event):void
+		{
+
+			wmsLyr.visible = false;
+		}
+
+		protected function onStatePaused(event:FlexEvent):void
+		{
+			if ( m_loopTimer ) m_loopTimer.stop();
+		}
+
+
+		protected function onStateRunning(event:FlexEvent):void
+		{
+			if ( m_loopTimer ) m_loopTimer.start();
+		}
+
+		private function onTimerTick( event:TimerEvent ):void {
+			try {
+				m_iTimerTicks++;
+			}
+			catch ( e:Error ) {
+				m_iTimerTicks = 0;
+			}
+			// Update the base time (used for the displayed time) at the start of each cycle.
+			// Because we don't know when data is updated on the server, the displayed time
+			// won't ever be guaranteed accurate. But at most it will be off by 5 minutes.
+			if ( currentLayerIndex( m_iTimerTicks ) == 0 )
+				m_lastQueryTime = new Date();
+		}
+
+		private function visibleLayers( iTimerTicks:int ):ArrayList {
+			var sLyrName:String = currentLayerName( iTimerTicks );
+			return new ArrayList( [ sLyrName ] );
+		}
+		private function currentLayerName( iTimerTicks:int ):String {
+			var iLyrIdx:int = currentLayerIndex( iTimerTicks );
+			return m_aVisLyrs.getItemAt( iLyrIdx ) as String;
+		}
+		private function currentLayerIndex( iTimerTicks:int ):int {
+			// Modulo operator to cycle through the provided list of visible layers
+			return iTimerTicks % m_aVisLyrs.length;
+		}
+
+		private function currentLayerDateTime( iTimerTicks:int ):Date {
+			var iLyrIdx:int = currentLayerIndex( iTimerTicks );
+			var nMSQueryTime:Number = m_lastQueryTime.time;
+			// Combining offsets with current date/time must be done in milliseconds...
+			var nMSLayerOffset:Number = Number(m_aOffsetMins.getItemAt( iLyrIdx )) * 60 * 1000;
+			var dt:Date = new Date( m_lastQueryTime.time + nMSLayerOffset );
+
+			return dt;
+		}
+
+		private function legendVisible( cfg:XML ):Boolean {
+			if ( cfg ) {
+				return ( cfg.legend.visible.valueOf().toString().toLowerCase() == "true" );
+			}
+			else return false;
+		}
+
+		private function opacityTip( value:Number ):Object {
+			return ( value * 100 ).toFixed() + "%";
+		}
+
+		protected function onLinkHandler(event:TextEvent):void
+		{
+			var urlstring:String=m_cfg.lowaurl;
+		   var urlrequest:URLRequest=new URLRequest(urlstring);
+			   navigateToURL(urlrequest,"_blank");
+		}
+
+
+
+		protected function trkOpacity_mouseOutHandler(event:MouseEvent):void
+		{
+			trkOpacity.focusEnabled=false;
+
+		}
+
+	]]>
+	</fx:Script>
+
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<esri:WMSLayer id="wmsLyr" disableClientCaching="true" alpha="{trkOpacity.value}" url="{m_cfg.url}" version="{m_cfg.version}" imageFormat="{m_cfg.imgFormat}" visibleLayers="{visibleLayers( m_iTimerTicks )}"/>
+
+		<mx:DateFormatter id="dfQueryDate" formatString="{m_cfg.dateFormatString}"/>
+	</fx:Declarations>
+
+
+	<viewer:WidgetTemplate id="wt" open="onOpen(event)" closed="onClose(event)" width="390" height="210" minWidth="385" minHeight="200">
+		<viewer:layout>
+			<s:VerticalLayout/>
+		</viewer:layout>
+
+		<s:HGroup verticalAlign="middle">
+			<mx:Image toolTip.paused="Click to run" toolTip.running="Click to pause" width="32" height="32" source.paused="widgets/WMSLooping/assets/images/Run_big.png" source.running="widgets/WMSLooping/assets/images/Pause_big.png" buttonMode="true" click.paused="currentState='running'" click.running="currentState='paused'"/>
+			<s:Label text="{dfQueryDate.format( currentLayerDateTime( m_iTimerTicks ) )}" color="0xFFF000"/>
+		</s:HGroup>
+
+
+		<s:RichEditableText  id="richTxt" textFlow="{TextConverter.importToFlow(m_cfg.about.toString(), TextConverter.TEXT_FIELD_HTML_FORMAT)}"
+							editable="false"
+							focusEnabled="false"
+							width="100%">
+		</s:RichEditableText>
+		<s:VGroup id="grpLegend"  visible="{legendVisible( m_cfg )}" width="100%" height="100%">
+			<s:Group width="100%">
+				<s:Label text="{m_cfg.legend.minLabel}" left="0"/>
+				<s:Label text="{m_cfg.legend.maxLabel}" right="0"/>
+			</s:Group>
+			<mx:Image minHeight="100" id="imgLegend" rotation="{m_cfg.legend.imgRotationDegrees}" scaleContent="true" height="100%" width="100%" source="{m_cfg.legend.imgURL}"/>
+		</s:VGroup>
+
+		<s:HGroup width="100%">
+			<s:Label text="Opacity:"/>
+			<s:HSlider id="trkOpacity" dataTipFormatFunction="opacityTip" minimum="0" maximum="1.0" stepSize="0.05" value="1.0"  showDataTip="true" mouseOut="trkOpacity_mouseOutHandler(event)"  liveDragging="false"  width="100%"/>
+		</s:HGroup>
+	</viewer:WidgetTemplate>
+
+</viewer:BaseWidget>

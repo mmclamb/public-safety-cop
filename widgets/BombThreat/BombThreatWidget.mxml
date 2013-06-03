@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2012 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -153,7 +153,7 @@
 				{
 					isMapClick=true;
 					var gra:Graphic= new Graphic()
-				//	(ViewerContainer.getInstance().getElementAt(childIndex)as Image).maintainAspectRatio=true;
+
 					var h:Number=(ViewerContainer.getInstance().getElementAt(childIndex)as Image).height;
 					var w:Number=(ViewerContainer.getInstance().getElementAt(childIndex)as Image).width;
 					gra.symbol= new PictureMarkerSymbol((ViewerContainer.getInstance().getElementAt(childIndex)as Image).source,w,h);
@@ -173,7 +173,7 @@
 				/**
 				 * Add listeners
 				 */
-				//	ViewerContainer.addEventListener(COPEvent.DROP_THE_IMAGE,enableCustomMousePointer);
+
 				AppEvent.addListener(AppEvent.WIDGET_STATE_CHANGED, widgetStateChangedHandler);
 			}
 
@@ -189,7 +189,7 @@
 					ViewerContainer.getInstance().removeElementAt(childIndex);
 					deSelectItem=0;
 					childCreate=false;
-					//lst.selectedIndex=-1;
+
 					childIndex=0;
 				}
 				else
@@ -200,26 +200,27 @@
 
 			private function onEnterFrame(event:Event):void
 			{
-				//trace(stage.width.toString()+'x:y'+stage.height.toString());
-				//trace(stage.height-280 +':'+ stage.mouseY-250);
+
 
 				if(childCreate==true)
 				{
 					(ViewerContainer.getInstance().getElementAt(childIndex)as Image).visible=true
-					if(stage.mouseX < stage.width-280)
+					if((stage.mouseX < stage.width-350 && stage.mouseY < stage.height-270))
 					{
+
 						(ViewerContainer.getInstance().getElementAt(childIndex)as Image).x = stage.mouseX;
-					}
+						(ViewerContainer.getInstance().getElementAt(childIndex)as Image).y= stage.mouseY;
+
+				}
 					else
 						(ViewerContainer.getInstance().getElementAt(childIndex)as Image).visible=false
 
-					if(stage.mouseY < stage.height-270 && stage.mouseY > 50)
-					{
-						//Mouse.show()
-						(ViewerContainer.getInstance().getElementAt(childIndex)as Image).y= stage.mouseY;
-					}
-					else
+					if(stage.mouseY<50)
 						(ViewerContainer.getInstance().getElementAt(childIndex)as Image).visible=false
+					if(stage.mouseX<50&&stage.mouseY<400)
+						(ViewerContainer.getInstance().getElementAt(childIndex)as Image).visible=false
+
+
 				}
 			}
 
@@ -260,7 +261,7 @@
 				sfs.alpha = 0.5;
 				m_gra.symbol=sfs;//new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,15,0xFF0000,1);
 				m_gra.geometry=result[0] as Polygon;
-				//m_gra.toolTip="Mandatory Evacuation Buffer";
+
 				m_gra.addEventListener(MouseEvent.CLICK,onmandBufferClick)
 				mGraphicLayer.add(m_gra);
 				if(extentPoints.xmax==0 && extentPoints.ymax==0 && extentPoints.xmin==0 && extentPoints.ymin==0)
@@ -268,7 +269,7 @@
 				else
 					extentPoints=extentPoints.union(result[0].extent as Extent);
 
-				//zoomToBuffer();
+
 
 			}
 
@@ -279,7 +280,7 @@
 				var sfs:SimpleFillSymbol = new SimpleFillSymbol();
 				sfs.color = Number('0x'+_dataParser.preferrdBufferColor);
 				sfs.alpha = 0.5;
-				p_gra.symbol= sfs ;//new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,15,0x0000FF,1);
+				p_gra.symbol= sfs ;
 				p_gra.geometry=result[0] as Polygon;
 				p_gra.addEventListener(MouseEvent.CLICK,onpreBufferClick)
 				if(extentPoints.xmax==0 && extentPoints.ymax==0 && extentPoints.xmin==0 && extentPoints.ymin==0)
@@ -288,7 +289,7 @@
 					extentPoints=extentPoints.union(result[0].extent as Extent);
 
 				pGraphicLayer.add(p_gra);
-				//map.extent= extentPoints.expand(0.5)
+
 				zoomToBuffer();
 
 			}
@@ -312,7 +313,7 @@
 					text.width=500;
 					text.htmlText=descrip;
 
-					//map.infoWindow.content = text;
+
 					var infoData:Object =new Object();
 
 					infoData.content=descrip;
@@ -463,6 +464,8 @@
 
 			private function wTemplate_openHandler(event:Event):void
 			{
+				wTemplate.minimizeButton.toolTip="Minimize"
+				wTemplate.closeButton.toolTip="Close"
 				// TODO Auto-generated method stub
 				if(map.getLayer('pGraphicLayer')!=null)
 				{
@@ -479,7 +482,7 @@
 			private function widgetStateChangedHandler(event:AppEvent):void
 			{
 				var data:Object = event.data;
-				//widgetItemArrCol = getWidgetItems(configData.widgets);
+
 				if (data.id as Number != this.widgetId)
 				{
 					if((data.state as String == WidgetStates.WIDGET_OPENED))

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2008 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -251,18 +251,32 @@
 			private function goTo(event:MouseEvent):void
 			{
 				goTo2();
-			}
 
+			}
+			private var timer:Timer;
 
 			private function goTo2():void
 			{
 				try{
+					usngGraphics.clear();
+
+				timer=new Timer(700,1);
+					cursorManager.setBusyCursor()
+					timer.addEventListener(TimerEvent.TIMER_COMPLETE,complete);
+					timer.start();
+
+					function complete(event:TimerEvent):void
+					{
+
+
 					var resultF:Boolean=false;
 					if(usngGoTo.text!='' && usngGoTo.text!='Enter USNG / MGRS Coordinates' )
 					{
 						var myPattern:RegExp = / /g;
 						var str:String = usngGoTo.text.replace(myPattern, "");
 						var pline:Polyline = MoreUtils.MGRS_To_Polyline(str, mgrsLayer.geographicCS,map);
+						if(pline)
+						{
 						var mappt:MapPoint=pline.paths[0][0] as MapPoint;
 						if( !isNaN(mappt.x) && !isNaN(mappt.y)   )
 						{
@@ -274,31 +288,52 @@
 								if (pline){
 									resultF=true;
 									usngGraphics.clear();
+
+
+
 									usngGraphics.add(new Graphic(pline));
-									var ext:Extent = GeometryUtils.calculatePolylineExtent(pline);
-									map.extent = ext.expand(20);
-								}
+
+
+											 var ext:Extent = GeometryUtils.calculatePolylineExtent(pline);
+											 map.extent = ext;
+
+
+											 cursorManager.removeBusyCursor();
+										}
+
+
 
 							}
 						}
 						else
 						{
+							cursorManager.removeBusyCursor();
+							Alert.show('Please enter valid USNG / MGRS coordinates.','Error');
+						}
+						}
+						else
+						{
+							cursorManager.removeBusyCursor();
 							Alert.show('Please enter valid USNG / MGRS coordinates.','Error');
 
 						}
 					}
 					else
 					{
+						cursorManager.removeBusyCursor();
 						Alert.show('Please enter USNG / MGRS coordinates.','Error');
 					}
 				}
+				}
 				catch (error:ArgumentError)
 				{
+					cursorManager.removeBusyCursor();
 					trace('here')
 
 				}
 				catch(error:Error)
 				{
+					cursorManager.removeBusyCursor();
 					trace('here2')
 					Alert.show('Please enter valid USNG / MGRS coordinates.','Error');
 				}
@@ -310,10 +345,13 @@
 			private function changeMGRSLayer():void
 			{
 				mgrsLayer.visible = !mgrsLayer.visible;
+				if(map.infoWindow)
+					map.infoWindow.hide()
 			}
 			private function changeGraticuleLayer():void
 			{
 				graticuleLayer.visible = !graticuleLayer.visible;
+
 			}
 			private function onMapClick(e:MapMouseEvent):void{
 
@@ -361,6 +399,8 @@
 
 			protected function widgettemplate1_openHandler(event:Event):void
 			{
+				wTemplate.minimizeButton.toolTip="Minimize"
+				wTemplate.closeButton.toolTip="Close"
 				if(isAdded==false)
 				{
 
@@ -388,12 +428,14 @@
 				beforCloseStateMgrsLayer=mgrsLayerCB.selected;
 			}
 
+
+
 		]]>
 	</fx:Script>
 	<fx:Declarations>
 		<mx:NumberFormatter id="numberFormatter"/>
 	</fx:Declarations>
-	<viewer:WidgetTemplate width="420" minWidth="420" height="260"  minHeight="260" minimized="widgettemplate1_minimizedHandler(event)" open="widgettemplate1_openHandler(event)" closed="widgettemplate1_closedHandler(event)">
+	<viewer:WidgetTemplate id="wTemplate" width="420" minWidth="420" height="260"  minHeight="260" minimized="widgettemplate1_minimizedHandler(event)" open="widgettemplate1_openHandler(event)" closed="widgettemplate1_closedHandler(event)">
 		<s:VGroup width="100%" paddingTop="15">
 			<s:HGroup>
 				<mx:CheckBox id="graticuleLayerCB" label="Show Lat / Long Grid" change="changeGraticuleLayer()" selected="{graticuleLayer.visible}"/>
@@ -445,22 +487,13 @@
 						</mx:GridItem>
 					</mx:GridRow>
 				</mx:Grid>
-				<!--<s:VGroup>
-				<s:Label color="0xffffff" id="latLabel" text="Latitude: {mapLat}" visible="true"/>
-				<s:Label color="0xffffff" id="lonLabel" text="Longitude: {mapLon}" visible = "true"/>
-				<s:Label color="0xffffff" id="latDLabel" text="Latitude : {mapDLat.toString()}" visible="true"/>
-				<s:Label color="0xffffff" id="lonDLabel" text="Longitude: {mapDLon.toString()}" visible = "true"/>
-				</s:VGroup>
-				<s:VGroup>
-				<s:Label color="0xffffff" id="yLabel" text="Northing: {mapNorth}" visible="true"/>
-				<s:Label color="0xffffff" id="xLabel" text="Easting: {mapEast}" visible = "true"/>
-				</s:VGroup>-->
+
 			</s:HGroup>
 			<s:Label color="0xffffff" id="mgrsLabel" text="USNG / MGRS: {mgrs}" visible="true"/>
 			<s:HGroup paddingTop="15">
 				<s:Button label="Go to (USNG / MGRS)" click="goTo(event)"/>
 				<s:TextInput height="24" width="200" maxChars="15"  id="usngGoTo"  click="if (usngGoTo.text=='Enter USNG / MGRS Coordinates') usngGoTo.text=''"
-							 text="Enter USNG / MGRS Coordinates" enter="goTo2()"/>
+							 text="Enter USNG / MGRS Coordinates"  enter="goTo2()"/>
 			</s:HGroup>
 			<s:Label color="0xffffff" text="Try 18SUJ23480647 for the Washington Monument."/>
 

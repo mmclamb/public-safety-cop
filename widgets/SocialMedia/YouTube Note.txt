@@ -1,0 +1,9 @@
+You Tube GeoLocation API:
+
+The YouTube search is not working because of the issue with GeoLocation API. 
+
+Please refer following links. The “Location” and “location-radius” API parameters are temporarily disabled. 
+It is expected to be restored by second half of 2013.
+
+https://developers.google.com/youtube/2.0/developers_guide_protocol_api_query_parameters#locationsp
+https://code.google.com/p/gdata-issues/issues/detail?id=4234

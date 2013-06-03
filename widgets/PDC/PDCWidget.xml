@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2012 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,11 +20,14 @@
 		<mapservice>tag define the map server url for all pdc active hazard layers
 		<metadata>tag define the metadata url which consist the individual hazard information
 		<geometryservice>tag define  the geometry service url
-
 	 -->
-	<mapservice  mode="dynamic">http://ags.pdc.org/ArcGIS/rest/services/global/pdc_active_hazards/MapServer/</mapservice>
+
+	<!--New PDC Map service accessible as PDC registered user. Visit http://www.pdc.org/?register and make sure to check the last checkbox (map services) on the form. -->
+	<mapservice  mode="dynamic">http://ags.pdc.org/rest/services/global/pdc_active_hazards/MapServer</mapservice>
+
 	<metadata url="http://www.pdc.org/atlas/metadata_abstracts/metadata_summary_ims_mde.jsp?metadata=" />
 	<geometryservice url="http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer"/>
+
 	<!--
 	<layers> tag define all pdc active hazard layer
 		<layer>tag defines details about each pdc layer like id,title,fields to be shown in infopopup,metadata Id

@@ -1,0 +1,660 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:components="widgets.AdvanceDraw.nzgc.viewer.components.*"
+			   width="400" height="500"
+			   creationComplete="titlewindow1_creationCompleteHandler(event)"
+			   currentState="SimpleMarkerTemplate" title="Template Editor"
+			   height.PolygonTemplate="435"
+			   height.PolylineTemplate="350"
+			   height.SimpleMarkerTemplate="460"
+			   x="0"
+			   y="0"
+			   height.TextTemplate="550">
+
+	<!-- Add events for calling applications to bind to. -->
+	<fx:Metadata>
+		[Event(name="graphicTemplateEditor_Save", type="flash.events.Event")]
+		[Event(name="graphicTemplateEditor_SaveNew", type="flash.events.Event")]
+		[Event(name="reloadGraphicTemplateEditor", type="flash.events.Event")]
+		[Event(name="graphicTemplateEditor_Cancel", type="flash.events.Event")]
+	</fx:Metadata>
+
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.symbols.SimpleFillSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.symbols.SimpleMarkerSymbol;
+			import com.esri.ags.symbols.Symbol;
+			import com.esri.ags.symbols.TextSymbol;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.ViewerContainer;
+
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.core.IVisualElement;
+			import mx.events.CloseEvent;
+			import mx.events.ColorPickerEvent;
+			import mx.events.FlexEvent;
+			import mx.events.MoveEvent;
+			import mx.utils.ObjectUtil;
+			import mx.utils.StringUtil;
+
+			import spark.events.IndexChangeEvent;
+			import spark.events.TitleWindowBoundsEvent;
+
+			import widgets.AdvanceDraw.nzgc.viewer.components.supportClasses.GraphicTemplate;
+			import widgets.AdvanceDraw.nzgc.viewer.components.supportClasses.GraphicTemplateGroup;
+			import widgets.AdvanceDraw.nzgc.viewer.utils.GraphicUtil;
+			import widgets.AdvanceDraw.nzgc.viewer.utils.SymbolUtil;
+
+
+
+			/* -------------------------------------------------------------------
+			Component constants
+			---------------------------------------------------------------------- */
+
+			public static const SIMPLE_MARKER_TEMPLATE:String = "Simple Marker Template";
+			public static const POLYGON_TEMPLATE:String = "Polygon Template";
+			public static const POLYLINE_TEMPLATE:String = "Polyline Template";
+			public static const TEXT_TEMPLATE:String = "Text Template";
+
+
+
+			/* -------------------------------------------------------------------
+			Component variables
+			---------------------------------------------------------------------- */
+
+			[Bindable]
+			private var _template:GraphicTemplate;
+
+			[Bindable]
+			private var _newTemplate:GraphicTemplate;
+
+			[Bindable]
+			private var _templateGroups:Array = [];
+
+			// Drawing tool drop list data provider
+			private var _arrayList:ArrayList;
+
+
+
+			/* -------------------------------------------------------------------
+			Component properties
+			---------------------------------------------------------------------- */
+
+			/**
+			 * Sets the default template to be modified
+			 */
+			public function set Template(value:GraphicTemplate):void
+			{
+				_template = value;
+
+				_newTemplate = new GraphicTemplate();
+				if (value)
+				{
+					// Set the template type dropdown
+					updateTemplateType(value);
+
+					// Set the template details
+					_newTemplate.name = value.name;
+					_newTemplate.description = value.description;
+					_newTemplate.drawingTool = value.drawingTool;
+					_newTemplate.groupname = value.groupname;
+
+					_newTemplate.prototype = GraphicUtil.CopyGraphic(value.prototype);
+					symbolEditor.symbol = _newTemplate.prototype.symbol;
+
+					// Update the name/description text
+					txtTemplateName.text = value.name;
+
+					cboTemplateGroupName.selectedItem = value.groupname;
+					txtTemplateDescription.text = value.description;
+
+					// Set the default state
+					updateCurrentState(value.CreateGeometryType);
+				}
+				else
+				{
+					_newTemplate = generateDefaultTemplate(SIMPLE_MARKER_TEMPLATE);
+					symbolEditor.symbol = _newTemplate.prototype.symbol;
+					currentState = "SimpleMarkerTemplate";
+				}
+			}
+
+			public function get Template():GraphicTemplate
+			{
+				return _template;
+			}
+
+			public function get NewTemplate():GraphicTemplate
+			{
+				return _newTemplate;
+			}
+
+			/**
+			 * Template groups
+			 */
+			public function set TemplateGroups(value:Array):void
+			{
+				if (value)
+				{
+					_templateGroups = value;
+
+					var templateList:ArrayList = new ArrayList();
+					for each (var grp:GraphicTemplateGroup in _templateGroups)
+					{
+						templateList.addItem(grp.name);
+					}
+					cboTemplateGroupName.dataProvider = templateList;
+				}
+				else
+				{
+					_templateGroups = [];
+				}
+			}
+
+			public function get TemplateGroups():Array
+			{
+				return _templateGroups;
+			}
+
+			/**
+			 *
+			 */
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void
+			{
+				// Update the default settings
+				if (!_template)
+				{
+					_newTemplate = generateDefaultTemplate(SIMPLE_MARKER_TEMPLATE);
+					symbolEditor.symbol = _newTemplate.prototype.symbol;
+				}
+				addEventListener(TitleWindowBoundsEvent.WINDOW_MOVING,dragwatcher);
+
+			}
+			protected function dragwatcher(event:TitleWindowBoundsEvent):void
+			{
+				if (event.afterBounds.left < 0) {
+					event.afterBounds.left = 0;
+
+				} else if (event.afterBounds.right > systemManager.stage.stageWidth) {
+					event.afterBounds.left = systemManager.stage.stageWidth - event.afterBounds.width;
+				}
+				if (event.afterBounds.top < 0) {
+					event.afterBounds.top = 0;
+
+				} else if (event.afterBounds.bottom > systemManager.stage.stageHeight) {
+					event.afterBounds.top = systemManager.stage.stageHeight - event.afterBounds.height;
+				}
+			}
+
+
+
+			/**
+			 * Creates a basic template based on the supplied template type.
+			 */
+			private function generateDefaultTemplate(templateType:String):GraphicTemplate
+			{
+				var template:GraphicTemplate = new GraphicTemplate();
+				template.name = "New Template";
+				template.description = "";
+
+
+				if (_templateGroups.length > 0)
+				{
+					var group:GraphicTemplateGroup = _templateGroups[0] as GraphicTemplateGroup;
+					template.groupname = group.name;
+				}
+				else
+				{
+					template.groupname = "My Templates";
+				}
+
+				_arrayList = new ArrayList();
+
+				switch(templateType)
+				{
+					case SIMPLE_MARKER_TEMPLATE:
+					{
+						template.prototype = new Graphic(null,new SimpleMarkerSymbol("circle",15,0xFF0000,1,0,0,0,
+							new SimpleLineSymbol("solid",0xFFFFFF,1,1)),{});
+						template.drawingTool = DrawTool.MAPPOINT;
+
+						_arrayList.addItem(mapPointIcon);
+						drawDropDownList.dataProvider = _arrayList;
+
+						break;
+					}
+
+					case POLYLINE_TEMPLATE:
+					{
+						template.prototype = new Graphic(null,new SimpleLineSymbol("solid",0xFF0000,1,1),{});
+						template.drawingTool = DrawTool.POLYLINE;
+
+						_arrayList.addItem(pointToPointLineIcon);
+						_arrayList.addItem(freehandLineIcon);
+						_arrayList.addItem(lineIcon);
+						drawDropDownList.dataProvider = _arrayList;
+						break;
+					}
+
+					case POLYGON_TEMPLATE:
+					{
+						template.prototype = new Graphic(null,new SimpleFillSymbol("solid",0xFF0000,0.5,
+							new SimpleLineSymbol("solid",0x000000,1,1)),{});
+						template.drawingTool = DrawTool.POLYGON;
+
+						_arrayList.addItem(pointToPointPolygonIcon);
+						_arrayList.addItem(freehandPolygonIcon);
+						_arrayList.addItem(extentIcon);
+						_arrayList.addItem(autoCompleteIcon);
+						_arrayList.addItem(circleIcon);
+						_arrayList.addItem(ellipseIcon);
+						drawDropDownList.dataProvider = _arrayList;
+						break;
+					}
+
+					case TEXT_TEMPLATE:
+					{
+						var ts:TextSymbol = new TextSymbol("Text",null,0x000000,1,false,0,false,0xFFFFFF,"middle",0,0,0);
+						var tf:TextFormat = new TextFormat("Arial",14,0x000000,false,false,false);
+						ts.textFormat = tf;
+						ts.alpha = 1;
+
+						template.prototype = new Graphic(null,ts,{});
+						template.drawingTool = DrawTool.MAPPOINT;
+
+						_arrayList.addItem(textIcon);
+						drawDropDownList.dataProvider = _arrayList;
+						break;
+					}
+				}
+
+				drawDropDownList.selectedIndex = -1;
+				drawDropDownList.selectedIndex = 0;
+
+				return template;
+			}
+
+			/**
+			 *
+			 */
+			protected function cboTemplateType_changeHandler(event:IndexChangeEvent):void
+			{
+				// Generate a new template based on this geometry type
+				_newTemplate = generateDefaultTemplate(cboTemplateType.selectedItem);
+
+				// Update the symbol editor
+				symbolEditor.symbol = _newTemplate.prototype.symbol;
+
+				// Set the default state
+				updateCurrentState(_newTemplate.CreateGeometryType);
+
+				txtTemplateName.text="";
+
+				cboTemplateGroupName.selectedIndex=-1;
+
+			}
+
+			/**
+			 *
+			 */
+			private function updateTemplateType(graphicTemplate:GraphicTemplate):void
+			{
+				// Reset the drawing tool list
+				_arrayList = new ArrayList();
+
+				switch(graphicTemplate.CreateGeometryType)
+				{
+					case Geometry.MAPPOINT:
+					{
+						// Check the symbol type
+						if (graphicTemplate.prototype.symbol is TextSymbol)
+						{
+							cboTemplateType.selectedIndex = 3;
+
+							// Set the drawing tools
+							_arrayList.addItem(textIcon);
+							drawDropDownList.dataProvider = _arrayList;
+						}
+						else
+						{
+							cboTemplateType.selectedIndex = 0;
+
+							// Set the drawing tools
+							_arrayList.addItem(mapPointIcon);
+							drawDropDownList.dataProvider = _arrayList;
+						}
+
+						break;
+					}
+
+					case Geometry.POLYLINE:
+					{
+						cboTemplateType.selectedIndex = 2;
+
+						// Set the drawing tools
+						_arrayList.addItem(pointToPointLineIcon);
+						_arrayList.addItem(freehandLineIcon);
+						_arrayList.addItem(lineIcon);
+						drawDropDownList.dataProvider = _arrayList;
+						break;
+					}
+
+					case Geometry.POLYGON:
+					{
+						cboTemplateType.selectedIndex = 1;
+
+						// Set the drawing tools
+						_arrayList.addItem(pointToPointPolygonIcon);
+						_arrayList.addItem(freehandPolygonIcon);
+						_arrayList.addItem(extentIcon);
+						_arrayList.addItem(autoCompleteIcon);
+						_arrayList.addItem(circleIcon);
+						_arrayList.addItem(ellipseIcon);
+						drawDropDownList.dataProvider = _arrayList;
+						break;
+					}
+				}
+
+				var index:int = -1;
+
+				for (var i:int = 0; i < drawDropDownList.dataProvider.length; i++)
+				{
+					if (drawDropDownList.dataProvider.getItemAt(i).drawId == graphicTemplate.drawingTool)
+					{
+						index = i;
+						break;
+					}
+				}
+
+				drawDropDownList.selectedIndex = index;
+			}
+
+			private function updateCurrentState(geometryType:String):void
+			{
+				switch (geometryType)
+				{
+					case Geometry.MAPPOINT:
+					{
+						if (_newTemplate.prototype.symbol is TextSymbol)
+						{
+							currentState = "TextTemplate";
+
+							this.y=this.y-40;
+						}
+						else
+						{
+							currentState = "SimpleMarkerTemplate";
+						}
+						break;
+					}
+
+					case Geometry.POLYGON:
+					{
+						currentState = "PolygonTemplate";
+						break;
+					}
+
+					case Geometry.POLYLINE:
+					{
+						currentState = "PolylineTemplate";
+						break;
+					}
+				}
+			}
+
+			/**
+			 * Called when the Apply button is clicked
+			 */
+			protected function butOK_clickHandler(event:MouseEvent):void
+			{
+				// Update the template
+				updateNewTemplate();
+
+				if (_template)
+				{
+					// Update the existing template details
+					_template.name = _newTemplate.name;
+					_template.description = _newTemplate.description;
+					_template.drawingTool = _newTemplate.drawingTool;
+					_template.groupname = _newTemplate.groupname;
+					_template.prototype.symbol = SymbolUtil.DuplicateSymbol(_newTemplate.prototype.symbol);
+				}
+
+				// Raise the save event - calling application will take care of updating the template.
+				dispatchEvent(new Event("graphicTemplateEditor_Save"));
+				AppEvent.dispatch("reloadGraphicTemplateEditor");
+			}
+
+			/**
+			 * Called when the Cancel button is clicked
+			 */
+			protected function butCancel_clickHandler(event:MouseEvent):void
+			{
+
+				// Dispatch the Cancel event
+				dispatchEvent(new Event("graphicTemplateEditor_Cancel"));
+			}
+
+			/**
+			 * Called when the Save As button is clicked
+			 */
+			protected function butSaveAs_clickHandler(event:MouseEvent):void
+			{
+				// Update the template
+				txtTemplateName.text=StringUtil.trim(txtTemplateName.text as String);
+				if(txtTemplateName.text.length>=3)
+				{
+					updateNewTemplate();
+					dispatchEvent(new Event("graphicTemplateEditor_SaveNew"));
+				}
+				else
+				{
+					focusManager.setFocus(txtTemplateName)
+					Alert.show("Please use 3 or more characters as name","Alert");
+				}
+
+
+				// Dispatch the Save New event
+				//dispatchEvent(new Event("graphicTemplateEditor_SaveNew"));
+			}
+
+			/**
+			 * Called to update the settings of the new template
+			 */
+			private function updateNewTemplate():void
+			{
+				_newTemplate.name = txtTemplateName.text;
+				_newTemplate.description = txtTemplateDescription.text;
+				_newTemplate.groupname = cboTemplateGroupName.selectedItem;
+				_newTemplate.drawingTool = drawDropDownList.selectedItem.drawId;
+				_newTemplate.prototype.symbol = symbolEditor.NewSymbol;
+			}
+
+			/**
+			 * Called when the user types a value in the template group dialog
+			 */
+			protected function cboTemplateGroupName_changeHandler(event:IndexChangeEvent):void
+			{
+				// Determine if the index specifies a new data item.
+				if(cboTemplateGroupName.selectedIndex == spark.components.ComboBox.CUSTOM_SELECTED_ITEM)
+				{
+					cboTemplateGroupName.selectedItem = StringUtil.trim(cboTemplateGroupName.selectedItem);
+					if(cboTemplateGroupName.selectedItem != "undefined" && cboTemplateGroupName.selectedItem != "")
+					{
+						var newGroupName:String = cboTemplateGroupName.selectedItem;
+
+						// Add the new item to the data provider.
+						cboTemplateGroupName.dataProvider.addItem(newGroupName);
+
+						// Reset as the selected item
+						cboTemplateGroupName.selectedIndex = cboTemplateGroupName.dataProvider.getItemIndex(newGroupName);
+					}
+
+				}
+
+			}
+
+
+
+		]]>
+	</fx:Script>
+
+	<s:states>
+		<s:State name="SimpleMarkerTemplate"/>
+		<s:State name="PolygonTemplate"/>
+		<s:State name="PolylineTemplate"/>
+		<s:State name="TextTemplate"/>
+	</s:states>
+
+	<fx:Declarations>
+		<!--- @private -->
+		<fx:Object id="mapPointIcon"
+				   label="{resourceManager.getString('ESRIMessages', 'editorCreatePointLabel')}"
+				   drawId="mappoint"
+				   icon="@Embed('widgets/AdvanceDraw/assets/images/skins/ElementMarker16.png')"/>
+
+		<!-- Icons for polyline drawing -->
+		<!--- @private -->
+		<fx:Object id="pointToPointLineIcon"
+				   label="{resourceManager.getString('ESRIMessages', 'editorCreatePointToPointLabel')}"
+				   drawId="pointToPointLine"
+				   icon="@Embed('widgets/AdvanceDraw/assets/images/skins/ElementPolyline16.png')"/>
+		<!--- @private -->
+		<fx:Object id="freehandLineIcon"
+				   label="{resourceManager.getString('ESRIMessages', 'editorCreateFreehandLabel')}"
+				   drawId="freehandLine"
+				   icon="@Embed('widgets/AdvanceDraw/assets/images/skins/ElementFreehand16.png')"/>
+		<!--- @private -->
+		<fx:Object id="lineIcon"
+				   label="{resourceManager.getString('ESRIMessages', 'editorCreateLineLabel')}"
+				   drawId="line"
+				   icon="@Embed('widgets/AdvanceDraw/assets/images/skins/ElementLine16.png')"/>
+
+		<!-- Icons for polygon drawing -->
+		<!--- @private -->
+		<fx:Object id="pointToPointPolygonIcon"
+				   label="{resourceManager.getString('ESRIMessages', 'editorCreatePointToPointLabel')}"
+				   drawId="pointToPointPolygon"
+				   icon="@Embed('widgets/AdvanceDraw/assets/images/skins/EditingPolygonTool16.png')"/>
+		<!--- @private -->
+		<fx:Object id="freehandPolygonIcon"
+				   label="{resourceManager.getString('ESRIMessages', 'editorCreateFreehandLabel')}"
+				   drawId="freehandPolygon"
+				   icon="@Embed('widgets/AdvanceDraw/assets/images/skins/FreehandPolygon_16.png')"/>
+		<!--- @private -->
+		<fx:Object id="extentIcon"
+				   label="{resourceManager.getString('ESRIMessages', 'editorCreateExtentLabel')}"
+				   drawId="extent"
+				   icon="@Embed('widgets/AdvanceDraw/assets/images/skins/EditingExtent_16.png')"/>
+
+		<!--- @private -->
+		<fx:Object id="circleIcon"
+				   label="{resourceManager.getString('ESRIMessages', 'editorCreateCircleLabel')}"
+				   drawId="circle"
+				   icon="@Embed('widgets/AdvanceDraw/assets/images/skins/EditingCircleTool16.png')"/>
+
+		<!--- @private -->
+		<fx:Object id="ellipseIcon"
+				   label="{resourceManager.getString('ESRIMessages', 'editorCreateEllipseLabel')}"
+				   drawId="ellipse"
+				   icon="@Embed('widgets/AdvanceDraw/assets/images/skins/EditingEllipseTool16.png')"/>
+
+		<!--- @private -->
+		<fx:Object id="autoCompleteIcon"
+				   label="{resourceManager.getString('ESRIMessages', 'editorCreateAutoCompleteLabel')}"
+				   drawId="autoComplete"
+				   icon="@Embed('widgets/AdvanceDraw/assets/images/skins/EditingAutoCompletePolygonTool16.png')"/>
+
+		<!--- @private -->
+		<fx:Object id="textIcon" label="{'Place Text'}" drawId="text"
+				   icon="@Embed('widgets/AdvanceDraw/assets/images/skins/ElementText16.png')"/>
+
+		<mx:StringValidator id="templateNameValidator" required="true" source="{txtTemplateName}"
+							minLength="3" property="text" triggerEvent="change"/>
+		<!--<mx:StringValidator id="templateGroupNameValidator" required="true" source="txtTemplateGroupName" minLength="3" />-->
+	</fx:Declarations>
+
+	<s:VGroup width="100%" height="100%" paddingBottom="5" paddingLeft="5" paddingRight="5"
+			  paddingTop="5">
+
+		<!--- Group where use determines the type of template they wish to create -->
+		<s:HGroup id="templateTypeGroup" width="100%" gap="5" verticalAlign="middle">
+			<s:Label id="labTemplateType" text="Select Template Type:"/>
+			<s:DropDownList id="cboTemplateType" width="100%"
+							change="cboTemplateType_changeHandler(event)"
+							dataProvider="{new ArrayCollection([SIMPLE_MARKER_TEMPLATE,POLYGON_TEMPLATE,POLYLINE_TEMPLATE,TEXT_TEMPLATE])}"
+							selectedIndex="0"/>
+		</s:HGroup>
+
+		<components:SymbolEditor id="symbolEditor" width="100%" height="100%"/>
+
+		<s:Label id="labTemplateSettings" width="100%" styleName="WidgetTitle"
+				 text="Template Settings:"/>
+
+		<s:HGroup id="templateNameSettingsGroup" width="100%" gap="5" verticalAlign="middle">
+			<s:Label id="labTemplateName" text="Name"/>
+			<s:TextInput id="txtTemplateName" width="100%"
+						 toolTip="Enter a name to call this template"/>
+			<s:Label id="labTemplateGroupName" text="Group"/>
+			<!--<s:TextInput id="txtTemplateGroupName" width="100%" toolTip="Enter the name of the group to put this template in" />-->
+
+			<s:ComboBox id="cboTemplateGroupName" width="100%"
+						change="cboTemplateGroupName_changeHandler(event)"
+						toolTip="Select an existing template or enter the name of a new group to put this template in"/>
+		</s:HGroup>
+
+		<s:VGroup id="templateDescriptionGroup" width="100%">
+			<s:Label id="labTemplateDescription" text="Description"/>
+			<s:TextInput id="txtTemplateDescription" width="100%"
+						 toolTip="Enter a brief description of this template"/>
+		</s:VGroup>
+
+		<s:HGroup id="templateToolSettingsGroup" width="100%" gap="5" verticalAlign="middle">
+			<s:Label id="labDrawTool" text="Default Draw Tool"/>
+			<s:DropDownList id="drawDropDownList" width="40" height="25"
+							itemRenderer="com.esri.ags.skins.supportClasses.EditorDropDownListItemRenderer"
+							skinClass="com.esri.ags.skins.EditorDrawDropDownListSkin"
+							toolTip="{resourceManager.getString('ESRIMessages', 'editorCreateOptionsTooltip')}"/>
+		</s:HGroup>
+
+		<s:HGroup id="templateActionGroup" width="100%" gap="5" horizontalAlign="center"
+				  verticalAlign="middle">
+			<s:Button id="butOK" visible="{_template != null}" label="Apply"
+					  click="butOK_clickHandler(event)"
+					  enabled="{txtTemplateName.text.length &gt; 0}"
+					  includeInLayout="{_template != null}"
+					  toolTip="Click to update the selected template properties"/>
+			<s:Button id="butSaveAs" label="Save As" click="butSaveAs_clickHandler(event)"
+					  enabled="{txtTemplateName.text.length &gt; 0,cboTemplateGroupName.selectedIndex &gt;-1}"
+					  toolTip="Click to create a new template based on these properties"/>
+			<s:Button id="butCancel" label="Close" click="butCancel_clickHandler(event)"
+					  toolTip="Click to cancel template edits"/>
+		</s:HGroup>
+
+	</s:VGroup>
+
+</s:TitleWindow>

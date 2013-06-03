@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<configuration>
+	<layout><!--specifies the layout of the controls in the widget-->
+		<optionTabLabel label="Option" /> <!-- User defined tool tip for second Tab in widget(OptionTab) -->
+		<chartTabLabel label="Chart" /> <!-- User defined tool tip for first Tab in widget(ChartTab) -->
+
+		<layersDropDownList label="Layer" gap="14" width="244" prompt="-Select Layer-" labelField="name"/> <!-- User defined label for first DropDownList(Layer) in Second tab(OptionTab) -->
+		<fieldsDropDownList label="Field" gap="17" width="244" prompt="-Select Field-" labelField="alias"/> <!-- User defined label for second DropDownList(Where) in Second tab(OptionTab) -->
+
+		<button shiftLeft="84" gap="5">
+			<submitButtonLabel label="Search"/> <!-- User defined label for first Button(Search) in Second tab(OptionTab) -->
+			<cancelButtonLabel label="Reset"/> <!-- User defined label for Second Button(Clear) in Second tab(OptionTab) -->
+		</button>
+	</layout>
+
+	<layers><!--specifies the map server layer-->
+		<mapServerLayer label="Damage to Residential Buildings"
+						url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer">
+			<includeLayers includeAllLayers="false" index="4,5,12" layerAttribute="layers"/> <!-- index number --> <!-- User defined layers included in first DropDownList(Layer) in Second
+			tab(OptionTab) based on their layer index -->
+			<includeFields includeAllFields="true" index="'0,2,3,4" fieldAttribute="fields"/> <!-- index number --> <!-- User defined fields included in second DropDownList(Where) in Second
+			tab(OptionTab) based on their field index -->
+		</mapServerLayer>
+	</layers>
+
+	<defaultQuery><!--specifies the default query for the pie chart-->
+		<defaultLayer label="Damage to Residential Buildings" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer/5"/>
+		<defaultField field="TYPDAMAGE" type="esriFieldTypeString" alias="Extent of Damage"/>
+	</defaultQuery>
+
+	<chart><!--specifies the properties related to pie chart-->
+		<pieChart header="PieChart based on"/>
+		<legendBackground color="0xb0b7b2"/>
+	</chart>
+
+	<table><!--specifies the properties related to table-->
+		<tableHeader header="Table based on"/>
+		<tableColumn field="INSPECTOR,HABITABLE,PRIMCAUSE"/>
+		<nullValue label="N/A"/>
+	</table>
+
+	<glowColor color="0x66F2B1" quality="20" strength="10"/><!--specifies the highlight of the feature on map when mouse hover over the feature on the table-->
+
+	<autoRefresh enabled="true" seconds="180"/><!--specifies the settings for auto-refresh -->
+
+	<alerts><!--specifies the various error messages displayed in the widget-->
+		<configLoadError header="Error" message="Failed to load Config.xml"/>
+		<defaultQueryAlert header="Error" message="Invalide Parameters for default query."/>
+		<noResultAlert header="Alert" message="Configured field has 'NULL' data."/>
+		<tableColumnMismatch header="Alert" message="Configured field for table is not present on the selected layer."/>
+	</alerts>
+</configuration>
