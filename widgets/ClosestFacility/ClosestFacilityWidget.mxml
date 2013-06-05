@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2012 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,17 +15,30 @@
  | See the License for the specific language governing permissions and
  | limitations under the License.
 -->
+<!--
+AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
+
+ For more details please refer following link
+   http://code.google.com/p/alivepdf/
+
+ The license is available in following link
+   http://opensource.org/licenses/mit-license.php
+-->
 <viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
 				   xmlns:s="library://ns.adobe.com/flex/spark"
 				   xmlns:mx="library://ns.adobe.com/flex/mx"
 				   xmlns:viewer="com.esri.viewer.*"
-				   layout="vertical"
+				   layout="vertical" isDraggable="true"
 				   widgetConfigLoaded="configLoaded()"
 				   creationComplete="basewidget1_creationCompleteHandler(event)"
 				   xmlns:esri="http://www.esri.com/2008/ags"
-				   xmlns:extendPolylineEffect="polyline.extendPolylineEffect.*"
-				   xmlns:line="line.*" xmlns:ClosestFacility="widgets.ClosestFacility.*"
+				   xmlns:line="line.*"  xmlns:local="*" xmlns:ClosestFacility1="widgets.ClosestFacility.*"
 				   >
+	<viewer:states>
+		<s:State name="ClosestFacility"/>
+		<s:State name="Dirctions"/>
+		<s:State name="resultView"/>
+	</viewer:states>
 	<fx:Script>
 		<![CDATA[
 			import com.esri.ags.FeatureSet;
@@ -34,9 +47,13 @@
 			import com.esri.ags.events.DrawEvent;
 			import com.esri.ags.events.ExtentEvent;
 			import com.esri.ags.events.LayerEvent;
-			import com.esri.ags.events.MapMouseEvent;
+			import com.esri.ags.events.PanEvent;
+			import com.esri.ags.events.QueryEvent;
+			import com.esri.ags.events.ZoomEvent;
+			import com.esri.ags.geometry.Extent;
 			import com.esri.ags.geometry.Geometry;
 			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polygon;
 			import com.esri.ags.geometry.Polyline;
 			import com.esri.ags.layers.FeatureLayer;
 			import com.esri.ags.layers.GraphicsLayer;
@@ -49,47 +66,228 @@
 			import com.esri.ags.tasks.QueryTask;
 			import com.esri.ags.tasks.supportClasses.BufferParameters;
 			import com.esri.ags.tasks.supportClasses.ClosestFacilityParameters;
+			import com.esri.ags.tasks.supportClasses.DirectionsFeatureSet;
 			import com.esri.ags.tasks.supportClasses.Query;
 			import com.esri.ags.tools.DrawTool;
-			import com.esri.ags.utils.GraphicUtil;
+			import com.esri.ags.utils.*;
+			import com.esri.viewer.AppEvent;
 			import com.esri.viewer.utils.Hashtable;
 
+			import flash.utils.flash_proxy;
+
+			import mx.charts.chartClasses.GraphicsUtilities;
 			import mx.collections.ArrayCollection;
 			import mx.collections.ArrayList;
+			import mx.containers.FormItem;
+			import mx.containers.VBox;
 			import mx.controls.Alert;
-			import mx.controls.Image;
+			import mx.controls.HRule;
+			import mx.controls.Text;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.UIComponent;
 			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.graphics.ImageSnapshot;
+			import mx.managers.PopUpManager;
+			import mx.printing.FlexPrintJob;
+			import mx.printing.FlexPrintJobScaleType;
 			import mx.rpc.AsyncResponder;
+			import mx.rpc.Fault;
 			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+			import mx.rpc.xml.SimpleXMLDecoder;
+			import mx.utils.GraphicsUtil;
+			import mx.utils.ObjectUtil;
+			import mx.utils.StringUtil;
 
+			import org.alivepdf.colors.*;
+			import org.alivepdf.display.Display;
+			import org.alivepdf.drawing.Blend;
+			import org.alivepdf.events.PageEvent;
+			import org.alivepdf.fonts.*;
+			import org.alivepdf.images.ColorSpace;
+			import org.alivepdf.images.ImageFormat;
+			import org.alivepdf.layout.Layout;
+			import org.alivepdf.layout.Orientation;
+			import org.alivepdf.layout.Size;
+			import org.alivepdf.layout.Unit;
+			import org.alivepdf.saving.Download;
+			import org.alivepdf.saving.Method;
+			import org.alivepdf.viewing.*;
+
+			import spark.components.Image;
 			import spark.events.IndexChangeEvent;
+			import spark.primitives.BitmapImage;
 
 			/********** VARS **********/
+			private var aniRouteSeg:Boolean;
+
+			[Bindable] private var directionlengthunits:String;
+
+			private var routeAltTxtBgClr:uint;
+
+			private var showDirArrows:Boolean = false;
+
+			private var columnWidth:Array;
+
+			[Bindable] private var createRouteTooltip:String;
+
+			[Bindable] private var msgVisible:Boolean = false;
+
+			[Bindable] private var msgVisible2:Boolean = false;
+
+			[Bindable] private var dirBtnTooltip:String;
+			private var arrOutField:Array = new Array()
+
+			private var myPDF:RoutePDF;
+			[Bindable] private	var dataColumn:Array;
+			[Bindable] private var printTooltip:String;
+
+			[Bindable]private var printEnabled:Boolean= false;
+
+			[Bindable] private var genPDF:String;
+
+			[Bindable] private var prepMapLabel:String;
+
+			[Bindable] private var savePdfBtnLbl:String;
+
+			[Bindable] private var pdfGenerationWarningLbl:String;
+
+			private var LayerLabel:String;
+			private var FieldLabel:String;
+			private var fromLabel:String;
+			private var toLabel:String;
+			private var nameLabel:String
+
+			[Bindable] private var gridCollection:ArrayCollection = new ArrayCollection();
+
+			[Bindable] private var arrColl:ArrayCollection;
+
+			private const NL:String = "\n";
+
+			private var sheet:VGroup;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdUnknown.png")]
+			private var unkCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdStop.png")]
+			private var stopCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdStraight.png")]
+			private var straightCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdBearLeft.png")]
+			private var bearrightCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdBearLeft.png")]
+			private var bearleftCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdRight.png")]
+			private var rightCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdLeft.png")]
+			private var leftCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdSharpRight.png")]
+			private var sharprightCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdSharpLeft.png")]
+			private var sharpleftCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdUturn.png")]
+			private var uturnCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdFerry.png")]
+			private var ferryCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdRoundAbout.png")]
+			private var rndaboutCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdMergeHwy.png")]
+			private var mergehwyCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdExitHwy.png")]
+			private var exithwyCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdStayStraight.png")]
+			private var centerforkCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdForkKeepLeft.png")]
+			private var leftforkCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdForkKeepRight.png")]
+			private var rightforkCls:Class;
+
+			[Embed(source="widgets/ClosestFacility/assets/images/rdFerryEnd.png")]
+			private var ferryendCls:Class;
+
+			private const ICON_URL:String = "assets/images/";
+
+			private const WIDGET_URL:String = "widgets/ClosestFacility/assets/images/";
+
+			private var stops:FeatureSet = new FeatureSet();
+
+			private var includeMapLbl:String = new String();
+
+			private var printMapBtnLbl:String = new String();
+
+			private var segmentGraphic:Graphic;
+
+			private var ColumnWidthString:String;
+
+			private var segmentGraphicLayer:GraphicsLayer = new GraphicsLayer();
+
+			[Bindable]private var stopsFS:FeatureSet = new FeatureSet();
+
+			[Bindable]
+			private var directionsFS:DirectionsFeatureSet;
+			private var configureField:String;
+			private var FieldType:String;
+
 
 			[Bindable]
 			private var _configXML : XML;
 
 			[Bindable(event="updateRouteSymbols")]
 			private var m_aryClosestFacilitySymbolInfos : Array;
-
+			private var arrOutFieldAlias:Array;
 			[Bindable]
 			private var m_nLoadOperationsInProcess : int = 1; // 1 because facilities automatically load
-
+			[Bindable] private var arrBarrier:ArrayCollection;
+			private var arr1:Array = new Array();
+			private var errorFlag:Boolean = false;
 			/****************** Common Variables**********************/
+			private var arrSelectedPointBuffar:ArrayCollection=new ArrayCollection();
 			[Bindable]
 			private var arrFacilityLayers:ArrayList= new ArrayList();
 			private var facilityServiceUrl:String='';
 			private var incidentServiceUrl:String='';
 
+			private var fieldType:String;
+			private var fieldAliastype:String;
+			private var arrFieldType:Array;
+			private var arrFieldAliastype:Array;
+			private var indexChangeEvent:IndexChangeEvent;
+			private var _totalTimeTxt:String = "";
+			private var _totalLength:String = "";
+			private var arr:ArrayCollection= new ArrayCollection();
 			private var aryClosestFacilitySymbolInfos:Array=[];
 			private var facilityLayerObj:Object=new Object();
 
-			private var isOplayers:Boolean=false;
 
+			private var isOplayers:Boolean=false;
 			private var facilityFeatureSet:FeatureSet=new FeatureSet();
+			private var incidentFeatureSet:FeatureSet = new FeatureSet();
+			private var bufferGraphic:Graphic;
+			private var bufferPoint:MapPoint;
+			private var barriersFS:FeatureSet= new FeatureSet();
+			private var barrierVisibleFlag:Boolean = false;
 			/**************** Layers Declarition *******************/
+			[Bindable]private var ftrLayerBarrier:FeatureLayer = new FeatureLayer();
 			private var lyrAllFacilities:FeatureLayer= new FeatureLayer();
 			private var graphicIncidentlayerEvent:GraphicsLayer= new GraphicsLayer();
+			private var incidentGraphicsLayer:GraphicsLayer = new GraphicsLayer();
 			private var graphiclyrBarrier:GraphicsLayer= new GraphicsLayer();
 			private var graphiclyrAllFacilities:GraphicsLayer= new GraphicsLayer();
 			private var textSymbolGraphiclayer:GraphicsLayer= new GraphicsLayer();
@@ -104,21 +302,101 @@
 			private var qtIncidents:QueryTask= new QueryTask();
 			private var query:Query = new Query();
 			private var closestFacility:ClosestFacilityTask;
+			private var closestFacility1:ClosestFacilityTask;
 			private var isincidentdrawn:Boolean=false;
+			private var attributename:String ="Name";
+			private var strOutField:String ;
+			private var strOutFieldAlias:String ;
+			private var resultTooltip:String;
+			private var footerLabel:String;
+
+
+
+			private var _fieldFeature:FeatureLayer = new FeatureLayer();
+			private var _mainFeatureLayer:FeatureLayer = new FeatureLayer();
+			private var _alertMsg:Object = new Object();
+			private var _titleBarImagePath:Object = new Object();
+			private var facilityObj:Object = new Object();
+			private var facilityobjForword:Object=new Object()
+
+			private var _geometry:Geometry = new Geometry();
+
+			private var _getDirLabel:String = "";
+			private var _revDirLabel:String = "";
+			private var arrconfigureField:Array=new Array();
+
+			private var tokens:String="";
+
+			[Bindable]
+			private var strUrl:String=new String();
 
 			private function  configLoaded():void
 			{
+
+
 				if(configXML)
 				{
+					strUrl=configData.geometryService.url;
+
+
+					arrBarrier = new ArrayCollection();
 					var LayerXmlList:XMLList = configXML..layer
 					var obj:Object;
 					var hashTable:Hashtable= new Hashtable();
+					configureField = configXML.configureField;
+					arrconfigureField=configureField.split(",");
+					FieldType = configXML.configureFieldType;
+					strOutField = configXML.outFields.@fieldTypes;
+					arrOutField=strOutField.split(",");
+					strOutFieldAlias = configXML.outFields.@fieldAlias;
+					arrOutFieldAlias=strOutFieldAlias.split(",");
+					fromLabel=configXML.formatString.source.@label;
+					toLabel=configXML.formatString.Destination.@label;
+					nameLabel=configXML.formatString.Name.@label;
+					ColumnWidthString = configXML.ColumnWidth;
+					columnWidth=ColumnWidthString.split(",");
+					_totalTimeTxt = configXML.formatString.time.@label || "totalTime";
+					_totalLength = configXML.formatString.length.@label || "totalLength";
+					footerLabel = configXML.footerLabel
+					createRouteTooltip = configXML.titleBarToolTip.showRouteToolTip || "Show Route";
+					dirBtnTooltip = configXML.titleBarToolTip.showDirectionsToolTip || "Show Direction";
+					resultTooltip =configXML.titleBarToolTip.showResultsTooltip || "Show Results";
+					printTooltip = configXML.titleBarToolTip.printTooltip || "Print";
+					routeAltTxtBgClr = configXML.alttxtbgclr || 0xd7d7d7;
+					showDirArrows =  configXML.showdirectionarrows || "true";
+					savePdfBtnLbl = configXML.exportpdfbtnlabel || "Save Map to PDF";
+					includeMapLbl = configXML.includemaplabel || "Include Map";
+					printMapBtnLbl = configXML.printmapbtnlabel || "Print Map";
+					pdfGenerationWarningLbl = configXML.pdfgenerationwarning || "If you choose to save a PDF then please be patient.&lt;br /&gt;A save dialog will open once the PDF has been generated.";
+					genPDF = configXML.genpdf || "Generating PDF...";
+					layerId.text= configXML.layerLabel[0].@label;
+					label1.text=configXML.fieldLabel[0].@label;
+
+					_getDirLabel = configXML.getDirLabel.toString() || "Get Directions";
+					_revDirLabel = configXML.revDirLabel.toString() || "Reverse Route Directions";
+
+					var xmlAlert:XML = (configXML.alerts[0]);
+					var xmlDoc:XMLDocument = new XMLDocument(xmlAlert.toString());
+					var decoder:SimpleXMLDecoder = new SimpleXMLDecoder(true);
+					var resultObj:Object = decoder.decodeXML(xmlDoc);
+					_alertMsg = resultObj.alerts;
+
+					var xmlImagePath:XML = (configXML.titlebarimagepath[0]);
+					var xmlImageDoc:XMLDocument = new XMLDocument(xmlImagePath.toString());
+					var resultImageObj:Object = decoder.decodeXML(xmlImageDoc);
+					_titleBarImagePath = resultImageObj.titlebarimagepath;
 
 					obj=new Object();
 					obj.label = 'Select Layer';
 					obj.url ='';
 					arrFacilityLayers.addItem(obj);
+					arr1.push(obj);
+
 					m_nLoadOperationsInProcess--;
+					fieldType= configXML.fieldtype;
+					fieldAliastype= configXML.fieldAliastype;
+					arrFieldType = fieldType.split(",");
+					arrFieldAliastype=fieldAliastype.split(",");
 					for each(var obj1:Object in configData.opLayers)
 					{
 						if(obj1.type=="feature")
@@ -126,8 +404,13 @@
 							obj=new Object();
 							obj.label = obj1.label;
 							obj.url =obj1.url;
-							arrFacilityLayers.addItem(obj);
 							hashTable.add(obj1.label,obj);
+							arr1.push(obj)
+							for(var i:int=0;i<arrFieldAliastype.length;i++)
+							{
+								if (obj1.label==arrFieldAliastype[i])
+									arrFacilityLayers.addItem(obj);
+							}
 						}
 					}
 					for each (var item:XML in LayerXmlList)
@@ -140,10 +423,33 @@
 							obj.label = item.@label[0];
 							obj.url =item.toString();
 							arrFacilityLayers.addItem(obj);
+							arr1.push(obj)
 						}
 					}
+
+					obj = new Object();
+					obj.label = "Select Barrier";
+					obj.url = "";
+					arrBarrier.addItem(obj);
+					for each(var objBarrier:Object in configXML.barrierLayers.barrier)
+					{
+						obj = new Object();
+						obj.label = objBarrier.@label[0].toString();
+						obj.url = objBarrier.toString();
+						if(obj.url !="")
+						{
+							ftrLayerBarrier.url = obj.url;
+							ftrLayerBarrier.id	= obj.label;
+							ftrLayerBarrier.name = obj.label;
+							ftrLayerBarrier.visible = false;
+
+						}
+						arrBarrier.addItem(obj);
+					}
+
 					incidentServiceUrl=configXML.incidents.url;
 					facilityServiceUrl=configXML.closestFacilitySvc.url;
+
 
 					// Load route renderer infos array
 					simpleLabelSym.color=0x000000;
@@ -154,9 +460,7 @@
 						);
 						aryClosestFacilitySymbolInfos.push(sym)
 
-						/* aryClosestFacilitySymbolInfos.push(
-						new UniqueValueInfo( sym, xmlRoute.@rank )
-						); */
+
 					}
 				}
 				else
@@ -164,65 +468,252 @@
 					Alert.show('Config not found');
 				}
 				/**************Add the graphic Layers*****************/
-
+				aniRouteSeg = (configXML.routesegment.@animate == "true")?true:false;
 				graphicIncidentlayerEvent.id='graphicIncidentlayer';
 				graphiclyrBarrier.id='barrierGraphicLayer';
+
 				map.addLayer(graphicIncidentlayerEvent);
+				map.addLayer(incidentGraphicsLayer);
 				map.addLayer(graphiclyrBarrier);
 				map.addLayer(lyrResultRoutes );
 				map.addLayer(textSymbolGraphiclayer);
 				map.addLayer(textSymbolGraphiclayer1);
+				map.addLayer(segmentGraphicLayer)
+				map.addLayer(ftrLayerBarrier);
 				/***/
 				closestFacility= new ClosestFacilityTask()
+
 				closestFacility.url=facilityServiceUrl;
 				closestFacility.method=URLRequestMethod.POST;
 				closestFacility.requestTimeout=20;
 				closestFacility.addEventListener(ClosestFacilityEvent.SOLVE_COMPLETE,onSolveComplete);
 				closestFacility.addEventListener(FaultEvent.FAULT,onSolveFail);
+				closestFacility1= new ClosestFacilityTask()
+				closestFacility1.url=facilityServiceUrl;
+				closestFacility1.method=URLRequestMethod.POST;
+				closestFacility1.requestTimeout=20;
+				closestFacility1.addEventListener(ClosestFacilityEvent.SOLVE_COMPLETE,onSolveComplete1);
+				wTemplate.addTitlebarButton(_titleBarImagePath.routeimagepath, createRouteTooltip, showRoute);
+				wTemplate.addTitlebarButton(_titleBarImagePath.resultimagepath, resultTooltip, callShowResults);
+				wTemplate.addTitlebarButton(_titleBarImagePath.directionimagepath, dirBtnTooltip, showDirections);
+
+
 
 
 				/*********************************************************/
 			}
 
 
-			private  function cmdfacilityLayers_changeHandler(event:IndexChangeEvent):void
+
+
+
+			private var keys:Object = {};
+
+
+
+			private function queryTask():void
+			{
+				cursorManager.setBusyCursor();
+				var query:HTTPService= new HTTPService();
+				query.method="Post";
+				query.url = cmdfacilityLayers.selectedItem.url +"?f=json&pretty=true";
+			    query.send();
+				query.addEventListener(ResultEvent.RESULT,onQuerySuccess1);
+				query.addEventListener(FaultEvent.FAULT, function onFoult():void{
+					cursorManager.removeBusyCursor()});
+			}
+			private var isCoded:Boolean= false;
+			private function onQuerySuccess1(event:ResultEvent):void
 			{
 
+				var rawData:String = event.result as String;
 
+
+				var attributes:Object = JSONUtil.decode(rawData);
+				var array:Array = new Array();
+				array=attributes.fields;
+				if(array.length > 0)
+				{
+					for each(var obj:Object in array)
+					{
+						if(obj.name == arrFieldType[cmdfacilityLayers.selectedIndex-1])
+						{
+							var arr:Array= new Array();
+							if(obj.domain!=null)
+							{
+								isCoded=true;
+								arr= obj.domain.codedValues;
+								arrColl= new ArrayCollection();
+								var obj1:Object=new Object();
+								obj1.label = 'Select Type';
+								obj1.url ='';
+								arrColl.addItem(obj1);
+								for each(var obj1:Object in arr)
+								{
+									var obj2:Object = new Object();
+									obj2.id=arrFieldType[cmdfacilityLayers.selectedIndex-1];
+									obj2.label= obj1.name;
+									obj2.alias=arrFieldAliastype[cmdfacilityLayers.selectedIndex-1];
+									obj2.url =cmdfacilityLayers.selectedItem.url;
+									arrColl.addItem(obj2);
+								}
+								trace(arrColl);
+								cmdfacilityLayers1.dataProvider = arrColl;
+								featuresShowOnMap()
+							}
+							else
+							{
+								isCoded=false;
+								featuresShowOnMap();
+
+								var queryTask:QueryTask = new QueryTask();
+								queryTask.url =  cmdfacilityLayers.selectedItem.url;
+								var query:Query = new Query();
+								query.where = "1=1";
+								query.returnGeometry = false;
+								query.outFields = [arrFieldType[cmdfacilityLayers.selectedIndex-1]];
+								queryTask.execute(query,new AsyncResponder(onQueryResultHandler,onqueryFaultHandler));
+							}
+
+						}
+					}
+				}
+				else
+				{
+					Alert.show(_alertMsg.noResultFound.alertmessage,_alertMsg.noResultFound.alertheader);
+				}
+
+			}
+
+			private function onQueryResultHandler(featureSet:FeatureSet,token:Object = null):void
+			{
+				var arrCollFeature:ArrayCollection = new ArrayCollection();
+				if(featureSet.attributes.length > 0)
+				{
+					var obj1:Object=new Object();
+					obj1.label = 'Select Type';
+					obj1.url ='';
+					arrCollFeature.addItem(obj1);
+					for each(var obj:Object in featureSet.attributes)
+					{
+						if(!arrCollFeature.contains(obj[arrFieldType[cmdfacilityLayers.selectedIndex-1]]))
+							arrCollFeature.addItem(obj[arrFieldType[cmdfacilityLayers.selectedIndex-1]]);
+
+					}
+
+					Mycombo.visible= true;
+					label1.visible=true;
+					fieldTypeValues.visible= true;
+					fieldTypeValues.includeInLayout = true;
+					fieldTypeValues.selectedIndex = 0;
+					fieldTypeValues.dataProvider=arrCollFeature;
+
+					cmdfacilityLayers1.visible= false;
+					cmdfacilityLayers1.includeInLayout = false;
+				}
+			}
+
+			private function onqueryFaultHandler(fault:Fault,token:Object = null):void
+			{
+				Alert.show(fault.message.toString(),"Alert")
+			}
+
+
+			private  function cmdfacilityLayers_changeHandler(event:IndexChangeEvent):void
+			{
+				if(cmdfacilityLayers.selectedIndex > 0)
+				{
+					queryTask();
+					indexChangeEvent = event;
+				}
+				else
+				{
+					cmdfacilityLayers1.visible = false;
+					cmdfacilityLayers1.includeInLayout = false;
+					fieldTypeValues.visible = false;
+					fieldTypeValues.includeInLayout = false;
+					label1.visible = false;
+					if(_fieldFeature != null)
+					{
+						if(_fieldFeature.visible == true)
+							_fieldFeature.visible = false;
+					}
+					if(_mainFeatureLayer != null)
+					{
+						if(_mainFeatureLayer.visible == true)
+						{
+							_mainFeatureLayer.visible = false;
+							map.infoWindow.hide();
+						}
+					}
+					map.infoWindow.hide();
+					segmentGraphicLayer.clear();
+					textSymbolGraphiclayer.clear()
+					textSymbolGraphiclayer1.clear()
+					graphicIncidentlayerEvent.clear();
+					incidentGraphicsLayer.clear();
+					lyrResultRoutes.clear();
+					graphiclyrBarrier.clear();
+				}
+			}
+
+			private function featuresShowOnMap():void
+			{
+				if(indexChangeEvent.currentTarget.selectedItem.label == arrFieldAliastype[cmdfacilityLayers.selectedIndex-1])
+				{
+					Mycombo.visible= true;
+					label1.visible=true;
+					cmdfacilityLayers1.visible= true;
+					cmdfacilityLayers1.includeInLayout = true;
+					cmdfacilityLayers1.dataProvider=arrColl;
+					fieldTypeValues.visible = false;
+					fieldTypeValues.includeInLayout = false;
+				}
+				else
+				{
+					Mycombo.visible= false;
+					label1.visible=false;
+					cmdfacilityLayers1.visible= false;
+					cmdfacilityLayers1.includeInLayout = false;
+					cmdfacilityLayers1.dataProvider=arrColl;
+					fieldTypeValues.visible = false;
+					fieldTypeValues.includeInLayout = false;
+
+				}
 				textSymbolGraphiclayer.clear()
 				textSymbolGraphiclayer1.clear()
 				graphicIncidentlayerEvent.clear();
+				incidentGraphicsLayer.clear();
 				lyrResultRoutes.clear();
 				graphiclyrBarrier.clear();
 				isincidentdrawn=false;
-
-				if(event.newIndex>0)
+				if(indexChangeEvent.newIndex>0)
 
 				{
-
-					cmdfacilityLayers.selectedIndex=event.newIndex;
-					/* if(event.oldIndex>0)
-					{	facilityLayerObj=arrFacilityLayers.getItemAt(event.oldIndex);
-					if(map.getLayer(facilityLayerObj.label)!=null)
-					{
-					var f:FeatureLayer= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
-					if(f.visible==true)
-					f.visible=false;
+					map.removeEventListener(ExtentEvent.EXTENT_CHANGE,zoomToFacilities1)
+					cmdfacilityLayers.selectedIndex=indexChangeEvent.newIndex;
+					if(indexChangeEvent.oldIndex>0)
+					{	facilityLayerObj=arrFacilityLayers.getItemAt(indexChangeEvent.oldIndex);
+						if(map.getLayer(facilityLayerObj.label)!=null)
+						{
+							var f:FeatureLayer= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
+							if(f.visible==true)
+								f.visible=false;
+						}
 					}
-					} */
-
 					facilityLayerObj= cmdfacilityLayers.selectedItem;
 					m_nLoadOperationsInProcess=1;
 					if(map.getLayer(facilityLayerObj.label)!=null)
 					{
 						isOplayers=true;
-						var f1:FeatureLayer= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
+						var f:FeatureLayer= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
+						_mainFeatureLayer = f;
 						if((map.getLayer(facilityLayerObj.label) as FeatureLayer).visible==false)
 							(map.getLayer(facilityLayerObj.label) as FeatureLayer).visible=true;
-						//lblFindingFeatures.text='Searching is Layer  already added.';
+						(map.getLayer(facilityLayerObj.label) as FeatureLayer).definitionExpression = "1=1";
+
 						m_nLoadOperationsInProcess--;
-						//map.addEventListener(ExtentEvent.EXTENT_CHANGE,zoomToFacilities1)
-						//f.addEventListener(LayerEvent.UPDATE_END, zoomToFacilities1 );
+
 					}
 					else
 					{
@@ -232,42 +723,125 @@
 						var f:FeatureLayer=new FeatureLayer(facilityLayerObj.url);
 						f.id=facilityLayerObj.label;
 						f.name=facilityLayerObj.label;
-						f.definitionExpression='1=1';
+						f.definitionExpression = arrFieldType[cmdfacilityLayers.selectedIndex-1]+" = '"+cmdfacilityLayers1.selectedItem.label+"'";
 						f.mode= FeatureLayer.MODE_SNAPSHOT;
 						map.addLayer(f);
-						f.addEventListener(LayerEvent.UPDATE_END, zoomToFacilities );
+
 						f.addEventListener(LayerEvent.LOAD_ERROR, function( event:LayerEvent ):void {
 							m_nLoadOperationsInProcess--;
 							showError( "Error loading facilities:\n" + event.fault.message.toString() );
 						} );
 					}
 				}
+				cursorManager.removeBusyCursor();
 			}
 
-
-
-
+			public static const FROM_FACILITY:String = "esriNATravelDirectionFromFacility";
+			public static const TO_FACILITY:String = "esriNATravelDirectionToFacility"
 
 
 			private function onQuerySuccess(result:Object,token:Object):void{
 
+
+				var tempGraphic:Graphic=new Graphic();
+				tempGraphic.geometry=token.extent.center as Geometry;
 				facilityFeatureSet= new FeatureSet();
+				if((result as FeatureSet).features.length > 0)
+					incidentFeatureSet = result as FeatureSet;
+
 				facilityFeatureSet= result as FeatureSet;
 				m_nLoadOperationsInProcess--;
 
+				var facilityLayerObj:Object=facilityLayerObj= cmdfacilityLayers.selectedItem;
+				if(map.getLayer(facilityLayerObj.label)!=null)
+				{
+					var f:FeatureLayer= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
+					if(f.visible==false)
+						f.visible=true;
+				}
+
+				if(isincidentdrawn == true)
+				{
+					closestFacilityParams.defaultTargetFacilityCount=numFacilities.value;
+					closestFacilityParams1.defaultTargetFacilityCount= numFacilities.value;
+
+
+
+					closestFacilityParams.facilities = facilityFeatureSet;
+					closestFacilityParams1.facilities = facilityFeatureSet;
+
+
+					closestFacilityParams.returnFacilities=true;
+					closestFacilityParams1.returnFacilities= true;
+
+
+
+
+					if(chkBarrier.selected)
+					{
+						closestFacilityParams.pointBarriers = barriersFS;
+					}
+					closestFacilityParams.incidents=new FeatureSet([tempGraphic]);
+
+
+					closestFacilityParams.travelDirection=TO_FACILITY;
+					closestFacilityParams.returnIncidents=true;
+					closestFacilityParams.polylineBarriers = featureSetForGraphicLayer( graphiclyrBarrier );
+					closestFacilityParams.outSpatialReference = map.spatialReference;
+					closestFacility.method = URLRequestMethod.POST;
+					closestFacilityParams.travelDirection= "esriNATravelDirectionFromFacility";
+					closestFacilityParams.returnDirections= true;
+					closestFacilityParams.returnRoutes=true;
+
+					if(chkBarrier.selected)
+					{
+						closestFacilityParams1.pointBarriers = barriersFS;
+					}
+
+					closestFacilityParams1.travelDirection=TO_FACILITY;
+					closestFacilityParams1.incidents=new FeatureSet([tempGraphic]);;
+
+					closestFacilityParams1.returnIncidents=true;
+					closestFacilityParams1.polylineBarriers = featureSetForGraphicLayer( graphiclyrBarrier );
+					closestFacilityParams1.outSpatialReference = map.spatialReference;
+					closestFacility1.method = URLRequestMethod.POST;
+					closestFacilityParams1.travelDirection= "esriNATravelDirectionToFacility";
+					closestFacilityParams1.returnDirections= true;
+
+					closestFacilityParams1.returnRoutes=true;
+
+
+
+					if((result as FeatureSet).features.length > 0)
+					{
+						closestFacility.token=tokens;
+						closestFacility1.token=tokens;
+						closestFacility.solve(closestFacilityParams);
+						closestFacility1.solve(closestFacilityParams1);
+					}
+					else
+					{
+						cursorManager.removeBusyCursor();
+					}
+
+
+				}
+				else
+				{
+					Alert.show(_alertMsg.drowPtError.alertmessage,_alertMsg.drowPtError.alertheader);
+				}
 			}
 
-			private function onFault(e:FaultEvent,token:Object):void
+			private function onFault(e:Fault,token:Object):void
 			{
 				m_nLoadOperationsInProcess--;
-				showError( "Error loading facilities:\n" + e.fault.message.toString() );
+
 
 			}
 
 			/**Common Functionality */
 			private function zoomToFacilities( event:LayerEvent ):void {
 				var evtLyr:FeatureLayer = event.currentTarget as FeatureLayer;
-				//map.extent = GraphicUtil.getGraphicsExtent( (evtLyr.graphicProvider as ArrayCollection).toArray() ).expand( 1.25 );
 				evtLyr.removeEventListener( LayerEvent.UPDATE_END, zoomToFacilities );
 				m_nLoadOperationsInProcess--;
 			}
@@ -287,24 +861,25 @@
 				if(cmdfacilityLayers.selectedIndex>0)
 				{
 					setMapAction(DrawTool.MAPPOINT, 'Add Event', symbolLyrEvent, drawEvent);
-					//lblFindingFeatures.text='Searching feature within the Buffer'
-					enableMapNav(false);
+
+					enableMapNav(true);
 				}
 				else
 				{
-					Alert.show('Please select a facility layer.','Error')
+					Alert.show(_alertMsg.selectfacilityLayer.alertmessage,_alertMsg.selectfacilityLayer.alertheader);
 				}
 			}
 
 
 			private function drawBuffer(geometry:Geometry):void
 			{
+				btnSolve.enabled = false;
 				var geometryService:GeometryService= new GeometryService();
 				var bufferpara:BufferParameters= new BufferParameters();
 				geometryService.url= configData.geometryService.url;
-				bufferpara.distances=[5];
+				bufferpara.distances=[new Number(configXML.bufferParameter)];
 				bufferpara.geometries= [geometry];
-				bufferpara.unit= GeometryService.UNIT_KILOMETER
+				bufferpara.unit= GeometryService.UNIT_STATUTE_MILE;
 				bufferpara.bufferSpatialReference= map.spatialReference;
 				bufferpara.outSpatialReference= map.spatialReference;
 				geometryService.buffer(bufferpara,new AsyncResponder(onBufferComplete,onFault));
@@ -314,19 +889,23 @@
 			private function onBufferComplete(result:Object, token:Object = null):void
 			{
 				var symbol:SimpleFillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID,0xFF00000,0.5);
-				var g:Graphic=new Graphic(result[0]as Geometry,symbol);
-				//graphiclyrBarrier.add(g);
+				bufferGraphic =new Graphic(result[0]as Geometry,symbol);
 
-				zoomToFacilities1(result[0]as Geometry);
-
+				_geometry = new Geometry();
+				if(chkBarrier.selected)
+				{
+					queryBarrierFunction()
+				}
+				_geometry = result[0] as Geometry;
+				arrSelectedPointBuffar.addItem(_geometry);
+				btnSolve.enabled = true;
 			}
 
-
 			private function zoomToFacilities1(geom:Geometry):void {
-				//var evtLyr:FeatureLayer = event.currentTarget as FeatureLayer;
 
-				//m_nLoadOperationsInProcess--;
-
+				var queryTask:QueryTask= new QueryTask(facilityLayerObj.url);
+				queryTask.useAMF=false;
+				queryTask.method ="Post";
 				var query:Query= new Query();
 				query.geometry= geom as Geometry;
 				query.spatialRelationship=Query.SPATIAL_REL_CONTAINS;
@@ -335,19 +914,36 @@
 				arr.push('OBJECTID')
 				query.outFields=arr;
 				query.outSpatialReference=map.spatialReference;
-				var queryTask:QueryTask= new QueryTask(facilityLayerObj.url)
-				queryTask.useAMF=false;
-				queryTask.method ="Post"
-				queryTask.execute(query,new AsyncResponder(onQuerySuccess,onFault));
-				//evtLyr.queryFeatures(query,new AsyncResponder(onQuerySuccess,onFault));
+
+				if(isCoded==true)
+					query.where = cmdfacilityLayers1.selectedItem.id+" = '"+cmdfacilityLayers1.selectedItem.label+"'";
+				else
+					query.where=arrFieldType[cmdfacilityLayers.selectedIndex-1]+" = '"+fieldTypeValues.selectedItem+"'";
+
+
+				query.outFields=["*"];
+				queryTask.disableClientCaching = false;
+				queryTask.execute(query,new AsyncResponder(onQuerySuccess,onFault,geom));
+
 			}
+
+			private var startpoint:Graphic= new Graphic();
+			private var endpoint:Graphic= new Graphic();
+			private var geomArr:Array = new Array();
 			private function drawEvent( event:DrawEvent ):void {
-				isincidentdrawn=true;
-				graphicIncidentlayerEvent.add(event.graphic);
-				drawBuffer(event.graphic.geometry);
 
+				isincidentdrawn=true;
+				errorFlag = false;
+				endpoint=event.graphic;
+				geomArr.push(event.graphic);
+				bufferPoint = (event.graphic.geometry) as MapPoint;
+				graphicIncidentlayerEvent.clear();
+				graphicIncidentlayerEvent.add(event.graphic);
+				incidentGraphicsLayer.add(event.graphic);
+				drawBuffer(bufferPoint);
 
 			}
+
 
 			private function drawPolylineBarrier( event:DrawEvent ):void {
 				graphiclyrBarrier.add(event.graphic);
@@ -362,22 +958,52 @@
 				var ary:Array = new Array();
 				for each ( var o:Object in xl )
 				ary.push( o.toString() );
-
 				return ary;
 			}
 
 			/**CLosest facilty*/
 
+			private var arrayD:Array = new Array();
+			private var arrayRD:Array = new Array();
+
+
+			private var routes:Array = new Array();
+			private function onSolveComplete1(e:ClosestFacilityEvent):void{
+
+				routes=e.closestFacilitySolveResult.routes;
+				for each(var directionFS:DirectionsFeatureSet in e.closestFacilitySolveResult.directions)
+				{
+					var obj:Object=new Object();
+					obj.directionFS=directionFS;
+					obj.geometry=e.closestFacilitySolveResult.incidents
+					arrayRD.push(obj);
+
+				}
+				cursorManager.removeBusyCursor();
+			}
 
 			private function onSolveComplete(e:ClosestFacilityEvent):void{
+				cursorManager.setBusyCursor();
 
-				lyrResultRoutes.clear();
 
-				graphiclyrBarrier.clear();
-				textSymbolGraphiclayer.clear()
-				textSymbolGraphiclayer1.clear()
+				var arr:Array
+
+
+
+				var arrRouteColl:ArrayCollection;
 
 				var routes:Array = e.closestFacilitySolveResult.routes;
+				arrRouteColl = new ArrayCollection(routes);
+
+				for each(var directionFS:DirectionsFeatureSet in e.closestFacilitySolveResult.directions)
+				{
+					var obj:Object=new Object();
+					obj.directionFS=directionFS;
+					obj.geometry=e.closestFacilitySolveResult.incidents
+					arrayD.push(obj);
+
+				}
+				cursorManager.removeBusyCursor();
 				// Order so lowest-ranked results are added/drawn first
 				routes.sort(
 					function( g1:Graphic, g2:Graphic ):int {
@@ -405,32 +1031,54 @@
 				for ( var i:int = 0; i < routes.length; i++ )
 				{
 					var o:Graphic = routes[ i ];
+
+					o.attributes.geometry=e.closestFacilitySolveResult.incidents;
 					textLblgra= new Graphic();
 					textBgGra= new Graphic();
 					simpleLabelSym= new TextSymbol()
 
-					simplefilsSym= new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_SQUARE,15,0x0000ff,1,0,0,0,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,0xffffff,1,2));
+
 
 					/* Route gra */
 					indexCount=o.attributes['IncidentID'];
 					var routSymb:SimpleLineSymbol=new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,0,1,4) ;
 					routSymb.color= getRandomColor();
-
+					(o as Graphic).addEventListener(MouseEvent.MOUSE_OVER,showInfo)
 					o.symbol= routSymb;
 					lyrResultRoutes.add(o);
 					/* Label adding*/
 
+					var str:String = "";
+					for(var j:Number = 0; j< arrRouteColl.length; j++)
+					{
+						var graph:Graphic = arrRouteColl[j];
+						var isEqual:Boolean = isGeometryEqual(o.geometry as Geometry,graph.geometry as Geometry);
+						if(isEqual)
+						{
+							if(str  == "")
+								str = graph.attributes['FacilityRank'];
+							else
+								str = graph.attributes['FacilityRank'] + "/" + str;
+						}
+					}
+					simplefilsSym= new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_SQUARE,15,0x0000ff,1,0,0,0,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,0xffffff,1,2));
+
+					if(str.length > 2)
+					{
+						simplefilsSym.size = simplefilsSym.size + str.length * 3;
+					}
 					simpleLabelSym.color=0xFFFFFF;
 					simpleLabelSym.alpha=1;
-					simpleLabelSym.text= o.attributes['FacilityRank'];
+					simpleLabelSym.text= str;
 					textLblgra.symbol=simpleLabelSym;
 					textBgGra.symbol=simplefilsSym;
+
 					var p:Polyline= new Polyline();
 					p.paths=(o.geometry as Object).paths;
 					// calc last point
 					var index:Number=Math.round(((p.paths[0]).length)/4)
 
-					//	Alert.show(index.toString());
+
 					textLblgra.geometry= p.getPoint(0,((p.paths[0]).length)-index) as MapPoint;
 
 					textBgGra.geometry= p.getPoint(0,((p.paths[0]).length)-index) as MapPoint;
@@ -439,61 +1087,241 @@
 					textSymbolGraphiclayer1.add(textLblgra);
 
 				};
-				cursorManager.removeBusyCursor();
+				showResults();
+
+
+			}
+
+			private function isGeometryEqual(geometry1:Geometry,geometry2:Geometry):Boolean
+			{
+				var isEqual:Boolean = true;
+				if(geometry1 is MapPoint)
+				{
+					if(((geometry1 as MapPoint).x != (geometry2 as MapPoint).x) || ((geometry1 as MapPoint).y != (geometry2 as MapPoint).y))
+						isEqual = false;
+				}
+				else if(geometry1 is Polygon)
+				{
+					if((geometry1 as Polygon).rings[0].length != (geometry2 as Polygon).rings[0].length)
+						isEqual = false;
+					else
+						for(var ringIndex:int = 0;ringIndex < ((geometry1 as Polygon).rings[0] as Array).length; ringIndex++)
+						{
+							var mp1:MapPoint = (geometry1 as Polygon).rings[0][ringIndex];
+							var mp2:MapPoint = (geometry2 as Polygon).rings[0][ringIndex];
+							if(int(mp1.x) != int(mp2.x) || int(mp1.y) != int(mp2.y))
+							{
+								isEqual = false;
+								break;
+							}
+						}
+				}
+				else if(geometry1 is Polyline)
+				{
+					if((geometry1 as Polyline).paths[0].length != (geometry2 as Polyline).paths[0].length)
+						isEqual = false;
+					else
+					{
+						for(var ringIndex:int = 0;ringIndex < ((geometry1 as Polyline).paths[0] as Array).length; ringIndex++)
+						{
+							var mp1:MapPoint = (geometry1 as Polyline).paths[0][ringIndex];
+							var mp2:MapPoint = (geometry2 as Polyline).paths[0][ringIndex];
+							if(int(mp1.x) != int(mp2.x) || int(mp1.y) != int(mp2.y))
+							{
+								isEqual = false;
+								break;
+							}
+						}
+					}
+				}
+				return isEqual;
+			}
+
+
+			private  function showInfo(event:MouseEvent):void
+			{
+				facilityObj = event.currentTarget.attributes;
+				facilityobjForword=event.currentTarget.attributes;
+				var vbox:VBox = new VBox();
+				var hRule:mx.controls.HRule = new mx.controls.HRule();
+				hRule.percentWidth = 100;
+				vbox.addChild(hRule);
+				var label:mx.controls.Label= new mx.controls.Label();
+				var string:String = event.currentTarget.attributes.Name;
+				var arr1:Array = new Array();
+				arr1 = string.split("-");
+				string = arr1[1]+" - "+arr1[0];
+				label.text= string;
+				vbox.addChild(label);
+				var formitem:FormItem = new FormItem();
+				formitem.label="Facility Rank:";
+				var textinput:mx.controls.Label = new mx.controls.Label();
+				textinput.text=event.currentTarget.attributes.FacilityRank;
+				var rank:int= event.currentTarget.attributes.FacilityRank;
+				formitem.addChild(textinput);
+				vbox.addChild(formitem);
+				var formitem1:FormItem = new FormItem();
+				formitem1.label="Travel Time :";
+				var textinput1:mx.controls.Label = new mx.controls.Label();
+				var strTime:String = new String();
+				strTime=formatTime(event.currentTarget.attributes.Total_TravelTime);
+				textinput1.text=strTime;
+				formitem1.addChild(textinput1);
+				vbox.addChild(formitem1);
+
+				var label2:mx.controls.Label= new mx.controls.Label();
+				label2.text=_getDirLabel;
+				label2.addEventListener(MouseEvent.CLICK,ReverseRouteDirections);
+				label2.useHandCursor=true;
+				label2.buttonMode=true;
+				label2.mouseChildren=false;
+				label2.setStyle("fontWeight","bold");
+				label2.setStyle("textDecoration", "underline");
+				label2.setStyle("color" ,"0xFFFFFF");
+				label2.setStyle("textAlign" ,'center');
+				label2.percentWidth = 100;
+				vbox.addChild(label2);
+				var label1:mx.controls.Label= new mx.controls.Label();
+				label1.text=_revDirLabel;
+				label1.addEventListener(MouseEvent.CLICK,getdirections);
+				label1.useHandCursor=true;
+				label1.buttonMode=true;
+				label1.mouseChildren=false;
+				label1.setStyle("fontWeight","bold");
+				label1.setStyle("textDecoration", "underline");
+				label1.setStyle("color" ,"0xFFFFFF");
+				label1.setStyle("textAlign",'center');
+				label1.percentWidth = 100;
+				vbox.setStyle("horizontalAlign","Center");
+				vbox.addChild(label1);
+				vbox.setStyle("horizontalAlign","Center");
+				map.infoWindow.content=vbox;
+				var mappoint:MapPoint = new MapPoint();
+				map.infoWindow.label = label.text;
+				map.infoWindow.closeButton.toolTip = "Close";
+				mappoint=map.toMapFromStage(event.stageX,event.stageY);
+				map.infoWindow.show(mappoint);
+				var o:Graphic= (event.currentTarget) as Graphic;
+
+				function getdirections(event:MouseEvent):void
+				{
+					wTemplate.widgetState="open";
+
+					currentState="Dirctions";
+
+					wTemplate.selectedTitlebarButtonIndex=1;
+					stopsFS.features = [];
+					directionsFS = null;
+					theDirections.removeAllElements();
+					theDirections.toolTip = null;
+					theRouteName.toolTip = null;
+					theSummary.toolTip = null;
+					segmentGraphic = null;
+					var index:int = new int()
+					index=rank-1;
+
+					var obj1:Object = ObjectUtil.copy(facilityObj);
+					var arr1:Array = new Array();
+					var string:String = obj1.Name;
+					var arr1:Array = new Array();
+					arr1 = string.split("-");
+					string = arr1[1]+" - "+arr1[0];
+					string = mx.utils.StringUtil.trim(string);
+					obj1.Name = string;
+
+					getDirections(obj1,arrayRD[index].directionFS,"reverseDirection")
+
+				}
+				function ReverseRouteDirections(event:MouseEvent):void
+				{
+
+					wTemplate.widgetState="open";
+
+					currentState="Dirctions";
+
+					wTemplate.selectedTitlebarButtonIndex=1;
+
+					directionsFS = null;
+					theDirections.removeAllElements();
+					theDirections.toolTip = null;
+					theRouteName.toolTip = null;
+					theSummary.toolTip = null;
+					segmentGraphic = null;
+					var index:int = new int();
+					index=rank-1;
+					var obj:Object = ObjectUtil.copy(facilityobjForword);
+					var string:String = obj.Name;
+					var arr1:Array = new Array();
+					arr1 = string.split("-");
+					string = arr1[0]+"-"+arr1[1];
+					string = mx.utils.StringUtil.trim(string);
+					obj.Name = string;
+					getDirections(obj,arrayD[index].directionFS,"direction");
+
+				}
+
 			}
 
 
 
 			private function onSolveFail( event:FaultEvent ):void
 			{
+
 				cursorManager.removeBusyCursor();
-				Alert.show("Cannot find closest facility.","Error")
-				//showError( "\n" + "Cannot find closest facility.","Error" );
+
+				if((graphiclyrBarrier.graphicProvider as ArrayCollection).source.length > 0)
+				{
+					graphicIncidentlayerEvent.clear();
+
+					map.infoWindow.hide();
+				}
+
 			}
 
-			private function onSolve( event:MouseEvent ):void
+			private function onSolve(event:MouseEvent):void
 			{
 
+
+				if(map.infoWindow.visible==true){
+					map.infoWindow.hide();
+					map.infoWindow.content=null;
+				}
+				segmentGraphicLayer.clear();
+				textSymbolGraphiclayer.clear()
+				textSymbolGraphiclayer1.clear()
+				gridCollection=new ArrayCollection();
+				arrayD=new Array();
+				arrayRD=new Array();
 				if(cmdfacilityLayers.selectedIndex>0)
 				{
-
-
-					var facilityLayerObj:Object=facilityLayerObj= cmdfacilityLayers.selectedItem;
-					if(map.getLayer(facilityLayerObj.label)!=null)
+					if((fieldTypeValues != null && fieldTypeValues.selectedIndex == 0 ) || (cmdfacilityLayers1 != null && cmdfacilityLayers1.selectedIndex == 0))
 					{
-						var f:FeatureLayer= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
-						if(f.visible==false)
-							f.visible=true;
-					}
-
-
-
-					if(isincidentdrawn == true)
-					{
-						closestFacilityParams.defaultTargetFacilityCount=numFacilities.value;
-						if(isOplayers==false)
-							closestFacilityParams.facilities = featureSetForGraphicLayer( map.getLayer(facilityLayerObj.label)as FeatureLayer );
-						else{
-							closestFacilityParams.facilities = facilityFeatureSet;
-							var f1:FeatureLayer= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
-							f1.removeEventListener( LayerEvent.UPDATE_END, zoomToFacilities );
-						}
-
-						closestFacilityParams.incidents = featureSetForGraphicLayer(graphicIncidentlayerEvent );
-						closestFacilityParams.polylineBarriers = featureSetForGraphicLayer( graphiclyrBarrier );
-
-						closestFacility.method = URLRequestMethod.POST;
-						closestFacility.solve(closestFacilityParams);
-						cursorManager.setBusyCursor()
+						Alert.show(_alertMsg.selectfacilityType.alertmessage,_alertMsg.selectfacilityType.alertheader);
 					}
 					else
 					{
-						Alert.show('Please define a location on the map first.','Location missing')
+						if(isincidentdrawn == true)
+						{
+							lyrResultRoutes.clear();
+							gridCollection = new ArrayCollection();
+							for(var i:int=0;i<arrSelectedPointBuffar.length;i++)
+							{
+								cursorManager.setBusyCursor();
+								zoomToFacilities1(arrSelectedPointBuffar[i] as Geometry);
+							}
+						}
+						else
+						{
+							Alert.show(_alertMsg.drowPtError.alertmessage,_alertMsg.drowPtError.alertheader);
+						}
+
 					}
+
+
 				}
 				else
 				{
-					Alert.show('Please select a facility layer.','Error')
+					Alert.show(_alertMsg.selectfacilityLayer.alertmessage,_alertMsg.selectfacilityLayer.alertheader);
 				}
 			}
 
@@ -502,25 +1330,99 @@
 				return new FeatureSet( (gl.graphicProvider as ArrayCollection).toArray() );
 			}
 
-			private function clear_clickHandler(event:MouseEvent):void
+			private function clear_clickHandler(event:MouseEvent = null):void
 			{
-				lyrResultRoutes.clear();
+
+				gridCollection=new ArrayCollection();
+				if(resultdata)
+				{
+					resultdata.dataProvider=gridCollection;
+				}
+				if(arrSelectedPointBuffar.length>0)
+				{
+					arrSelectedPointBuffar.removeAll();
+				}
+				if(map.infoWindow.visible==true){
+					map.infoWindow.hide();
+					map.infoWindow.content=null;
+				}
+				if(lyrResultRoutes.numGraphics > 0)
+				{
+					resetVariables();
+				}
+				if(theDirections)
+				{
+					theRouteName.text="";
+					theSummary.text="";
+					theDirections.removeAllElements()
+
+				}
+
+				incidentGraphicsLayer.clear();
 				graphicIncidentlayerEvent.clear();
 				graphiclyrBarrier.clear();
+				segmentGraphicLayer.clear();
 				textSymbolGraphiclayer.clear()
 				textSymbolGraphiclayer1.clear()
 				isincidentdrawn=false;
+				errorFlag = false;
+				cursorManager.removeBusyCursor();
+				geomArr = new Array();
+				printEnabled = false;
+				if(directionsFS != null)
+				{
+					if(directionsFS.features.length > 0)
+						directionsFS = null;
+				}
+
+
+				if(incMap != null)
+				{
+					incMap.selected = false;
+					incMap.enabled = false;
+				}
+			}
+
+			private function resetVariables():void
+			{
+				lyrResultRoutes.clear();
+
+				arrayD=new Array();
+				arrayRD= new Array();
+
+
 			}
 
 			private function wTemplate_closedHandler(event:Event):void
 			{
+
 				setMapAction(null, null, null, null);
+				map.defaultGraphicsLayer.clear();
 				lyrResultRoutes.visible=false;
 				graphicIncidentlayerEvent.visible=false;
+				incidentGraphicsLayer.visible = false;
 				graphiclyrBarrier.visible=false;
 				textSymbolGraphiclayer.visible=false;
 				textSymbolGraphiclayer1.visible=false;
+				if((map.getLayer(arrFieldAliastype[cmdfacilityLayers.selectedIndex-1])))
+				{
+					((map.getLayer(arrFieldAliastype[cmdfacilityLayers.selectedIndex-1])) as FeatureLayer).visible=false;
+				}
 				map.removeEventListener(ExtentEvent.EXTENT_CHANGE,zoomToFacilities1)
+
+				map.infoWindow.hide();
+
+				if(ftrLayerBarrier.visible)
+				{
+					barrierVisibleFlag = true;
+					ftrLayerBarrier.visible = false;
+				}
+				else
+				{
+					barrierVisibleFlag = false;
+				}
+				errorFlag = false;
+				segmentGraphicLayer.visible = false;
 			}
 
 			protected function cmdfacilityLayers_creationCompleteHandler(event:FlexEvent):void
@@ -529,14 +1431,31 @@
 
 			}
 
-			protected function wTemplate_openHandler(event:Event):void
+			protected function wTemplate_openHandler():void
 			{
+
+				wTemplate.closeButton.toolTip="Close";
+				wTemplate.minimizeButton.toolTip="Minimize";
+				errorFlag = false;
+				if(barrierVisibleFlag == true)
+				{
+					ftrLayerBarrier.visible = true;
+				}
+				if(cmdfacilityLayers.selectedIndex > 0 )
+				{
+					if((map.getLayer(arrFieldAliastype[cmdfacilityLayers.selectedIndex-1])))
+					{
+						((map.getLayer(arrFieldAliastype[cmdfacilityLayers.selectedIndex-1])) as FeatureLayer).visible=true;
+					}
+				}
+
 				lyrResultRoutes.visible=true;
 				graphicIncidentlayerEvent.visible=true;
+				incidentGraphicsLayer.visible = true;
+				map.defaultGraphicsLayer.visible= true;
 				graphiclyrBarrier.visible=true;
 				textSymbolGraphiclayer.visible=true;
 				textSymbolGraphiclayer1.visible=true;
-
 			}
 
 
@@ -557,17 +1476,1001 @@
 			}
 
 
+			protected function cmdfacilityLayers1_creationCompleteHandler(event:FlexEvent):void
+			{
+				cmdfacilityLayers1.textInput.editable=false;
+
+			}
+
+			private function cmdBarrierLayer_creationCompleteHandler(event:FlexEvent):void
+			{
+				cmdBarrierLayer.enabled = false;
+				cmdBarrierLayer.textInput.editable = false;
+			}
+
+			private function showRoute():void
+			{
+				resizeWidget(240,480,1500);
+				currentState = "ClosestFacility";
+			}
+
+			private function showDirections():void
+			{
+				if(directionsFS)
+				{
+					resizeWidget(300,600,1500);
+				}
+				currentState = "Dirctions";
+				wTemplate.selectedTitlebarButtonIndex = 2;
+			}
+
+
+			private function callShowResults():void
+			{
+				currentState = "resultView";
+				if(gridCollection.length>0)
+				{
+					resizeWidget(250,700,2000);
+				}
+
+			}
+			private function showResults():void
+			{
+				currentState = "resultView";
+
+				gridCollection = new ArrayCollection();
+				for(var i:int=0;i<arrayD.length;i++)
+				{
+					var _objTemp:Object = {};
+					var dfSet:DirectionsFeatureSet = arrayD[i].directionFS as DirectionsFeatureSet;
+					for(var m:int=0;m<arrOutField.length;m++){
+
+						var str:String = arrOutField[m] as String;
+						if(str!=FieldType)
+							_objTemp[str] =  dfSet[str];
+					}
+					var name:String = dfSet.routeName;
+					var j:int = name.indexOf("-");
+					name=name.substring(j+2,name.length);
+					for each(var graphic:Graphic in incidentFeatureSet.features)
+					{
+						if(_objTemp[FieldType] == null)
+						{
+							_objTemp[FieldType]=graphic.attributes[arrconfigureField[cmdfacilityLayers.selectedIndex-1]];
+
+						}
+					}
+
+
+					gridCollection.addItem(_objTemp);
+					var tempArray:Array=gridCollection.toArray();
+
+
+				}
+
+				wTemplate.selectedTitlebarButtonIndex =1;
+				dataColumn = new Array()
+				resultdata.dataProvider = gridCollection;
+				for(var k:int=0;k<arrOutField.length;k++)
+				{
+					var str1:String = arrOutFieldAlias[k] as String;
+					var str:String=arrOutField[k] as String
+					var dataGridColumn:DataGridColumn = new DataGridColumn(str);
+
+					dataGridColumn.minWidth=columnWidth[k];
+					dataGridColumn.width=columnWidth[k];
+					dataGridColumn.dataField= str;
+					dataGridColumn.headerText = arrOutFieldAlias[k] as String;
+					if(str == _totalLength)
+						dataGridColumn.labelFunction=totalFunction;
+					else if(str == _totalTimeTxt)
+						dataGridColumn.labelFunction=totalTimeFunction;
+					if(str==nameLabel)
+					{
+						if(str1==fromLabel)
+							dataGridColumn.labelFunction=desFunction;
+						if(str1== toLabel)
+							dataGridColumn.labelFunction=sourceFunction;
+					}
+					dataColumn.push(dataGridColumn)
+				}
+
+				cursorManager.removeBusyCursor();
+
+				resultdata.columns= dataColumn;
+				resizeWidget(250,700,2000);
+
+			}
+
+			private function resizeWidget(height:Number, width:Number, duration:Number):void
+			{
+				resize.widthTo = width;
+				resize.heightTo = height;
+				resize.duration = duration;
+				resize.play([wTemplate]);
+
+				wTemplate.widgetHeight = height;
+				wTemplate.widgetWidth = width;
+				wTemplate.minWidth = width;
+				wTemplate.minHeight = height;
+			}
+			private function totalTimeFunction(item:Object, column:DataGridColumn):String
+			{
+
+				return formatTime(item[_totalTimeTxt]);
+			}
+
+			private function sourceFunction(item:Object, column:DataGridColumn):String
+			{
+				var str:String=item[nameLabel] as String
+
+				if(str != "")
+				{
+					var i:int = str.indexOf("-");
+					str=str.substring(0,i)
+				}
+				return str;
+
+			}
+			private function desFunction(item:Object, column:DataGridColumn):String
+			{
+
+				var str:String=item[nameLabel] as String
+
+				if(str != "")
+				{
+					var i:int = str.indexOf("-");
+					str=str.substring(i+1,str.length)
+				}
+				return str;
+			}
+
+
+			private function totalFunction(item:Object, column:DataGridColumn):String
+			{
+				return formatDistance(item[_totalLength],"miles");
+			}
+
+			protected function cmdfacilityLayers1_changeHandler(event:IndexChangeEvent):void
+			{
+				if(event.currentTarget.selectedIndex==0)
+				{
+					cmdfacilityLayers1.selectedIndex=0;
+					if(cmdfacilityLayers.selectedIndex > 0)
+					{
+						_mainFeatureLayer.visible = true;
+						_mainFeatureLayer.definitionExpression = "1=1";
+					}
+				}
+				else{
+					clear_clickHandler();
+					var f:FeatureLayer=	map.getLayer((event.currentTarget.selectedItem.alias) as String) as FeatureLayer
+					f.definitionExpression=event.currentTarget.selectedItem.id+"="+"'"+event.currentTarget.selectedItem.label+"'";
+					f.visible
+					lyrResultRoutes.clear();
+					graphicIncidentlayerEvent.clear();
+					incidentGraphicsLayer.clear();
+					graphiclyrBarrier.clear();
+					textSymbolGraphiclayer.clear();
+					textSymbolGraphiclayer1.clear();
+					isincidentdrawn=false;
+					map.infoWindow.hide();
+
+					if(resultdata!= null && (resultdata.dataProvider as ArrayCollection).length > 0)
+					{
+						arrayD = new Array();
+						arrayRD = new Array();
+						gridCollection = new ArrayCollection();
+						resultdata.dataProvider  = null;
+					}
+				}
+				segmentGraphicLayer.clear();
+			}
+			//Route task
+
+
+			private function getDirections(facilityObj:Object,directionsFS1:DirectionsFeatureSet,strDirection:String):void
+			{
+				incMap.enabled = true;
+				incMap.selected=false;
+				showDirections();
+				segmentGraphicLayer.clear();
+
+				var directionSet:DirectionsFeatureSet = new DirectionsFeatureSet();
+				if(facilityObj != null)
+				{
+					if(strDirection == "reverseDirection")
+					{
+						for(var j:Number = 0; j < arrayRD.length; j++)
+						{
+
+
+							if((Number(facilityObj.Total_Kilometers).toPrecision(1)== Number(arrayRD[j].directionFS.totalLength).toPrecision(1))&&(facilityObj.Name == arrayRD[j].directionFS.routeName))
+							{
+								directionSet = arrayRD[j].directionFS;
+							}
+							else if(((facilityObj.geometry[0] as Graphic).geometry as MapPoint).x==((arrayRD[j].geometry[0] as Graphic).geometry as MapPoint).x&&((facilityObj.geometry[0] as Graphic).geometry as MapPoint).y==((arrayRD[j].geometry[0] as Graphic).geometry as MapPoint).y&&(facilityObj.Name == arrayRD[j].directionFS.routeName))
+							{
+								directionSet = arrayRD[j].directionFS;
+							}
+						}
+					}
+					else if(strDirection == "direction")
+					{
+						for(var j:Number = 0; j < arrayD.length; j++)
+						{
+							if((Number(facilityObj.Total_Kilometers).toPrecision(2) == Number(arrayD[j].directionFS.totalLength).toPrecision(2))&&(facilityObj.Name == arrayD[j].directionFS.routeName))
+							{
+								directionSet = arrayD[j].directionFS;
+							}
+							else if(((facilityObj.geometry[0] as Graphic).geometry as MapPoint).x==((arrayD[j].geometry[0] as Graphic).geometry as MapPoint).x&&((facilityObj.geometry[0] as Graphic).geometry as MapPoint).y==((arrayD[j].geometry[0] as Graphic).geometry as MapPoint).y&&(facilityObj.Name == arrayD[j].directionFS.routeName))
+							{
+								directionSet = arrayD[j].directionFS;
+							}
+
+						}
+					}
+
+					directionsFS=directionSet ;
+				}
+				else
+				{
+					directionsFS=directionsFS1 ;
+				}
+
+
+				printEnabled = true;
+
+				var i:int = 1;
+				var textCntl:mx.controls.Label;
+				for each (var feature:Graphic in directionsFS.features)
+				{
+					textCntl = new mx.controls.Label() ;
+					textCntl.addEventListener(MouseEvent.ROLL_OVER, textCntl_rollOverHandler);
+					textCntl.addEventListener(MouseEvent.ROLL_OUT, textCntl_rollOutHandler);
+					textCntl.percentWidth = 100;
+					textCntl.setStyle("color" ,"0xFFFFFF");
+
+					textCntl.text = i + ". " + feature.attributes.text;
+					if (i > 1 && i < directionsFS.features.length)
+					{
+						textCntl.text += " (" + formatDistance(feature.attributes.length, "miles");
+						var time:String = formatTime(feature.attributes.time);
+						if (time != "")
+						{
+							textCntl.text += ", " + time;
+						}
+						textCntl.text += ")";
+					}
+					textCntl.addEventListener(MouseEvent.CLICK, directionsSegmentClickHandler);
+					theDirections.addElement(textCntl);
+					i++;
+					function directionsSegmentClickHandler(event:MouseEvent):void
+					{
+						var textCntl1:mx.controls.Label = event.currentTarget as mx.controls.Label;
+						var segInt:int = parseInt(textCntl1.text);
+						var segment:Graphic = directionsFS.features[segInt - 1];
+						map.extent = segment.geometry.extent;
+
+						if(aniRouteSeg == true){
+							for(var g:int=segmentGraphicLayer.numGraphics - 1; g>=0; g--)
+							{
+								var gra:Graphic = segmentGraphicLayer.graphicProvider[g] as Graphic;
+								if(gra.name == "routeSegment")
+									segmentGraphicLayer.remove(gra);
+							}
+							if((segInt != directionsFS.features.length) && (segInt != 1)){
+								var segGra:Graphic = new Graphic(segment.geometry, segmentSymbol);
+								segGra.name = "routeSegment";
+
+								segmentGraphicLayer.add(segGra);
+							}
+						}
+
+						if(aniRouteSeg == false){
+							if (!segmentGraphic)
+							{
+								segmentGraphic = new Graphic(segment.geometry, segmentSymbol);
+								segmentGraphic.name = "routeSegment";
+								segmentGraphicLayer.add(segmentGraphic);
+							}
+							else
+							{
+								segmentGraphic.geometry = segment.geometry;
+							}
+						}
+					}
+				}
+
+				theSummary.toolTip = "Click to zoom to full route";
+				theRouteName.toolTip = "Click to zoom to full route";
+
+
+			}
+
+			private function faultHandler(event:FaultEvent):void
+			{
+				Alert.show(event.fault.faultString + "\n\n" + event.fault.faultDetail, "Routing Error " + event.fault.faultCode);
+			}
+
+			private function zoomToFullRoute():void
+			{
+				if (segmentGraphic)
+				{
+					map.defaultGraphicsLayer.remove(segmentGraphic);
+					segmentGraphic = null;
+				}
+				map.extent = directionsFS.extent;
+				if (!map.extent.contains(directionsFS.extent))
+				{
+					map.level--; // make sure the whole extent is visible
+				}
+			}
+
+			private function formatDistance(dist:Number, units:String):String
+			{
+				var result:String = "";
+
+				var d:Number = Math.round(dist * 100) / 100;
+
+				if (d != 0)
+				{
+					result = d + " " + units;
+				}
+
+				return result;
+			}
+			private function myFormatTime1(time:Number):String
+			{
+				var result:String;
+
+				var hr:Number = Math.floor(time / 60);
+				var min:Number = Math.round(time % 60);
+
+				if (hr < 1 && min < 1)
+				{
+					result = "";
+				}
+				else if (hr < 1 && min < 2)
+				{
+					result = min + " minute";
+				}
+				else if (hr < 1)
+				{
+					result = min + " minutes";
+				}
+				else
+				{
+					result = hr + " hour(s) " + min + " minute(s)";
+				}
+
+				return result;
+			}
+
+			private function formatTime(time:Number):String
+			{
+				var result:String;
+
+				var hr:Number = Math.floor(time / 60);
+				var min:Number = Math.round(time % 60);
+
+
+				if (hr < 1 && min < 1)
+				{
+					var sec:Number = (time*60);
+					result = sec.toFixed(0)+"seconds";
+				}
+				else if (hr < 1 && min < 2)
+				{
+					result = min + " minute";
+				}
+				else if (hr < 1)
+				{
+					result = min + " minutes";
+				}
+				else
+				{
+					result = hr + " hour(s) " + min + " minute(s)";
+				}
+
+				return result;
+			}
+
+
+
+			private function textCntl_rollOverHandler(event:MouseEvent):void
+			{
+				var uic:UIComponent = event.currentTarget as UIComponent;
+				(event.currentTarget as mx.controls.Label).toolTip = "Click individual segment to zoom to that segment.";
+				uic.setStyle("color", 0xC1C5F5);
+			}
+
+			private function textCntl_rollOutHandler(event:MouseEvent):void
+			{
+				var uic:UIComponent = event.currentTarget as UIComponent;
+				uic.setStyle("color", 0xFFFFFF);
+			}
+
+			private function copytoClickBoard(event:Event):void
+			{
+				var arr:Array = [];
+				for (var i:int=0;i<theDirections.numChildren;i++ )
+				{
+					arr.push(theDirections.getElementAt(i));
+				}
+				var copyData:String = "";
+				for each(var obj:Object in arr)
+				{
+					if(obj is spark.components.Label)
+						copyData +=obj.text + "\t\n";
+
+				}
+				System.setClipboard(copyData);
+			}
+			//Code For PDF
+
+
+			private function printDirections():void
+			{
+				if(directionsFS)
+				{
+					printMap.enabled = true;
+					var printJob:FlexPrintJob = new FlexPrintJob();
+					printJob.printAsBitmap = false;
+
+					if (printJob.start())
+					{
+						var h:Number = printJob.pageHeight;
+						var w:Number = printJob.pageWidth;
+						//VGROUP
+						var printBox:VGroup = new VGroup();
+						printBox.styleName = "PrintBox";
+						printBox.width = map.width;
+						this.addChild(printBox); // add now to workaround https://bugs.adobe.com/jira/browse/SDK-26906
+						try
+						{
+							var topM:int = 36;
+							var layoutDirection:String = getStyle('layoutDirection');
+
+							//TITLE
+							var printTitle:mx.controls.Label = new mx.controls.Label();
+							printTitle.x = 0
+							printTitle.y = 25;
+							printTitle.text = theRouteName.text;
+							// TODO: make fontsize specified in stylename overwrite this fontSize
+							printTitle.setStyle("fontSize", h / 24);
+							printTitle.setStyle("color","0x000000");
+							printTitle.setStyle("fontWeight","bold");
+							printTitle.percentWidth = 100;
+							printTitle.setStyle("textAlign","center");
+							printBox.addElement(printTitle);
+							//SUBTITLE
+							var printSubtitle:mx.controls.Label = new mx.controls.Label();
+							//printSubtitle.x = 0
+							printSubtitle.y = 36;
+							printSubtitle.text = formatDistance(directionsFS.totalLength,"Miles") + " Total Time: " + formatTime(directionsFS.totalTime);
+							// TODO: make fontsize specified in stylename overwrite this fontSize
+							printSubtitle.setStyle("fontSize", h / 29);
+							printSubtitle.setStyle("color","0x000000");
+							printSubtitle.setStyle("fontWeight","bold");
+							printSubtitle.percentWidth = 100;
+							printSubtitle.setStyle("textAlign","center");
+							printBox.addElement(printSubtitle);
+							//MAP
+							if(incMap.selected){
+								map.zoomSliderVisible = false;
+
+
+
+								var bmpMap:BitmapData = ImageSnapshot.captureBitmapData(map);
+
+								var hbox:HBox = new HBox();
+								hbox.setStyle("borderColor","black");
+								hbox.setStyle("borderStyle","solid");
+								hbox.width = printJob.pageWidth + 790;
+								hbox.horizontalScrollPolicy = "off";
+								hbox.verticalScrollPolicy = "off";
+								hbox.height = 580;
+								var image:spark.components.Image = new spark.components.Image();
+								image.smooth = true;
+								image.source = bmpMap;
+								image.maintainProjectionCenter = true;
+								hbox.addChild(image);
+
+
+
+								printBox.addElement(hbox)
+
+
+								topM = hbox.height + 30;
+							}
+							else
+							{
+								topM = 40;
+							}
+
+
+							var printDirtitle:mx.controls.Label = new mx.controls.Label();
+							//printSubtitle.x = 0
+							printDirtitle.y = topM + 50;
+							topM = topM + 20;
+							printDirtitle.text = "Driving Directions";
+							// TODO: make fontsize specified in stylename overwrite this fontSize
+							printDirtitle.setStyle("fontSize", h / 30);
+							printDirtitle.setStyle("color","0x000000");
+							printDirtitle.setStyle("fontWeight","bold");
+							printDirtitle.percentWidth = 100;
+							printDirtitle.setStyle('layoutDirection', "ltr");
+							printBox.addElement(printDirtitle);
+
+
+							var txt:mx.controls.Label = new mx.controls.Label();
+							var currPos:int = topM;
+							for (var e:int=0; e<theDirections.numElements; e++){
+								currPos += 28;
+
+
+
+
+								var textCntl:mx.controls.Label = theDirections.getElementAt(e) as mx.controls.Label ;
+								txt = new mx.controls.Label;
+								txt.y = currPos + 40;
+								if(showDirArrows){
+									txt.x = 55;
+									txt.percentWidth = 100;
+								}else{
+									txt.x = 42;
+									txt.percentWidth = 100;
+								}
+								txt.setStyle("fontFamily","Helvetica");
+								txt.setStyle('layoutDirection', "ltr");
+								txt.setStyle("color","0x000000");
+								txt.setStyle("fontSize",printJob.pageHeight/29);
+
+								if(textCntl){
+									if(textCntl.id && showDirArrows == true){
+
+									}
+									txt.text = textCntl.text;
+
+									printBox.addElement(txt);
+								}
+							}
+
+							//PRINT
+
+							printJob.addObject(printBox, FlexPrintJobScaleType.SHOW_ALL);
+
+							if(incMap.selected)
+								bmpMap.dispose();
+						}
+						catch (error:Error)
+						{
+							showError(error.toString());
+						}
+						finally
+						{
+							this.removeChild(printBox);
+						}
+					}
+
+				}
+
+			}
+			private function getManeuverIMG(maneuverType:String):BitmapData
+			{
+				var bitmap:BitmapData;
+
+				switch(maneuverType)
+				{
+					case "esriDMTUnknown":
+					{
+						bitmap = new unkCls().bitmapData;
+						break;
+					}
+					case "esriDMTStop":
+					{
+						bitmap = new stopCls().bitmapData;
+						break;
+					}
+					case "esriDMTStraight":
+					{
+						bitmap = new straightCls().bitmapData;
+						break;
+					}
+					case "esriDMTBearLeft":
+					{
+						bitmap = new bearleftCls().bitmapData;
+						break;
+					}
+					case "esriDMTBearRight":
+					{
+						bitmap = new bearrightCls().bitmapData;
+						break;
+					}
+					case "esriDMTTurnLeft":
+					{
+						bitmap = new leftCls().bitmapData;
+						break;
+					}
+					case "esriDMTTurnRight":
+					{
+						bitmap = new rightCls().bitmapData;
+						break;
+					}
+					case "esriDMTSharpLeft":
+					{
+						bitmap = new sharpleftCls().bitmapData;
+						break;
+					}
+					case "esriDMTSharpRight":
+					{
+						bitmap = new sharprightCls().bitmapData;
+						break;
+					}
+					case "esriDMTUTurn":
+					{
+						bitmap = new uturnCls().bitmapData;
+						break;
+					}
+					case "esriDMTFerry":
+					{
+						bitmap = new ferryCls().bitmapData;
+						break;
+					}
+					case "esriDMTRoundabout":
+					{
+						bitmap = new rndaboutCls().bitmapData;
+						break;
+					}
+					case "esriDMTHighwayMerge":
+					{
+						bitmap = new mergehwyCls().bitmapData;
+						break;
+					}
+					case "esriDMTHighwayExit":
+					{
+						bitmap = new exithwyCls().bitmapData;
+						break;
+					}
+					case "esriDMTForkCenter":
+					{
+						bitmap = new centerforkCls().bitmapData;
+						break;
+					}
+					case "esriDMTForkLeft":
+					{
+						bitmap = new leftforkCls().bitmapData;
+						break;
+					}
+					case "esriDMTForkRight":
+					{
+						bitmap = new rightforkCls().bitmapData;
+						break;
+					}
+					case "esriDMTEndOfFerry":
+					{
+						bitmap = new ferryendCls().bitmapData;
+						break;
+					}
+					default:
+					{
+						bitmap = new unkCls().bitmapData;
+						break;
+					}
+				}
+				return bitmap;
+			}
+			private function incMapChange():void
+			{
+				if(incMap.selected){
+					if(directionsFS)
+						if(map.extent !== directionsFS.extent){
+							printMap.enabled = false;
+							savePDF.enabled = false;
+							showMessage2(prepMapLabel ,true);
+							map.addEventListener(ZoomEvent.ZOOM_END,function():void{printMap.enabled = true; savePDF.enabled = true;clearMessage2();})
+							map.addEventListener(PanEvent.PAN_END,function():void{printMap.enabled = true; savePDF.enabled = true;clearMessage2();})
+							zoomToFullRoute();
+						}
+				}
+			}
+
+			private function showMessage2(msg:String, swfVisible:Boolean):void
+			{
+				txtMessage2.text = msg;
+				swfMessage2.visible = swfVisible;
+				msgVisible2 = true;
+			}
+			private function clearMessage2():void
+			{
+				msgVisible2 = false;
+			}
+			private function printPDF(event:Event):void
+			{
+				if(directionsFS)
+				{
+					savePDF.enabled = true;
+					myPDF = new RoutePDF(Orientation.PORTRAIT, Unit.MM, Size.LETTER, 0, theRouteName.text,
+						formatDistance(directionsFS.totalLength,"Miles") + " Total Time: " + formatTime(directionsFS.totalTime));
+					myPDF.setDisplayMode(Display.FULL_PAGE, Layout.SINGLE_PAGE);
+					myPDF.addPage();
+					map.zoomSliderVisible = false;
+					var pInsideMar:Number = myPDF.getMargins().right - myPDF.getMargins().left;
+
+					var topM:int = 10;
+
+					if(incMap.selected){
+						var bmpMap:BitmapData = ImageSnapshot.captureBitmapData(map);
+						var nWid:Number = pInsideMar;
+						var nHgt:Number = (nWid/bmpMap.width)* bmpMap.height;
+						topM = nHgt + 15;
+						myPDF.addImage(map,null,0,14,nWid,nHgt,0,1,false,ImageFormat.JPG,100,Blend.NORMAL,null);
+						myPDF.drawRect (new Rectangle ( 10, 24, nWid, nHgt ));
+					}else{
+						topM = 15;
+
+					}
+
+					var myCoreFont:IFont = new CoreFont(FontFamily.HELVETICA);
+					myPDF.setFont(myCoreFont, 12);
+					myPDF.setXY(myPDF.getMargins().left ,myPDF.getMargins().top + topM);
+					myPDF.textStyle(new RGBColor(0x000000));
+
+					var myBGColor:uint = 0xffffff;
+					var currPos:int = topM;
+					myPDF.setAutoPageBreak(true,15);
+					myPDF.addEventListener(PageEvent.ADDED, function():void{currPos = myPDF.getMargins().top+15});
+					for (var e:int=0; e<theDirections.numElements; e++){
+						currPos += 10
+
+						if ((e%2) == 1) {
+							myBGColor = routeAltTxtBgClr;
+						}
+						else
+							myBGColor = 0xffffff;
+
+						myCoreFont = new CoreFont(FontFamily.HELVETICA);
+						myPDF.setFont(myCoreFont, 12);
+						myPDF.beginFill(new RGBColor(myBGColor));
+
+						var textCntl:mx.controls.Label = theDirections.getElementAt(e) as mx.controls.Label;
+						myPDF.setXY((showDirArrows)?myPDF.getMargins().left + 5:myPDF.getMargins().left, currPos);
+
+						if(textCntl){
+							myPDF.addMultiCell((showDirArrows)?pInsideMar - 10:pInsideMar,10,textCntl.text,0,"L",1);
+							if(textCntl.id && showDirArrows == true){
+								//Use a custom PNG Encoder to get past the issue AlivePDF has with PNG Alpha Channel.
+								var pngEnc:PNGEncoderSekvens = new PNGEncoderSekvens()
+								myPDF.addImageStream(pngEnc.encode(getManeuverIMG(textCntl.id)),ColorSpace.DEVICE_RGB,null,0,currPos - 10,8.466666667536852,8.466666667536852,0,1,Blend.NORMAL,null);
+							}
+						}
+
+
+					}
+					myPDF.drawRect (new Rectangle ( 10, 24, pInsideMar, currPos - 12 ));
+					myPDF.setCreator("Closest Facility Widget for Flex Viewer");
+					myPDF.setAuthor("Robert J. Scheitlin");
+					myPDF.setKeywords("Closest Facility FLEX Viewer");
+					myPDF.setTitle("Closest Facility Widget Directions");
+					myPDF.setSubject(theRouteName.text);
+
+
+					const fileReference:FileReference = new FileReference();
+					fileReference.addEventListener(Event.COMPLETE, removeCur);
+					fileReference.addEventListener(Event.CANCEL, removeCur);
+					fileReference.addEventListener(IOErrorEvent.IO_ERROR, removeCur);
+					fileReference.addEventListener(SecurityErrorEvent.SECURITY_ERROR, removeCur);
+					fileReference.save(myPDF.save(Method.LOCAL,"",Download.INLINE,"myRoute.pdf"),"myRoute.pdf");
+				}
+				else
+				{
+					clearMessage2();
+					savePDF.enabled= false;
+					Alert.show(_alertMsg.noDirectionSelection.alertmessage,_alertMsg.noDirectionSelection.alertheader);
+				}
+
+			}
+			private function removeCur(evt:Event):void
+			{
+				clearMessage2();
+			}
+			private function pdfMd(Evt:Event):void
+			{
+				showMessage2(genPDF ,true);
+				this.validateNow();
+			}
+
+			private function chkBarrier_changeHandler(event:Event):void
+			{
+				if(chkBarrier.selected)
+				{
+					cmdBarrierLayer.enabled = true;
+				}
+				else
+				{
+					cmdBarrierLayer.enabled = false;
+				}
+
+				if(chkBarrier.selected && cmdBarrierLayer.selectedIndex > 0)
+				{
+					ftrLayerBarrier.visible = true;
+				}
+				else
+				{
+					ftrLayerBarrier.visible = false;
+				}
+			}
+
+			private function cmdBarrierLayer_changeHandler(event:IndexChangeEvent):void
+			{
+				if(cmdBarrierLayer.selectedIndex > 0 )
+				{
+					if(cmdBarrierLayer.selectedItem.label.toString() == ftrLayerBarrier.id)
+					{
+						ftrLayerBarrier.visible = true;
+					}
+					else
+					{
+						ftrLayerBarrier.visible = false;
+					}
+				}
+				else
+				{
+					ftrLayerBarrier.visible = false;
+					chkBarrier.selected = true;
+				}
+			}
+
+			private function queryBarrierFunction():void
+			{
+
+				var queryLyrBarrier:Query = new Query();
+				var queryTaskLyrBarrier:QueryTask = new QueryTask();
+
+				queryTaskLyrBarrier.url = cmdBarrierLayer.selectedItem.url.toString();
+				queryTaskLyrBarrier.method = URLRequestMethod.POST;
+				queryTaskLyrBarrier.useAMF = false;
+				queryLyrBarrier.geometry = bufferGraphic.geometry;
+				queryLyrBarrier.relationParam = Query.SPATIAL_REL_CONTAINS;
+
+				queryLyrBarrier.returnGeometry= true;
+				queryTaskLyrBarrier.execute(queryLyrBarrier);
+				queryTaskLyrBarrier.addEventListener(QueryEvent.EXECUTE_COMPLETE, onResultBarrier);
+			}
+
+			private function onResultBarrier(event:QueryEvent):void
+			{
+				barriersFS= new FeatureSet()
+				barriersFS=event.featureSet as FeatureSet;
+
+			}
+
+			private const UNCAUGHT_ERROR_PROPERTY:String = "uncaughtErrorEvents";
+			private const UNCAUGHT_ERROR_PROPERTY_TYPE:String = "uncaughtError";
+			private var _isGlobalErrorCaught:Boolean = false;
+			protected function onAddedToStageHandler(event:Event):void
+			{
+				if(this.loaderInfo.hasOwnProperty(UNCAUGHT_ERROR_PROPERTY)){
+					IEventDispatcher(loaderInfo[UNCAUGHT_ERROR_PROPERTY]).addEventListener(UNCAUGHT_ERROR_PROPERTY_TYPE, uncaughtErrorHandler);
+				}
+			}
+			private function uncaughtErrorHandler(error:*):void
+			{
+				error.preventDefault();
+				if (error.error is Error)
+				{
+					var _errorCaught:Error = error.error as Error;
+					if(_errorCaught is ScriptTimeoutError)
+					{
+						_isGlobalErrorCaught = true;
+
+
+					}
+				}
+				else
+				{
+					var _errorEventCaught:ErrorEvent = error.error as ErrorEvent;
+					if(_errorEventCaught is ScriptTimeoutError)
+					{
+						_isGlobalErrorCaught = true;
+
+
+					}
+				}
+
+
+
+			}
+
+			protected function resultdata_itemClickHandler(event:ListEvent):void
+			{
+				var rank:int= event.currentTarget.selectedIndex as int;
+				currentState="Dirctions";
+				wTemplate.selectedTitlebarButtonIndex=2;
+				stopsFS.features = [];
+				directionsFS = null;
+				theDirections.removeAllElements();
+				theDirections.toolTip = null;
+				theRouteName.toolTip = null;
+				theSummary.toolTip = null;
+				segmentGraphic = null;
+				var index:int = new int()
+				index=rank;
+				var obj:Object = new Object();
+				obj = null;
+				getDirections(obj,arrayD[index].directionFS,"");
+
+			}
+
+
+			protected function fieldTypeValues_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				fieldTypeValues.textInput.editable=false;
+			}
+
+			protected function fieldTypeValues_changeHandler(event:IndexChangeEvent):void
+			{
+				if(fieldTypeValues.selectedIndex > 0)
+				{
+					clear_clickHandler();
+					var string:String = (event.currentTarget as ComboBox).selectedItem;
+					var str:String= arrFieldType[cmdfacilityLayers.selectedIndex-1] as String;
+					var f:FeatureLayer=	map.getLayer(arrFieldAliastype[cmdfacilityLayers.selectedIndex-1]) as FeatureLayer
+					f.definitionExpression=str+"="+"'"+string+"'";
+					_fieldFeature = f;
+					lyrResultRoutes.clear();
+					graphicIncidentlayerEvent.clear();
+					incidentGraphicsLayer.clear();
+					graphiclyrBarrier.clear();
+					textSymbolGraphiclayer.clear();
+					textSymbolGraphiclayer1.clear();
+					isincidentdrawn=false;
+					map.infoWindow.hide();
+
+					if((resultdata!= null && resultdata.dataProvider!=null) && (resultdata.dataProvider as ArrayCollection).length > 0)
+					{
+						arrayD = new Array();
+						arrayRD = new Array();
+						gridCollection = new ArrayCollection();
+						resultdata.dataProvider  = null;
+					}
+
+				}
+				else
+				{
+					if(cmdfacilityLayers.selectedIndex > 0)
+					{
+						_mainFeatureLayer.visible = true;
+						_mainFeatureLayer.definitionExpression = "1=1";
+					}
+					map.infoWindow.hide();
+				}
+				segmentGraphicLayer.clear();
+				textSymbolGraphiclayer.clear()
+				textSymbolGraphiclayer1.clear()
+				graphicIncidentlayerEvent.clear();
+				incidentGraphicsLayer.clear();
+				lyrResultRoutes.clear();
+				graphiclyrBarrier.clear();
+			}
+
 		]]>
 	</fx:Script>
 
-	<viewer:WidgetTemplate id="wTemplate" color="0xFFFFFF" minWidth="390" minHeight="220"   closed="wTemplate_closedHandler(event)" open="wTemplate_openHandler(event)"
-						   width="390" height="220">
-		<viewer:layout>
-			<s:VerticalLayout horizontalAlign="left"  >
 
-			</s:VerticalLayout>
+
+	<viewer:WidgetTemplate id="wTemplate" color="0xFFFFFF"
+						   minWidth="500" width="500" minHeight="240" height="240"
+						   open="wTemplate_openHandler()"
+						   closed="wTemplate_closedHandler(event)">
+
+		<viewer:layout>
+			<s:VerticalLayout horizontalAlign="left" />
 		</viewer:layout>
-		<mx:Grid>
+
+		<mx:Grid includeIn="ClosestFacility">
 
 			<mx:GridRow>
 				<mx:GridItem>
@@ -581,28 +2484,52 @@
 			</mx:GridRow>
 			<mx:GridRow  >
 				<mx:GridItem verticalAlign="middle">
-						<s:Label  right="0"  fontWeight="normal" text="Select  Facility Layers" width="50%"/>
+					<s:Label id="layerId" right="0"  fontWeight="normal" text="{LayerLabel}" width="100%"/>
 				</mx:GridItem>
 				<mx:GridItem>
-					<s:ComboBox id='cmdfacilityLayers' width="150"  creationComplete="cmdfacilityLayers_creationCompleteHandler(event)"  requireSelection="true" labelField="label" dataProvider="{arrFacilityLayers}" change="cmdfacilityLayers_changeHandler(event)" />
+					<s:ComboBox id='cmdfacilityLayers' width="100%"
+								creationComplete="cmdfacilityLayers_creationCompleteHandler(event)"
+								requireSelection="true" labelField="label"
+								dataProvider="{arrFacilityLayers}"
+								change="cmdfacilityLayers_changeHandler(event)" />
 				</mx:GridItem>
 			</mx:GridRow>
-
-			<mx:GridRow>
-				<mx:GridItem>
-					<mx:Label id="txtLocation" text="Navigation / Drawing Tools" width="80%"/>
+			<mx:GridRow id="Mycombo" visible="false" >
+				<mx:GridItem verticalAlign="middle">
+					<s:Label id="label1" right="0" visible="false" fontWeight="normal" text="{FieldLabel}" width="100%"/>
 				</mx:GridItem>
 				<mx:GridItem>
-
+					<s:ComboBox id="fieldTypeValues" prompt="Select Type" visible="false" width="100%" includeInLayout="false"
+								creationComplete="fieldTypeValues_creationCompleteHandler(event)"
+								requireSelection="true"
+								change="fieldTypeValues_changeHandler(event)"/>
+					<s:ComboBox id='cmdfacilityLayers1' prompt="Select Type" visible="false" width="100%" includeInLayout="false"
+								creationComplete="cmdfacilityLayers1_creationCompleteHandler(event)"
+								requireSelection="true" labelField="label" dataProvider="{arrColl}"
+								change="cmdfacilityLayers1_changeHandler(event)" />
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow>
+				<mx:GridItem>
+					<mx:Label id="lblBarrier" text="Add Barrier"/>
+				</mx:GridItem>
+				<mx:GridItem>
+					<mx:Image source="widgets/ClosestFacility/assets/images/i_draw_line.png"
+							  useHandCursor="true" buttonMode="true" width="20" height="20" click="line_clickHandler(event)"
+							  toolTip="Draw a traffic barrier (one click per vertex, double-click to stop)"/>
+					<mx:Label text=" And/Or "/>
+					<s:CheckBox id="chkBarrier" change="chkBarrier_changeHandler(event)"/>
+					<s:ComboBox id="cmdBarrierLayer" width="110" creationComplete="cmdBarrierLayer_creationCompleteHandler(event)" requireSelection="true" labelField="label" dataProvider="{arrBarrier}" change="cmdBarrierLayer_changeHandler(event)"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow>
+				<mx:GridItem>
+					<mx:Label  id="txtLocation" text="Navigation / Drawing Tools" width="80%"/>
+				</mx:GridItem>
+				<mx:GridItem>
 					<mx:Image source="widgets/ClosestFacility/assets/images/w_addstart.png"
 							  useHandCursor="true" buttonMode="true" width="20" height="20" click="startButton1_clickHandler(event)"
 							  toolTip="Use this tool to add the incidents to be allocated to nearby facilities">
-
-					</mx:Image>
-					<mx:Image source="widgets/ClosestFacility/assets/images/i_draw_line.png"
-							  useHandCursor="true" buttonMode="true" width="20" height="20" click="line_clickHandler(event)"
-							  toolTip="Draw a traffic barrier (one click per vertex, double-click to stop)">
-
 					</mx:Image>
 				</mx:GridItem>
 			</mx:GridRow>
@@ -611,13 +2538,12 @@
 					<mx:Label text="# of facilities to find"/>
 				</mx:GridItem>
 				<mx:GridItem>
-					<ClosestFacility:UnEditableNumericStepper id="numFacilities"  width="50" minimum="1" maximum="5" stepSize="1" value="3"/>
+					<ClosestFacility1:UnEditableNumericStepper id="numFacilities"  width="50" minimum="1" maximum="5" stepSize="1" value="3"/>
 				</mx:GridItem>
 			</mx:GridRow>
-
 			<mx:GridRow>
 				<mx:GridItem>
-					<mx:Button label="Solve" toolTip="Solve and display the results" click="onSolve(event)" />
+					<mx:Button id="btnSolve" label="Solve" toolTip="Solve and display the results" click="onSolve(event)" />
 					<mx:CheckBox id="chkZoomToResults"
 								 label="Zoom to Result"
 								 toolTip="After solving, zoom to results"/>
@@ -633,9 +2559,54 @@
 		<s:Spacer height="2" />
 		<s:Label textAlign="left" id="lblFindingFeatures" visible="{m_nLoadOperationsInProcess &gt; 0}" includeInLayout="{m_nLoadOperationsInProcess &gt; 0}" right="0" color="#FFFF00" fontWeight="normal" text="Loading data..."/>
 
+		<s:VGroup  visible="false" includeIn="Dirctions" visible.Dirctions="true" id="Directions" width="100%" height="100%">
 
+			<mx:HBox width="100%" >
+				<s:CheckBox id="incMap" selected="false" label="{includeMapLbl}" click="incMapChange()" enabled="false"/>
+				<mx:VBox>
+
+					<s:HGroup horizontalAlign="center" width="100%">
+						<mx:Button id="printMap" enabled="{printEnabled}" label="{printMapBtnLbl}" click="printDirections()" icon="@Embed(source='widgets/ClosestFacility/assets/images/i_print3.png')"/>
+						<mx:Button id="savePDF" enabled="{printEnabled}" click="pdfMd(event);printPDF(event)" label="{savePdfBtnLbl}" icon="@Embed(source='widgets/ClosestFacility/assets/images/i_pdf2.png')"/>
+					</s:HGroup>
+					<s:HGroup id="pBoxMessage"  includeInLayout="{msgVisible2}" visible="{msgVisible2}">
+						<mx:Image id="swfMessage2" source="assets/images/loader.swf" visible="false"/>
+						<s:Label id="txtMessage2" width="98%" text=""/>
+					</s:HGroup>
+				</mx:VBox>
+			</mx:HBox>
+			<s:Label id="theRouteName"
+					 width="100%"
+					 click="zoomToFullRoute()"
+					 fontWeight="bold"
+					 text="{directionsFS.routeName}"
+					 toolTip="Click to zoom to full route"/>
+
+			<s:Label id="theSummary"
+					 width="100%"
+					 click="zoomToFullRoute()"
+					 text="Total Distance: {formatDistance(directionsFS.totalLength, 'miles')}{NL}Total Time: {formatTime(directionsFS.totalTime)}"/>
+
+			<s:Line id="lineStroke" width="100%">
+				<s:stroke>
+					<s:SolidColorStroke color="0xEEEEEE" weight="2"/>
+				</s:stroke>
+			</s:Line>
+			<s:Scroller width="100%" height="100%">
+				<s:VGroup id="theDirections"
+						  width="100%" height="100%"
+						  minHeight="0">
+					<!--<s:Label text="Click 'Get Directions' above to display driving directions here..."/>-->
+				</s:VGroup>
+			</s:Scroller>
+		</s:VGroup>
+
+		<mx:VBox id="myGrid" width="100%" height="100%" includeIn="resultView" >
+			<mx:DataGrid id="resultdata" draggableColumns="false" resizableColumns="true" width="100%" height="100%" sortableColumns="false" itemClick="resultdata_itemClickHandler(event)"/>
+		</mx:VBox>
 	</viewer:WidgetTemplate>
 	<fx:Declarations>
+		<s:Resize id="resize"/>
 		<!--==================== Graphics Layers and Symbology ====================-->
 
 
@@ -647,17 +2618,32 @@
 		</esri:GraphicsLayer>
 
 		<!--==================== Tasks ====================-->
+		<esri:SimpleLineSymbol id="routeSymbol"
+							   width="4"
+							   alpha="0.5"
+							   color="0x0000FF"/>
+		<esri:SimpleLineSymbol id="segmentSymbol"
+							   width="8"
+							   alpha="0.5"
+							   color="0xFF0000"/>
 
 
+		<esri:GeometryService id="geometryService1"   concurrency="last"
+							  showBusyCursor="true" method="{URLRequestMethod.POST}"
+							  url="{strUrl}" />
 		<esri:ClosestFacilityParameters id="closestFacilityParams"
 										defaultCutoff="3000"
-
 										outSpatialReference="{map.spatialReference}"
 										outputLines="esriNAOutputLineTrueShape"
 										returnFacilities="true"
-
 										/>
-		<!--	<extendPolylineEffect:ExtendPolylineEffect id="fxExtendLines" duration="{configXML.symbology.animateRoutesDuration}"/>-->
+		<esri:ClosestFacilityParameters id="closestFacilityParams1"
+										defaultCutoff="3000"
+										outSpatialReference="{map.spatialReference}"
+										outputLines="esriNAOutputLineTrueShape"
+										returnFacilities="true"
+										/>
 	</fx:Declarations>
+
 
 </viewer:BaseWidget>
