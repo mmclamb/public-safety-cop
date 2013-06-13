@@ -69,28 +69,28 @@
                 <sublayer id="5" popupconfig="popups/PopUp_USGS_NHSS_Wildfires.xml"/>
                 <sublayer id="6" popupconfig="popups/PopUp_USGS_NHSS_WildfirePerimeters.xml"/>
             </layer>
-            <layer type="dynamic" label="Hurricanes" imageformat="png8" url="http://tm2-elb-1378978824.us-east-1.elb.amazonaws.com/ArcGIS/rest/services/LiveFeeds/Hurricane_Active/MapServer" visible="false">
+            <layer type="dynamic" label="Hurricanes" imageformat="png8" url="http://tmservices1.esri.com/ArcGIS/rest/services/LiveFeeds/Hurricane_Active/MapServer" visible="false">
                 <sublayer id="0" popupconfig="popups/PopUp_HurricaneForecastPosition.xml"/>
                 <sublayer id="1" popupconfig="popups/PopUp_HurricanePastPosition.xml"/>
             </layer>
-            <layer type="dynamic" label="Weather_NOAA_storm_reports" imageformat="png8" url="http://tm2-elb-1378978824.us-east-1.elb.amazonaws.com/ArcGIS/rest/services/LiveFeeds/NOAA_storm_reports/MapServer" visible="false">
+            <layer type="dynamic" label="Weather_NOAA_storm_reports" imageformat="png8" url="http://tmservices1.esri.com/ArcGIS/rest/services/LiveFeeds/NOAA_storm_reports/MapServer" visible="false">
                 <sublayer id="0" popupconfig="popups/PopUp_Hail24hr.xml"/>
                 <sublayer id="1" popupconfig="popups/PopUp_Tornado24hr.xml"/>
                 <sublayer id="2" popupconfig="popups/PopUp_Wind24hr.xml"/>
                 <sublayer id="3" popupconfig="popups/PopUp_TornadoWeek.xml"/>
             </layer>
             <layer type="dynamic" label="Emergency Operations" alpha="0.5" imageformat="png8" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer" visible="false" visiblelayers="1,3,4,5"/>
-            <layer type="feature" label="Incident Point" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/0" popupconfig="popups/PopUp_EMIncidentPoints.xml" visible="true"/>
-            <layer type="feature" label="Incident Line" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/1" popupconfig="popups/PopUp_EMIncidentLines.xml" visible="true"/>
-            <layer type="feature" label="Incident Area" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/2" popupconfig="popups/PopUp_EMIncidentArea.xml" visible="true"/>
-            <layer type="feature" label="Shelters" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/5" popupconfig="popups/PopUp_EMShelters.xml" visible="true"/>
-            <layer type="feature" label="Pet Collection Areas" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/6" visible="true"/>
-            <layer type="feature" label="Public Safety Resources" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/7" popupconfig="popups/PopUp_EMResources.xml" visible="true"/>
-            <layer type="feature" label="Resource Assignments" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/8" visible="true"/>
-            <layer type="feature" label="Road Blocks" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/3" popupconfig="popups/PopUp_EMRoadBlocks.xml" visible="true"/>
-            <layer type="feature" label="Access Points" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/4" visible="true"/>
-            <layer type="feature" label="US National Grid - 10Km" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/9" visible="false"/>
-            <layer type="feature" label="US National Grid - 1Km" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/10" visible="false"/>
+            <layer type="feature" label="Incident Point" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/0" popupconfig="popups/PopUp_EMIncidentPoints.xml" visible="true"/>
+            <layer type="feature" label="Incident Line" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/1" popupconfig="popups/PopUp_EMIncidentLines.xml" visible="true"/>
+            <layer type="feature" label="Incident Area" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/2" popupconfig="popups/PopUp_EMIncidentArea.xml" visible="true"/>
+            <layer type="feature" label="Shelters" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/5" popupconfig="popups/PopUp_EMShelters.xml" visible="true"/>
+            <layer type="feature" label="Pet Collection Areas" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/6" visible="true"/>
+            <layer type="feature" label="Public Safety Resources" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/7" popupconfig="popups/PopUp_EMResources.xml" visible="true"/>
+            <layer type="feature" label="Resource Assignments" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/8" visible="true"/>
+            <layer type="feature" label="Road Blocks" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/3" popupconfig="popups/PopUp_EMRoadBlocks.xml" visible="true"/>
+            <layer type="feature" label="Access Points" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/4" visible="true"/>
+            <layer type="feature" label="US National Grid - 10Km" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/USNGstatusTryItLive/FeatureServer/1" visible="false"/>
+            <layer type="feature" label="US National Grid - 1Km" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/USNGstatusTryItLive/FeatureServer/0" visible="false"/>
 
         </operationallayers>
 
@@ -122,7 +122,7 @@
             config="widgets/Identify/IdentifyWidget.xml"
             url="widgets/Identify/IdentifyWidget.swf"/>
 
-        <widget label="Dynamic Legend" left="80" bottom="80"
+        <widget label="Legend" left="80" bottom="80"
             config="widgets/DynamicLegend/DynamicLegendWidget.xml"
             icon="Widgets/DynamicLegend/assets/images/i_solar.png"
             url="widgets/DynamicLegend/DynamicLegendWidget.swf"/>
