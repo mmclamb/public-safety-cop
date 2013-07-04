@@ -26,24 +26,23 @@
         <titlefont name="Verdana"/>
         <subtitlefont name="Verdana"/>
     </style>
-    <!-- replace the following url with your own geometryservice -->
-    <geometryservice url="http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer"/>
-    <!-- UI elements -->
+    <!--replace the following url with your own geometryservice -->
+    <geometryservice url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"/>
+    <!--UI elements -->
     <splashpage url="widgets/EMSplash/EMSplashWidget.swf" label="ArcGIS Viewer for Flex" config="widgets/EMSplash/EMSplashWidget.xml"/>
-    <!--Header Widget is integrated with Search widget functionality -->
-    <!-- widgets organized into widget containers that manage close/open etc -->
-    <!-- supported layout property options: horizontal(default)|float|vertical|fix -->
-    <widget url="widgets/Navigation/NavigationWidget.swf" config="widgets/Navigation/NavigationWidget.xml" left="10" top="50"/>
-    <widget url="widgets/OverviewMap/OverviewMapWidget.swf" config="widgets/OverviewMap/OverviewMapWidget.xml" right="0" bottom="0"/>
-    <widget url="widgets/EMHeaderController/EMHeaderControllerWidget.swf" config="widgets/EMHeaderController/EMHeaderControllerWidget.xml" left="0" top="0"/>
-    <widget url="widgets/Coordinate/CoordinateWidget.swf" config="widgets/Coordinate/CoordinateWidget.xml" left="3" bottom="1"/>
-    <widget url="widgets/MapSwitcher/MapSwitcherWidget.swf" config="widgets/MapSwitcher/MapSwitcherWidget.xml" right="20" top="55"/>
+	<widget left="10" top="50"  config="widgets/Navigation/NavigationWidget.xml" url="widgets/Navigation/NavigationWidget.swf" />
+    <widget right="0" bottom="0" config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf" />
+	<widget right="20" top="55" config="widgets/MapSwitcher/EM_MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf" />
+	<!--Header Widget is integrated with Search widget functionality -->
+	<widget left="0" top="0" config="widgets/EMHeaderController/EMHeaderControllerWidget.xml" url="widgets/EMHeaderController/EMHeaderControllerWidget.swf" />
+	<widget left="3" bottom="1" config="widgets/Coordinate/CoordinateWidget.xml" url="widgets/Coordinate/CoordinateWidget.swf" />
+
     <map attributionvisible="true" esrilogovisible="true" openhandcursorvisible="false" scalebarvisible="true" scalebar="default" zoomslidervisible="false" wraparound180="false" addarcgisbasemaps="false" initialextent="-9818997.224084323 5120335.761616537 -9803002.775915677 5129164.238383463" fullextent="-9816800 5121400 -9805200 5128100" wkid="102100" top="40" portalurl="https://www.arcgis.com">
         <basemaps>
-            <layer type="tiled" label="Topographic" icon="assets/images/basemap_imagery.jpg" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer" visible="true"/>
-            <layer type="tiled" label="Imagery" icon="assets/images/basemap_imagery_with_labels.png" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" visible="false"/>
-            <layer type="tiled" label="Public Safety" icon="assets/images/basemap_topographic.jpg" url="http://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer" visible="false"/>
-            <layer type="tiled" label="Public Safety" url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafety/MapServer" visible="false"/>
+			<layer label="Topographic" type="tiled" visible="true" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer" icon="assets/images/basemap_imagery.jpg"/>
+            <layer label="Imagery" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" icon="assets/images/basemap_imagery_with_labels.png"/>
+            <layer label="Public Safety" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer" icon="assets/images/basemap_topographic.jpg"/>
+            <layer label="Public Safety" type="tiled" visible="false" url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafety/MapServer"/>
         </basemaps>
         <operationallayers>
             <layer type="dynamic" label="Wildfires" imageformat="png8" url="http://rmgsc.cr.usgs.gov/ArcGIS/rest/services/nhss_haz/MapServer" visible="false" visiblelayers="5,6">
@@ -52,7 +51,6 @@
                 <sublayer id="5" popupconfig="popups/PopUp_USGS_NHSS_Wildfires.xml"/>
                 <sublayer id="6" popupconfig="popups/PopUp_USGS_NHSS_WildfirePerimeters.xml"/>
             </layer>
-
             <layer type="dynamic" label="Flood_Warnings" alpha="0.75" imageformat="png8" url="http://rmgsc.cr.usgs.gov/ArcGIS/rest/services/nhss_weat/MapServer" visible="false" visiblelayers="0">
                 <sublayer id="0" popupconfig="popups/PopUp_WW.xml" definitionexpression="event = 'FLOOD WARNING'"/>
             </layer>
@@ -93,123 +91,132 @@
             <layer type="feature" label="US National Grid - 1Km" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/USNGstatusTryItLive/FeatureServer/0" visible="false"/>
 
             <!--Map Service used for "Closest Facility" Widget-->
-            <layer type="feature" label="Resource" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/MapServer/7"
-                popupconfig="popups/PopUp_ClosestFacility.xml" visible="false"/>
+            <layer type="feature" label="Resource" visible="false" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/7"
+				   popupconfig="popups/PopUp_ClosestFacility.xml" />
 
-            <!--Map Service used for "LiveLayerByException-Polygon" Widget-->
-            <layer label="Evacuation Area" type="feature" visible="true" alpha="1"
-                url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer/1">
-            </layer>
+		</operationallayers>
 
-            <!--Sample Map Service used for "LiveLayerByException (Point layer Option)" Widget-->
-            <layer label="CAD Calls" type="feature" visible="false" alpha="1.0"
-                url="http://publicsafetytemplates.esri.com/ArcGIS/rest/services/EMCOP/RBELayers/MapServer/0">
-            </layer>
-
-        </operationallayers>
     </map>
 
-    <widgetcontainer layout="float">
-        <widget url="widgets/Edit/EditWidget.swf" config="widgets/Edit/EM_EditWidget.xml" label="Edit" icon="assets/images/i_scissors.png" left="100" top="90"/>
-        <widget url="widgets/Print/PrintWidget.swf" config="widgets/Print/EM_PrintWidget.xml" label="Print" icon="assets/images/i_print.png" left="100" top="90"/>
+	<!--widgets organized into widget containers that manage close/open etc -->
+	<!--supported layout property options: horizontal(default)|float|vertical|fix -->
 
-        <widgetgroup label="Tools">
-            <widget url="widgets/ERGChemical/ERGChemicalWidget.swf" config="widgets/ERGChemical/ERGChemicalWidget.xml" label="ERG" icon="widgets/ERGChemical/assets/images/HAZMAT_ICON.png" left="100" top="90"/>
-            <widget url="widgets/NationalGrid/NationalGridWidget.swf" config="widgets/NationalGrid/NationalGridWidget.xml" label="National Grid" icon="widgets/NationalGrid/assets/images/i_globe.png" left="100" top="90"/>
-            <widget url="widgets/CI/CIWidget.swf" config="widgets/CI/CIWidget.xml" label="Critical Infrastructure" icon="widgets/CI/assets/images/i_statistics.png" left="100" top="90"/>
-            <widget url="widgets/Chart/ChartWidget.swf" config="widgets/Chart/ChartWidget.xml" label="Chart" icon="assets/images/i_piechart.png" left="80" bottom="80"/>
+   <widgetcontainer layout="float">
+            <widget label="Edit" left="100" top="90"
+                    icon="assets/images/i_scissors.png"
+                    config="widgets/Edit/EM_EditWidget.xml"
+                    url="widgets/Edit/EditWidget.swf" />
+
+            <widget label="Print" left="100" top="90"
+					icon="assets/images/i_print.png"
+                    config="widgets/Print/EM_PrintWidget.xml"
+                    url="widgets/Print/PrintWidget.swf"/>
+
+		<widgetgroup label="Tools">
+            <widget label="ERG" left="100" top="90"
+					icon="widgets/ERGChemical/assets/images/HAZMAT_ICON.png"
+                    config="widgets/ERGChemical/ERGChemicalWidget.xml"
+                    url="widgets/ERGChemical/ERGChemicalWidget.swf" />
+
+            <widget label="National Grid"  left="100" top="90"
+                    icon="widgets/NationalGrid/assets/images/i_globe.png"
+                    config="widgets/NationalGrid/NationalGridWidget.xml"
+                    url="widgets/NationalGrid/NationalGridWidget.swf" />
+
+            <widget label="Critical Infrastructure"  left="100" top="90"
+                    icon="widgets/CI/assets/images/i_statistics.png"
+                    config="widgets/CI/CIWidget.xml"
+                    url="widgets/CI/CIWidget.swf"  />
+
+            <widget label="Chart"  left="80" bottom="80"
+                    icon="assets/images/i_piechart.png"
+                    config="widgets/Chart/ChartWidget.xml"
+                    url="widgets/Chart/ChartWidget.swf"  />
         </widgetgroup>
 
-        <widgetgroup label="Feeds">
+		<widgetgroup label="Feeds">
             <widget label="GeoRSS Report by Exception" left="100" top="90"
-                url="widgets/ReportByException/ReportByExceptionWidget.swf"
-                config="widgets/ReportByException/GeoRSSWidget_ReportByException.xml"
-                icon="widgets/ReportByException/assets/images/i_rss.png" />
-            <widget label="GeoRSS"
-                url="widgets/GeoRSS/GeoRSSWidget.swf"
-                config="widgets/GeoRSS/EM_GeoRSSWidget.xml"
-                icon="assets/images/i_rss.png" />
+                    icon="widgets/ReportByException/assets/images/i_rss.png"
+                    config="widgets/ReportByException/GeoRSSWidget_ReportByException.xml"
+                    url="widgets/ReportByException/ReportByExceptionWidget.swf"  />
+
+            <widget label="GeoRSS" left="100" top="90"
+                    icon="assets/images/i_rss.png"
+                    config="widgets/GeoRSS/EM_GeoRSSWidget.xml"
+                    url="widgets/GeoRSS/GeoRSSWidget.swf"   />
+
+        	<widget label="LiveLayer By Exception" left="100" top="90"
+			     	icon="widgets/LivelayerByException/assets/images/polygon.png"
+				    config="widgets/LivelayerByException/LiveLayerWidget_ReportByExceptionPoint.xml"
+				    url="widgets/LivelayerByException/LiveLayerWidget_ReportByExceptionWidget.swf"/>
         </widgetgroup>
 
-        <widgetgroup label="Additional Tools">
-            <widget url="widgets/BombThreat/BombThreatWidget.swf" config="widgets/BombThreat/BombThreatWidget.xml" label="Bomb Threat" icon="widgets/BombThreat/assets/images/bomb.png" left="100" top="90"/>
-            <widget url="widgets/PDC/PDCWidget.swf" config="widgets/PDC/PDCWidget.xml" label="PDC Active Hazard" icon="widgets/PDC/assets/images/i_pdc_active_hazards.png" left="100" top="90"/>
+		<widgetgroup label="Additional Tools">
+            <widget label="Bomb Threat"  left="100" top="90"
+                    icon="widgets/BombThreat/assets/images/bomb.png"
+                    config="widgets/BombThreat/BombThreatWidget.xml"
+                    url="widgets/BombThreat/BombThreatWidget.swf"  />
+
+            <widget label="PDC Active Hazard"  left="100" top="90"
+                    icon="widgets/PDC/assets/images/i_pdc_active_hazards.png"
+                    config="widgets/PDC/PDCWidget.xml"
+                    url="widgets/PDC/PDCWidget.swf"  />
         </widgetgroup>
 
-        <widgetgroup label="Core Widgets">
+            <widget label="Query" left="100" top="90"
+                    icon="assets/images/i_policestation.png"
+		            config="widgets/Query/QueryWidget_Louisville_PoliceStations.xml"
+		            url="widgets/Query/QueryWidget.swf"/>
 
-            <widget label="Search"
-                icon="assets/images/i_search.png"
-                config="widgets/Search/SearchWidget_Louisville.xml"
-                url="widgets/EMSearch/EMSearchWidget.swf"/>
+	   <!-- <widget label="Directions" left="100" top="90" -->
+	   <!-- icon="widgets/Directions/assets/images/directionIcon.png" -->
+	   <!-- config="widgets/Directions/DirectionsWidget.xml" -->
+	   <!-- url="widgets/Directions/DirectionsWidget.swf" /> -->
 
-            <widget label="Query" icon="assets/images/i_policestation.png"
-                config="widgets/Query/QueryWidget_Louisville_PoliceStations.xml"
-                url="widgets/Query/QueryWidget.swf"/>
+     	     <widget label="Identify" left="100" top="90"
+				     icon="assets/images/i_info.png"
+				     config="widgets/Identify/IdentifyWidget.xml"
+				     url="widgets/Identify/IdentifyWidget.swf"/>
 
-            <widget label="Directions" left="100" top="90"
-                config="widgets/Directions/DirectionsWidget.xml"
-                url="widgets/Directions/DirectionsWidget.swf" />
+		     <widget label="Find Closest Resource" left="100" top="90"
+				     icon="widgets/ClosestFacility/assets/images/i_servicearea.png"
+				     config="widgets/ClosestFacility/ClosestFacilityWidget.xml"
+				     url="widgets/ClosestFacility/ClosestFacilityWidget.swf" />
 
-            <widget label="Viewshed" left="100" top="90"
-                config="widgets/Geoprocessing/GeoprocessingWidget_CalculateViewshed.xml"
-                url="widgets/Geoprocessing/GeoprocessingWidget.swf" />
+		     <widget label="Key Performance Indicator" left="100" top="90"
+                     icon="widgets/KPI/assets/images/view-report.png"
+                     config="widgets/KPI/KPIWidget.xml"
+                     url="widgets/KPI/KPIWidget.swf"/>
 
-            <widget label="Drive Times" left="100" top="90"
-                config="widgets/Geoprocessing/GeoprocessingWidget_DriveTimes.xml"
-                url="widgets/Geoprocessing/GeoprocessingWidget.swf" />
+		     <widget label="Advanced Drawing" left="100" top="90"
+                     icon="widgets/AdvanceDraw/assets/images/i_draw2.png"
+                     config="widgets/AdvanceDraw/AdvanceDrawWidget.xml"
+                     url="widgets/AdvanceDraw/AdvanceDrawWidget.swf"/>
 
-            <widget label="Elevation profile"  url="widgets/Geoprocessing/GeoprocessingWidget.swf"
-                config="widgets/Geoprocessing/GeoprocessingWidget_SurfaceProfile.xml" />
+		     <widget label="Legend" left="80" bottom="80"
+				     icon="Widgets/DynamicLegend/assets/images/legend.png"
+					 config="widgets/DynamicLegend/DynamicLegendWidget.xml"
+				     url="widgets/DynamicLegend/DynamicLegendWidget.swf"/>
 
-            <widget label="Locate" icon="assets/images/locate.png"
-                config="widgets/Locate/LocateWidget.xml" url="widgets/Locate/LocateWidget.swf"/>
+		     <widget label="WMS Weather Looping" left="100" top="90"
+		             icon="widgets/WMSLooping/assets/images/weather-radar.png"
+				     config="widgets/WMSLooping/WMSLoopingWidget.xml"
+		 		     url="widgets/WMSLooping/WMSLoopingWidget.swf"/>
 
-        </widgetgroup>
+		     <widget label="Ushahidi" left="100" top="90"
+			         icon="widgets/Ushahidi/assets/images/ushahidi.png"
+				     config="widgets/Ushahidi/UshahidiWidget.xml"
+				     url="widgets/Ushahidi/UshahidiWidget.swf" />
 
-        <widget label="Identify" left="100" top="90"
-            icon="assets/images/i_info.png"
-            config="widgets/Identify/IdentifyWidget.xml"
-            url="widgets/Identify/IdentifyWidget.swf"/>
+		     <widget label="SocialMedia" left="100" top="90"
+                     icon="widgets/SocialMedia/assets/images/i_socialMedia.png"
+                     config="widgets/SocialMedia/SocialMediaWidget.xml"
+                     url="widgets/SocialMedia/SocialMediaWidget.swf" />
 
-        <widget label="Find Closest Resource" left="100" top="90"
-            icon="widgets/ClosestFacility/assets/images/i_servicearea.png"
-            config="widgets/ClosestFacility/ClosestFacilityWidget.xml"
-            url="widgets/ClosestFacility/ClosestFacilityWidget.swf" />
-
-        <widget label="Key Performance Indicator" left="100" top="90"
-            icon="widgets/KPI/assets/images/view-report.png"
-            config="widgets/KPI/KPIWidget.xml"
-            url="widgets/KPI/KPIWidget.swf"/>
-
-        <widget label="Advanced Drawing" left="100" top="90"
-            icon="widgets/AdvanceDraw/assets/images/i_draw2.png"
-            config="widgets/AdvanceDraw/AdvanceDrawWidget.xml"
-            url="widgets/AdvanceDraw/AdvanceDrawWidget.swf"/>
-
-        <widget label="Live Layer By Exception" left="100" top="90"
-            icon="widgets/ReportByException/assets/images/i_rss.png"
-            config="widgets/LivelayerByException/LiveLayerWidget_ReportByException.xml"
-            url="widgets/LivelayerByException/LivelayerByExceptionWidget.swf" />
-
-        <widget label="Legend" left="80" bottom="80"
-            config="widgets/DynamicLegend/DynamicLegendWidget.xml"
-            icon="Widgets/DynamicLegend/assets/images/i_solar.png"
-            url="widgets/DynamicLegend/DynamicLegendWidget.swf"/>
-
-        <widget label="WMS Weather Looping" icon="widgets/WMSLooping/assets/images/widget.png"
-            url="widgets/WMSLooping/WMSLoopingWidget.swf"
-            config="widgets/WMSLooping/WMSLoopingWidget.xml"/>
-
-        <widget label="Ushahidi" left="100" top="90"
-            icon="widgets/Ushahidi/assets/images/ushahidi.png"
-            config="widgets/Ushahidi/UshahidiWidget.xml"
-            url="widgets/Ushahidi/UshahidiWidget.swf" />
-
-        <widget label="SocialMedia" left="100" top="90"
-            icon="widgets/SocialMedia/assets/images/i_socialMedia.png"
-            config="widgets/SocialMedia/SocialMediaWidget.xml"
-            url="widgets/SocialMedia/SocialMediaWidget.swf" />
+             <widget label="Swipe" left="60" top="330"
+                     icon="widgets/Swipe/assets/images/i_swipe.png"
+                     config="widgets/Swipe/SwipeWidget.xml"
+                     url="widgets/Swipe/SwipeWidget.swf"/>
 
     </widgetcontainer>
 </configuration>

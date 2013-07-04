@@ -32,7 +32,7 @@
                         result="onJSONLoadPlacard(event)"/>
 
         <esri:Geoprocessor	id="findClosestWeatherStation" concurrency="last" useAMF="false"/>
-        <esri:GeometryService id="geometryService" url="http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer"
+        <esri:GeometryService id="geometryService" url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"
                               projectComplete="projectCompleteHandler(event)" fault="faultHandler(event)"/>
         <mx:SeriesSlide id="slideLeft" duration="1000" direction="left"/>
         <mx:SeriesSlide id="slideRight" duration="1000" direction="right"/>

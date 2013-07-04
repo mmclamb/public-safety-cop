@@ -22,11 +22,11 @@
 		<geometryservice>tag define  the geometry service url
 	 -->
 
-	<!--New PDC Map service accessible as PDC registered user. Visit http://www.pdc.org/?register and make sure to check the last checkbox (map services) on the form. -->
-	<mapservice  mode="dynamic">http://ags.pdc.org/rest/services/global/pdc_active_hazards/MapServer</mapservice>
+	<!--New PDC Map service accessible as PDC registered user @http://www.pdc.org/iweb/pdcregistration.html. -->
+	<mapservice  mode="dynamic">http://agstest.pdc.org/rest/services/global/pdc_active_hazards/MapServer/</mapservice>
 
-	<metadata url="http://www.pdc.org/atlas/metadata_abstracts/metadata_summary_ims_mde.jsp?metadata=" />
-	<geometryservice url="http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer"/>
+	<metadata url="http://www.pdc.org" />
+	<geometryservice url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"/>
 
 	<!--
 	<layers> tag define all pdc active hazard layer
@@ -46,7 +46,6 @@
 				<fieldname>	specify the field name from the layer to be shown in info popup
 					@label specify the label to be display in infopopup
 					@displaytype specify the field type .if field is url than display will be hyperlink
-
 	 -->
 
 	<layers>

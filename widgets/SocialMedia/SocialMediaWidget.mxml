@@ -107,7 +107,7 @@
 
 			[Embed("assets/images/flickr.png")] private const flickrIcon:Class;
 			[Embed("assets/images/twitter.png")] private const twitterIcon:Class;
-			[Embed("assets/images/ytube.png")] private const youtubeIcon:Class;
+			[Embed("assets/images/youtube.png")] private const youtubeIcon:Class;
 
 			private var flickrSymbol:PictureMarkerSymbol = new PictureMarkerSymbol(flickrIcon, 20, 20);
 			private var twitterSymbol:PictureMarkerSymbol = new PictureMarkerSymbol(twitterIcon, 20, 20);
@@ -1069,7 +1069,7 @@
 
 		<s:VGroup width="100%" height="100%" id="boxSocialMedia" horizontalAlign="left" verticalAlign="middle">
 			<mx:TabNavigator creationPolicy="all" id="tabSocialMedias" change="TabSocialMedias_changeHandler(event)" selectedIndex="2" width="100%" height="100%" >
-				<mx:VBox id="youtubeSearch" creationPolicy="all" label="YouTube" icon="@Embed('assets/images/ytube.png')" verticalScrollPolicy="off" textAlign="left" verticalGap="6" paddingTop="4" paddingBottom="8">
+				<mx:VBox id="youtubeSearch" creationPolicy="all" label="YouTube" icon="@Embed('assets/images/youtube.png')" verticalScrollPolicy="off" textAlign="left" verticalGap="6" paddingTop="4" paddingBottom="8">
 					<mx:Form  includeIn="baseState" >
 						<mx:FormHeading textAlign="left" label="Search YouTube for videos" fontWeight="bold" />
 						<mx:FormItem label="Use this Keyword" >
@@ -1172,7 +1172,7 @@
 					<s:backgroundFill>
 						<s:SolidColor color="0x660000" alpha="1"/>
 					</s:backgroundFill>
-					<mx:SWFLoader source="assets/images/loader.swf" autoLoad="true" width="18" height="18" horizontalAlign="center" verticalAlign="middle" />
+					<mx:SWFLoader source="widgets/SocialMedia/assets/images/loader.gif" autoLoad="true" width="18" height="18" horizontalAlign="center" verticalAlign="middle" />
 				</s:BorderContainer>
 			</s:HGroup>
 		</s:VGroup>

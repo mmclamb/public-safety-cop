@@ -16,180 +16,132 @@
  | limitations under the License.
 -->
 <configuration>
-    <title>Situational Awareness Viewer</title>
-    <subtitle>ESF #4 – Firefighting</subtitle>
-    <logo>assets/images/em_logo.png</logo>
-    <style>
-        <colors>0xFFFFFF,0x333333,0x101010,0x000000,0xFFFFFF</colors>
-        <alpha>0.8</alpha>
-    </style>
-    <!-- replace the following url with your own geometryservice -->
-    <geometryservice
-        url="http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer" />
-    <!-- UI elements -->
+	<title>Situational Awareness Viewer</title>
+    	<subtitle>ESF #4 – Firefighting</subtitle>
+    	<logo>assets/images/em_logo.png</logo>
+	<style>
+		<colors>0xFFFFFF,0x333333,0x101010,0x000000,0xFFFFFF</colors>
+		<alpha>0.8</alpha>
+	</style>
+	<!-- replace the following url with your own geometryservice -->
+	<geometryservice url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"/>
+	<!-- UI elements -->
     <!-- removed splash -->
-    <widget left="10" top="50" config="widgets/Navigation/NavigationWidget.xml" url="widgets/Navigation/NavigationWidget.swf" />
-    <widget right="-2" bottom="-2" config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf" />
-    <widget right="20" top="55" config="widgets/MapSwitcher/MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf" />
-    <!--Header Widget is integrated with Search widget functionality -->
-    <widget left="0" top="0" config="widgets/EMHeaderController/EMHeaderControllerWidget.xml" url="widgets/EMHeaderController/EMHeaderControllerWidget.swf" />
-    <widget left="3" bottom="3" config="widgets/Coordinate/CoordinateWidget.xml" url="widgets/Coordinate/CoordinateWidget.swf"/>
+	<widget left="10" top="50"  config="widgets/Navigation/NavigationWidget.xml" url="widgets/Navigation/NavigationWidget.swf" />
+	<widget right="0" bottom="0" config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf" />
+	<widget right="20" top="55" config="widgets/MapSwitcher/EM_MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf" />
+	<!--Header Widget is integrated with Search widget functionality -->
+	<widget left="0" top="0" config="widgets/EMHeaderController/EMHeaderControllerWidget.xml" url="widgets/EMHeaderController/EMHeaderControllerWidget.swf" />
+	<widget left="3" bottom="1" config="widgets/Coordinate/CoordinateWidget.xml" url="widgets/Coordinate/CoordinateWidget.swf" />
 
-    <map wraparound180="true" initialextent="-9816800 5121400 -9805200 5128100" fullextent="-9816800 5121400 -9805200 5128100" top="40">
-        <basemaps>
-            <layer label="Topographic" type="tiled" visible="false" alpha="1"
-                url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer" />
-            <layer label="Imagery" type="tiled" visible="false" alpha="1"
-                url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" />
-            <layer label="Public Safety" type="tiled" visible="true" alpha="1"
-                url="http://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer"/>
-            <layer label="Public Safety" type="tiled" visible="true" alpha="1"
-                url="http://localgovtemplates.esri.com/ArcGIS/rest/services/PublicSafety/MapServer"/>
-        </basemaps>
-        <operationallayers>
-            <layer  label="Wildfires" type='dynamic'  visible="false"
-                url="http://rmgsc.cr.usgs.gov/ArcGIS/rest/services/nhss_haz/MapServer" visiblelayers="5,6"  >
+	<map wraparound180="true" initialextent="-9816800 5121400 -9805200 5128100" fullextent="-9816800 5121400 -9805200 5128100" top="40">
+    <basemaps>
+		<layer label="Topographic" type="tiled" visible="true" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer" icon="assets/images/basemap_imagery.jpg"/>
+		<layer label="Imagery" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" icon="assets/images/basemap_imagery_with_labels.png"/>
+		<layer label="Public Safety" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer" icon="assets/images/basemap_topographic.jpg"/>
+		<layer label="Public Safety" type="tiled" visible="false" url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafety/MapServer"/>
+    </basemaps>
+	<operationallayers>
+      <layer type="dynamic" label="Wildfires" imageformat="png8" url="http://rmgsc.cr.usgs.gov/ArcGIS/rest/services/nhss_haz/MapServer" visible="false" visiblelayers="5,6">
                 <sublayer id="0" popupconfig="popups/PopUp_USGS_NHSS_Floods.xml"/>
                 <sublayer id="3" popupconfig="popups/PopUp_USGS_NHSS_Earthquakes.xml"/>
                 <sublayer id="5" popupconfig="popups/PopUp_USGS_NHSS_Wildfires.xml"/>
                 <sublayer id="6" popupconfig="popups/PopUp_USGS_NHSS_WildfirePerimeters.xml"/>
             </layer>
-
-            <layer  label="Flood_Warnings" type='dynamic'  visible="false" visiblelayers="0"
-                url='http://rmgsc.cr.usgs.gov/ArcGIS/rest/services/nhss_weat/MapServer' alpha='0.75'>
+            <layer type="dynamic" label="Flood_Warnings" alpha="0.75" imageformat="png8" url="http://rmgsc.cr.usgs.gov/ArcGIS/rest/services/nhss_weat/MapServer" visible="false" visiblelayers="0">
                 <sublayer id="0" popupconfig="popups/PopUp_WW.xml" definitionexpression="event = 'FLOOD WARNING'"/>
             </layer>
-
-            <layer  label="Flood_Stream_Gauges"  type='dynamic' visible="false"
-                url='http://rmgsc.cr.usgs.gov/ArcGIS/rest/services/nhss_haz/MapServer' visiblelayers="0" >
+            <layer type="dynamic" label="Flood_Stream_Gauges" imageformat="png8" url="http://rmgsc.cr.usgs.gov/ArcGIS/rest/services/nhss_haz/MapServer" visible="false" visiblelayers="0">
                 <sublayer id="0" popupconfig="popups/PopUp_USGS_NHSS_Floods.xml"/>
                 <sublayer id="3" popupconfig="popups/PopUp_USGS_NHSS_Earthquakes.xml"/>
                 <sublayer id="5" popupconfig="popups/PopUp_USGS_NHSS_Wildfires.xml"/>
                 <sublayer id="6" popupconfig="popups/PopUp_USGS_NHSS_WildfirePerimeters.xml"/>
             </layer>
-
-            <layer  label="Earthquakes_Shakemaps" type='dynamic' visible="false"
-                url='http://rmgsc.cr.usgs.gov/ArcGIS/rest/services/nhss_shakemaps/MapServer' alpha='0.7' />
-
-            <layer  label="Earthquakes"   type='dynamic' visible="false"
-                url='http://rmgsc.cr.usgs.gov/ArcGIS/rest/services/nhss_haz/MapServer/' visiblelayers="3" >
+            <layer type="dynamic" label="Earthquakes_Shakemaps" alpha="0.7" imageformat="png8" url="http://rmgsc.cr.usgs.gov/ArcGIS/rest/services/nhss_shakemaps/MapServer" visible="false"/>
+            <layer type="dynamic" label="Earthquakes" imageformat="png8" url="http://rmgsc.cr.usgs.gov/ArcGIS/rest/services/nhss_haz/MapServer/" visible="false" visiblelayers="3">
                 <sublayer id="0" popupconfig="popups/PopUp_USGS_NHSS_Floods.xml"/>
                 <sublayer id="3" popupconfig="popups/PopUp_USGS_NHSS_Earthquakes.xml"/>
                 <sublayer id="5" popupconfig="popups/PopUp_USGS_NHSS_Wildfires.xml"/>
                 <sublayer id="6" popupconfig="popups/PopUp_USGS_NHSS_WildfirePerimeters.xml"/>
             </layer>
-
-            <layer  label="Hurricanes"  type='dynamic' visible="false"
-                url='http://tmservices1.esri.com/ArcGIS/rest/services/LiveFeeds/Hurricane_Active/MapServer' >
+            <layer type="dynamic" label="Hurricanes" imageformat="png8" url="http://tmservices1.esri.com/ArcGIS/rest/services/LiveFeeds/Hurricane_Active/MapServer" visible="false">
                 <sublayer id="0" popupconfig="popups/PopUp_HurricaneForecastPosition.xml"/>
                 <sublayer id="1" popupconfig="popups/PopUp_HurricanePastPosition.xml"/>
             </layer>
-
-            <layer  label="Weather_NOAA_storm_reports" type='dynamic' visible="false"
-                url='http://tmservices1.esri.com/ArcGIS/rest/services/LiveFeeds/NOAA_storm_reports/MapServer' >
+            <layer type="dynamic" label="Weather_NOAA_storm_reports" imageformat="png8" url="http://tmservices1.esri.com/ArcGIS/rest/services/LiveFeeds/NOAA_storm_reports/MapServer" visible="false">
                 <sublayer id="0" popupconfig="popups/PopUp_Hail24hr.xml"/>
                 <sublayer id="1" popupconfig="popups/PopUp_Tornado24hr.xml"/>
                 <sublayer id="2" popupconfig="popups/PopUp_Wind24hr.xml"/>
                 <sublayer id="3" popupconfig="popups/PopUp_TornadoWeek.xml"/>
             </layer>
-
-            <layer label="Emergency Operations" type="dynamic" visible="false" alpha="0.5"
-                url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer" visiblelayers="3"></layer>
-
-            <layer label="Incident Point" type="feature" visible="true"
-                popupconfig="popups/PopUp_EMIncidentPoints.xml"
-                url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/0"/>
-
-            <layer label="Incident Line" type="feature" visible="true"
-                popupconfig="popups/PopUp_EMIncidentLines.xml"
-                url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/1"/>
-
-            <layer label="Incident Area" type="feature" visible="true"
-                popupconfig="popups/PopUp_EMIncidentArea.xml"
-                url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/2"/>
-
-            <layer label="Shelters" type="feature" visible="false"
-                popupconfig="popups/PopUp_EMShelters.xml"
-                url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/5"/>
-
-            <layer label="Pet Collection Areas" type="feature" visible="false"
-                url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/6"/>
-
-            <layer label="Public Safety Resources" type="feature" visible="false"
-                popupconfig="popups/PopUp_EMResources.xml"
-                url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/7"/>
-
-            <layer label="Resource Assignments" type="feature" visible="true"
-                url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/8"/>
-
-            <layer label="Road Blocks" type="feature" visible="false"
-                popupconfig="popups/PopUp_EMRoadBlocks.xml"
-                url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/3"/>
-
-            <layer label="Access Points" type="feature" visible="false"
-                url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/4"/>
-
-            <layer label="US National Grid - 10Km" type="feature" visible="false"
-                url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/USNGstatusTryItLive/FeatureServer/1"/>
-
-            <layer label="US National Grid - 1Km" type="feature" visible="false"
-                url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/USNGstatusTryItLive/FeatureServer/0"/>
+            <layer type="dynamic" label="Emergency Operations" alpha="0.5" imageformat="png8" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer" visible="false" visiblelayers="1,3,4,5"/>
+            <layer type="feature" label="Incident Point" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/0" popupconfig="popups/PopUp_EMIncidentPoints.xml" visible="true"/>
+            <layer type="feature" label="Incident Line" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/1" popupconfig="popups/PopUp_EMIncidentLines.xml" visible="true"/>
+            <layer type="feature" label="Incident Area" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/2" popupconfig="popups/PopUp_EMIncidentArea.xml" visible="true"/>
+            <layer type="feature" label="Shelters" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/5" popupconfig="popups/PopUp_EMShelters.xml" visible="true"/>
+            <layer type="feature" label="Pet Collection Areas" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/6" visible="true"/>
+            <layer type="feature" label="Public Safety Resources" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/7" popupconfig="popups/PopUp_EMResources.xml" visible="true"/>
+            <layer type="feature" label="Resource Assignments" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/8" visible="true"/>
+            <layer type="feature" label="Road Blocks" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/3" popupconfig="popups/PopUp_EMRoadBlocks.xml" visible="true"/>
+            <layer type="feature" label="Access Points" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/4" visible="true"/>
+            <layer type="feature" label="US National Grid - 10Km" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/USNGstatusTryItLive/FeatureServer/1" visible="false"/>
+            <layer type="feature" label="US National Grid - 1Km" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/USNGstatusTryItLive/FeatureServer/0" visible="false"/>
 
             <!--Map Service used for "Closest Facility" Widget-->
-            <layer type="feature" label="Resource" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/MapServer/7"
-                popupconfig="popups/PopUp_ClosestFacility.xml" visible="false"/>
+			<layer type="feature" label="Resource" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/7"
+				   popupconfig="popups/PopUp_ClosestFacility.xml" visible="false"/>
 
-        </operationallayers>
-    </map>
+		</operationallayers>
+	</map>
 
-    <!-- widgets organized into widget containers that manage close/open etc -->
-    <!-- supported layout property options: horizontal(default)|float|vertical|fix -->
+	<!-- widgets organized into widget containers that manage close/open etc -->
+	<!-- supported layout property options: horizontal(default)|float|vertical|fix -->
 
-    <widgetcontainer layout="float">
-
+  <widgetcontainer layout="float">
 
         <widget label="Find Closest Resource" left="100" top="90"
-            icon="widgets/ClosestFacility/assets/images/i_servicearea.png"
-            config="widgets/ClosestFacility/ClosestFacilityWidget.xml"
-            url="widgets/ClosestFacility/ClosestFacilityWidget.swf" />
+				icon="widgets/ClosestFacility/assets/images/i_servicearea.png"
+				config="widgets/ClosestFacility/ClosestFacilityWidget.xml"
+				url="widgets/ClosestFacility/ClosestFacilityWidget.swf" />
 
         <widget label="Edit" left="100" top="90"
-            icon="assets/images/i_scissors.png"
-            config="widgets/Edit/EM_EditWidget.xml"
-            url="widgets/Edit/EditWidget.swf"/>
+				icon="assets/images/i_scissors.png"
+				config="widgets/Edit/EM_EditWidget.xml"
+				url="widgets/Edit/EditWidget.swf"/>
 
         <widget label="Legend" left="80" bottom="80"
-            config="widgets/DynamicLegend/DynamicLegendWidget.xml"
-            icon="Widgets/DynamicLegend/assets/images/i_solar.png"
-            url="widgets/DynamicLegend/DynamicLegendWidget.swf"/>
+				icon="Widgets/DynamicLegend/assets/images/legend.png"
+				config="widgets/DynamicLegend/DynamicLegendWidget.xml"
+				url="widgets/DynamicLegend/DynamicLegendWidget.swf"/>
 
-        <widget label="Identify" left="100" top="90"
-            icon="assets/images/i_info.png"
-            config="widgets/Identify/IdentifyWidget.xml"
-            url="widgets/Identify/IdentifyWidget.swf"/>
+	    <widget label="Identify" left="100" top="90"
+				icon="assets/images/i_info.png"
+				config="widgets/Identify/IdentifyWidget.xml"
+				url="widgets/Identify/IdentifyWidget.swf"/>
 
-        <widget label="Directions" left="100" top="90"
-            config="widgets/Directions/DirectionsWidget.xml"
-            url="widgets/Directions/DirectionsWidget.swf" />
+	  <!-- <widget label="Directions" left="100" top="90" -->
+	  <!-- icon="widgets/Directions/assets/images/directionIcon.png" -->
+	  <!-- config="widgets/Directions/DirectionsWidget.xml" -->
+	  <!-- url="widgets/Directions/DirectionsWidget.swf" /> -->
 
-        <widgetgroup label="Tools">
+    <widgetgroup label="Tools">
 
-            <widget label="ERG" left="100" top="90" preload="open"
-                icon="widgets/ERGChemical/assets/images/HAZMAT_ICON.png"
-                config="widgets/ERGChemical/ERGChemicalWidget.xml"
-                url="widgets/ERGChemical/ERGChemicalWidget.swf" />
+        <widget label="ERG" left="100" top="90" preload="open"
+				icon="widgets/ERGChemical/assets/images/HAZMAT_ICON.png"
+				config="widgets/ERGChemical/ERGChemicalWidget.xml"
+			    url="widgets/ERGChemical/ERGChemicalWidget.swf" />
 
-        </widgetgroup>
+    </widgetgroup>
 
-        <widgetgroup label="Additional Tools">
+    <widgetgroup label="Additional Tools">
 
-            <widget label="Bomb Threat" left="100" top="90"
+        <widget label="Bomb Threat" left="100" top="90"
                 icon="widgets/BombThreat/assets/images/bomb.png"
                 config="widgets/BombThreat/BombThreatWidget.xml"
                 url="widgets/BombThreat/BombThreatWidget.swf" />
 
-        </widgetgroup>
+    </widgetgroup>
 
-    </widgetcontainer>
+ </widgetcontainer>
 
 </configuration>

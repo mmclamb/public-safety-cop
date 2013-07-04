@@ -21,6 +21,7 @@ package widgets.Identify
 		private static var _instance:IdentifyParserUtil
 
 		[Bindable] public var strType:String = "";
+		[Bindable]
 		public var strDescription:String = "";
 
 		public static function getIdentifyParseUtil():IdentifyParserUtil

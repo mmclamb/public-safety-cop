@@ -17,53 +17,49 @@
 -->
 <configuration>
 	<facilities>
-	<!-- Specify the facility Layer to find closest facility,label :specify
-		the name of layer,url: specify the feature layer url -->
+		<!-- Specify the facility Layer to find closest facility,label :specify
+			the name of layer,url: specify the feature layer url -->
 	</facilities>
 
-<!--<layerLabel> tag Specifies Configurable Labels for Drop Down Lists.-->
-<!--<fieldLabeltag Specifies Configurable Labels for Drop Down Lists.-->
+    <!--<layerLabel> tag Specifies Configurable Labels for Drop Down Lists.-->
+    <!--<fieldLabeltag Specifies Configurable Labels for Drop Down Lists.-->
 	<layerLabel label="Select Facility Layers"/>
 	<fieldLabel label="Select  Facility Type"/>
 	<incidents>
-<!-- These are incidents to route to nearest facilities: a map or feature
-	service. The user can draw new ones, so leave blank if desired -->
+		<!-- These are incidents to route to nearest facilities: a map or feature
+			service. The user can draw new ones, so leave blank if desired -->
 	</incidents>
 	<!-- <fieldtype> specifies the type of you want to select -->
 	<fieldtype>FCODE</fieldtype>
 
-<!-- <fieldAliastype> : specifies Layer label to be displayed in the Select Facility Layer dropdown -->
-<!-- NOTE:  Layer label (from Main Config) and fieldAliastype must be same.  Like: ‘Hospital’. -->
+    <!--<fieldAliastype> : specifies Layer label to be displayed in the Select Facility Layer dropdown -->
+    <!--NOTE:  Layer label (from Main Config) and fieldAliastype must be same.  Like: ‘Hospital’. -->
 
 	<fieldAliastype>Resource</fieldAliastype>
 
-<!-- <configureField> : Specifies Configured Field Type From Map Service -->
+    <!--<configureField> : Specifies Configured Field Type From Map Service -->
 
 	<configureField>CATEGORY</configureField>
 
-<!-- <closestFacilitySvc>Specifies the service for Closest Facility.-->
+	<!--<closestFacilitySvc>Specifies the service for Closest Facility.-->
 	<closestFacilitySvc>
-		<url>http://route.arcgis.com/arcgis/rest/services/World/ClosestFacility/NAServer/ClosestFacility_World/solveClosestFacility
-		</url>
+		<url>http://route.arcgis.com/arcgis/rest/services/World/ClosestFacility/NAServer/ClosestFacility_World/solveClosestFacility</url>
 	</closestFacilitySvc>
 
-<!--	fieldTypes :specifies the configurable columns to show in the result view-->
-<!--	fieldAlias: specifies the configurable column header text in the result view-->
+    <!--fieldTypes :specifies the configurable columns to show in the result view-->
+    <!--fieldAlias: specifies the configurable column header text in the result view-->
 	<outFields fieldTypes="routeName,routeName,Resource Type,routeId,totalTime,totalLength" fieldAlias="From,To,Resource Type,Rank,Total Time,Distance"/>
 	<ColumnWidth>100,100,200,50,100,100</ColumnWidth>
-<!--<configureField> :specifies Configured Field Type From Map Service-->
+    <!--<configureField> :specifies Configured Field Type From Map Service-->
 
-
-<!--<configureFieldType> :specifies Header of Configured Label in Grid View .-->
+    <!--<configureFieldType> :specifies Header of Configured Label in Grid View .-->
 	<configureFieldType>Resource Type</configureFieldType>
 
-<!-- <barrier>:Specifies the barrier layer for Closest Facility.-->
-<!-- label: Specifies the name of barrier layer.-->
+    <!--<barrier>:Specifies the barrier layer for Closest Facility.-->
+    <!--label: Specifies the name of barrier layer.-->
 
 	<barrierLayers>
-		<barrier label="Road Blocks CF">
-			http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/3
-		</barrier>
+		<barrier label="Road Blocks">http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/3</barrier>
 	</barrierLayers>
 	<!-- Accumulated attributes as defined by the network analyst service.
 		Leave the <routeRequestAccumulatedAttributes> tag empty to indicate no accumulation.
@@ -75,7 +71,7 @@
 		<attrName>Length</attrName>
 	</routeRequestAccumulatedAttributes>
 
-<!--	<formatString>Specifies labels used to format the columns in the data grid in Search Results Table. -->
+    <!--<formatString>Specifies labels used to format the columns in the data grid in Search Results Table. -->
 	<formatString>
 	<source label="To"/>
 	<Destination label="From"/>
@@ -85,25 +81,23 @@
 	<FieldType label="FieldType"/>
 	</formatString>
 
-<!-- Set the Buffer radius in Statute Miles -->
+    <!-- Set the Buffer radius in Statute Miles -->
 	<bufferParameter>250</bufferParameter>
 	<symbology>
-<!-- What attribute will be used to specify the z-order of result route polylines? -->
+		<!-- What attribute will be used to specify the z-order of result route
+			polylines? -->
 		<routeZOrderAttrName>FacilityRank</routeZOrderAttrName>
-<!-- What attribute will be used to symbolize the result route polylines? -->
+		<!-- What attribute will be used to symbolize the result route polylines? -->
 		<routeRendererAttrName>FacilityRank</routeRendererAttrName>
 		<barrier style="dashdot" color="0xAA0000" width="3" />
 		<event size="15" style="circle" outlineColor="0x000000"
 			outlineWidth="2" markerColor="0x00CC00" />
 	</symbology>
 
-
-<!--<TITELEBARTOOLTIP>:CONTAINS DIFFERENT TOOL TIPS USED IN CLOSEST FACILITY.-->
-<!--<SHOWROUTETOOLTIP>:SPECIFIES TOOL TIP FOR FIRST TITLE BAR TAB IN THE CLOSEST FACILITY.-->
-<!--<SHOWDIRECTIONSTOOLTIP>: SPECIFIES THE TOOL TIP FOR SECOND TITLE BAR TAB IN THE CLOSEST FACILITY.-->
-<!--<PRINTTOOLTIP>:SPECIFIES THE TOOL TIP FOR THIRD TITLE BAR TAB IN THE CLOSEST FACILITY.-->
-
-
+    <!--    	<TITELEBARTOOLTIP>:CONTAINS DIFFERENT TOOL TIPS USED IN CLOSEST FACILITY.-->
+    <!--		<SHOWROUTETOOLTIP>:SPECIFIES TOOL TIP FOR FIRST TITLE BAR TAB IN THE CLOSEST FACILITY.-->
+    <!--		<SHOWDIRECTIONSTOOLTIP>: SPECIFIES THE TOOL TIP FOR SECOND TITLE BAR TAB IN THE CLOSEST FACILITY.-->
+    <!--		<PRINTTOOLTIP>:SPECIFIES THE TOOL TIP FOR THIRD TITLE BAR TAB IN THE CLOSEST FACILITY.-->
 	<titleBarToolTip>
 		<showRouteToolTip>Search</showRouteToolTip>
 		<showDirectionsToolTip>Show Direction</showDirectionsToolTip>
@@ -111,31 +105,25 @@
 		<showResultsTooltip>Show Results</showResultsTooltip>
 	</titleBarToolTip>
 
-<!--<showdirectionarrows>: Specifies to show direction in the exported PDF File.-->
-
+    <!--	<showdirectionarrows>: Specifies to show direction in the exported PDF File.-->
 	<showdirectionarrows>true</showdirectionarrows>
 
-<!--<exportpdfbtnlabel>: Specifies to the label used on button for export to PDF file.-->
-
+    <!--	<exportpdfbtnlabel>: Specifies to the label used on button for export to PDF file.-->
 	<exportpdfbtnlabel>Save to PDF</exportpdfbtnlabel>
 
 
-<!--<includemaplabel>: Specifies to the label used for check box to include map.-->
+    <!--	<includemaplabel>: Specifies to the label used for check box to include map.-->
 	<includemaplabel>Include Map</includemaplabel>
 
-<!--<printmapbtnlabel>: Specifies to the label used on button for pint.-->
-
+    <!--	<printmapbtnlabel>: Specifies to the label used on button for pint.-->
 	<printmapbtnlabel>Print</printmapbtnlabel>
 
-
-<!--<pdfgenerationwarning>: Specifies the message generated for user before opening save dialog box.-->
-
+    <!--	<pdfgenerationwarning>: Specifies the message generated for user before opening save dialog box.-->
 	<pdfgenerationwarning>If you choose to save a PDF then please be
 		patient.&lt;br /&gt;A save dialog will open once the PDF has been
 		generated.</pdfgenerationwarning>
 
-<!--<genpdf>: Specifies to the message shown while system prepare PDF file.-->
-
+    <!--		<genpdf>: Specifies to the message shown while system prepare PDF file.-->
 	<genpdf>Generating PDF...</genpdf>
 
 	<!-- Get Direction Label -->
@@ -144,7 +132,7 @@
 	<!-- Reverse Direction Label -->
 	<revDirLabel>Reverse Route Directions</revDirLabel>
 
-	<!--<alerts>: Alert messages.-->
+	<!--		<alerts>: Alert messages.-->
 	<alerts>
 		<noResultFound alertheader="Alert"
 			alertmessage="No Result Found"/>

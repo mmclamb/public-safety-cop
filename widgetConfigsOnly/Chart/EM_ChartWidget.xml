@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<configuration label="Charts (example)">
+    <highlightcolor>0x336699</highlightcolor>
+    <labels>
+        <layerselectionlabel>Select layer</layerselectionlabel>
+        <drawtoolmenulabel>Select draw tool</drawtoolmenulabel>
+    </labels>
+    <layers>
+      <layer label="County Stats" url="http://gis.fema.gov/REST/services/GP/CountyReport/MapServer/0">
+        <labelfield>NAME</labelfield>
+        <fields>
+          <field name="NAME"/>
+          <field name="FireStations"/>
+          <field name="Schools"/>
+          <field name="Hospitals"/>
+          <field name="NursingHomes"/>
+          <field name="SpecialNeedsTot"/>
+        </fields>
+        <medias>
+          <!-- This example shows the four different types of chart: "barchart", "columnchart", "linechart", "piechart" in {=COUNT} counties-->
+          <media chartfields="Schools"
+                 title="Number of Schools"
+                 type="barchart" caption="Total number of Schools: {=SUM} in {=COUNT} counties"/>
+          <media chartfields="FireStations"
+                 title="Number of Fire Stations"
+                 type="columnchart" caption="Total number of Fire Stations: {=SUM} in {=COUNT} counties"/>
+          <media chartfields="Hospitals"
+                 title="Number of Hospitals"
+                 type="linechart" caption="Total number of Hospitals: {=SUM} in {=COUNT} counties"/>
+          <media chartfields="NursingHomes"
+                 title="Number of Nursing Homes"
+                 type="piechart" caption="Total number of Nursing Homes: {=SUM} in {=COUNT} counties"/>
+          <media chartfields="SpecialNeedsTot"
+                 title="Total Special Needs Population"
+                 type="barchart" caption="Total number of Special Needs Population: {=SUM} in {=COUNT} counties"/>
+        </medias>
+      </layer>
+      <layer label="BG Stats" url="http://gis.fema.gov/REST/services/GP/CensusBG_SN/MapServer/0">
+        <labelfield>STCOFIPS</labelfield>
+        <fields>
+          <field name="CNTY_FIPS"/>
+          <field name="FIRE"/>
+          <field name="SCHOOLS"/>
+          <field name="HOSPITALS"/>
+          <field name="NURSING"/>
+          <field name="SPECNEEDS"/>
+        </fields>
+        <medias>
+          <!-- This example shows the four different types of chart: "barchart", "columnchart", "linechart", "piechart" -->
+          <media chartfields="SCHOOLS"
+                 title="Number of Schools"
+                 type="barchart" caption="Total number of Schools: {=SUM} in {=COUNT} block groups"/>
+          <media chartfields="FIRE"
+                 title="Number of Fire Stations"
+                 type="barchart" caption="Total number of Fire Stations: {=SUM} in {=COUNT} block groups"/>
+          <media chartfields="HOSPITALS"
+                 title="Number of Hospitals"
+                 type="barchart"  caption="Total number of Hospitals: {=SUM} in {=COUNT} block groups"/>
+          <media chartfields="NURSING"
+                 title="Number of Nursing Homes"
+                 type="barchart" caption="Total number of Nursing Homes: {=SUM} in {=COUNT} block groups"/>
+          <media chartfields="SPECNEEDS"
+                 title="Total Special Needs Population"
+                 type="barchart" caption="Total number of Special Needs Population: {=SUM} in {=COUNT} block groups"/>
+        </medias>
+      </layer>
+      <layer label="Total Population by Block Group" url="http://services.arcgisonline.com/ArcGIS/rest/services/Demographics/USA_Population_Density/MapServer/1">
+        <labelfield>TOTPOP_CY</labelfield>
+        <fields>
+          <field name="TOTPOP_CY"/>
+        </fields>
+        <medias>
+          <!-- This example shows the four different types of chart: "barchart", "columnchart", "linechart", "piechart" -->
+          <media chartfields="TOTPOP_CY"
+                 title="Total Population (2010)"
+                 type="piechart" caption="Total Population (2010): {=SUM} in {=COUNT} block groups"/>
+        </medias>
+      </layer>
+      <layer label="Tapestry Segment by Tract" url="http://services.arcgisonline.com/ArcGIS/rest/services/Demographics/USA_Tapestry/MapServer/2">
+        <labelfield>TAPSEGNAM</labelfield>
+        <fields>
+          <field name="TAPSEGNAM"/>
+        </fields>
+        <medias>
+           This example shows the four different types of chart: "barchart", "columnchart", "linechart", "piechart"
+          <media chartfields="TAPSEGNAM"
+                 title="Tapestry Segment by Census Tract"
+                 type="piechart" caption="Count: {=COUNT} census tracts"/>
+        </medias>
+      </layer>
+    </layers>
+</configuration>

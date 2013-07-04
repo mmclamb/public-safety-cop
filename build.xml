@@ -37,6 +37,8 @@
         <antcall target="-addWidgetSource"><param name="widget" value="CI" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="ClosestFacility" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="DynamicLegend" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="EMEdit" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="EMGeoRSS" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="EMHeaderController" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="EMSearch" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="EMSplash" /></antcall>
@@ -77,6 +79,17 @@
             <fileset dir="widgetConfigsOnly" />
         </copy>
 
+        <!-- Copy config-only widgets to distribution -->
+        <copy todir="${distrib}\assets" overwrite="true">
+            <fileset dir="assets" />
+        </copy>
+        <copy todir="${distrib}\popups" overwrite="true">
+            <fileset dir="popups" />
+        </copy>
+        <copy todir="${distrib}\widgets" overwrite="true">
+            <fileset dir="widgetConfigsOnly" />
+        </copy>
+
         <!-- Build widgets -->
         <exec executable="cmd" failonerror="true">
             <arg value="/c"/>
@@ -89,6 +102,8 @@
         <antcall target="-getWidgetResults"><param name="widget" value="CI" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="ClosestFacility" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="DynamicLegend" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="EMEdit" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="EMGeoRSS" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="EMHeaderController" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="EMSearch" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="EMSplash" /></antcall>
@@ -128,7 +143,7 @@
     </target>
 
     <target name="-getWidgetResults">
-        <copy todir="${distrib}\${widget}" overwrite="true">
+        <copy todir="${distrib}\widgets\${widget}" overwrite="true">
             <fileset dir="${flexviewer}\bin-release\widgets\${widget}" />
         </copy>
     </target>

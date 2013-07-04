@@ -210,7 +210,7 @@ package widgets.DynamicLegend.classes
 							break;
 						}
 					}
-					else if(objRenderer.rendererType="temporal")
+					else if(objRenderer.rendererType=="temporal")
 					{
 						if(!_newLegendUtil.legendCollection.contains(objRenderer))
 							_newLegendUtil.legendCollection.addItem(objRenderer);

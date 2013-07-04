@@ -306,7 +306,7 @@
 				_legendData.selectedName = vlabel;
 				_legendData.data = data;
 				_legendData.selectedData = data;
-				ViewerContainer.dispatchEvent(new LegendEvent(LegendEvent.CHECK_BOX_SELECTED,_legendData))
+				AppEvent.dispatch(LegendEvent.CHECK_BOX_SELECTED,_legendData);
 			}
 
 			override public function set data(value:Object):void {

@@ -32,6 +32,7 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 				   widgetConfigLoaded="configLoaded()"
 				   creationComplete="basewidget1_creationCompleteHandler(event)"
 				   xmlns:esri="http://www.esri.com/2008/ags"
+				   xmlns:extendPolylineEffect="polyline.extendPolylineEffect.*"
 				   xmlns:line="line.*"  xmlns:local="*" xmlns:ClosestFacility1="widgets.ClosestFacility.*"
 				   >
 	<viewer:states>
@@ -154,10 +155,15 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 
 			[Bindable] private var pdfGenerationWarningLbl:String;
 
+			[Bindable]
 			private var LayerLabel:String;
+			[Bindable]
 			private var FieldLabel:String;
+			[Bindable]
 			private var fromLabel:String;
+			[Bindable]
 			private var toLabel:String;
+			[Bindable]
 			private var nameLabel:String
 
 			[Bindable] private var gridCollection:ArrayCollection = new ArrayCollection();
@@ -227,9 +233,9 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 			private const WIDGET_URL:String = "widgets/ClosestFacility/assets/images/";
 
 			private var stops:FeatureSet = new FeatureSet();
-
+			[Bindable]
 			private var includeMapLbl:String = new String();
-
+			[Bindable]
 			private var printMapBtnLbl:String = new String();
 
 			private var segmentGraphic:Graphic;
@@ -548,11 +554,11 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 								obj1.label = 'Select Type';
 								obj1.url ='';
 								arrColl.addItem(obj1);
-								for each(var obj1:Object in arr)
+								for each(var objNew:Object in arr)
 								{
 									var obj2:Object = new Object();
 									obj2.id=arrFieldType[cmdfacilityLayers.selectedIndex-1];
-									obj2.label= obj1.name;
+									obj2.label= objNew.name;
 									obj2.alias=arrFieldAliastype[cmdfacilityLayers.selectedIndex-1];
 									obj2.url =cmdfacilityLayers.selectedItem.url;
 									arrColl.addItem(obj2);
@@ -690,13 +696,14 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 				if(indexChangeEvent.newIndex>0)
 
 				{
+					var f:FeatureLayer;
 					map.removeEventListener(ExtentEvent.EXTENT_CHANGE,zoomToFacilities1)
 					cmdfacilityLayers.selectedIndex=indexChangeEvent.newIndex;
 					if(indexChangeEvent.oldIndex>0)
 					{	facilityLayerObj=arrFacilityLayers.getItemAt(indexChangeEvent.oldIndex);
 						if(map.getLayer(facilityLayerObj.label)!=null)
 						{
-							var f:FeatureLayer= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
+							f= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
 							if(f.visible==true)
 								f.visible=false;
 						}
@@ -706,7 +713,7 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 					if(map.getLayer(facilityLayerObj.label)!=null)
 					{
 						isOplayers=true;
-						var f:FeatureLayer= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
+						f= (map.getLayer(facilityLayerObj.label) as FeatureLayer);
 						_mainFeatureLayer = f;
 						if((map.getLayer(facilityLayerObj.label) as FeatureLayer).visible==false)
 							(map.getLayer(facilityLayerObj.label) as FeatureLayer).visible=true;
@@ -720,7 +727,7 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 						/** Add Layers */
 						map.removeEventListener(ExtentEvent.EXTENT_CHANGE,zoomToFacilities1)
 						isOplayers=false;
-						var f:FeatureLayer=new FeatureLayer(facilityLayerObj.url);
+						 f=new FeatureLayer(facilityLayerObj.url);
 						f.id=facilityLayerObj.label;
 						f.name=facilityLayerObj.label;
 						f.definitionExpression = arrFieldType[cmdfacilityLayers.selectedIndex-1]+" = '"+cmdfacilityLayers1.selectedItem.label+"'";
@@ -1122,11 +1129,11 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 						isEqual = false;
 					else
 					{
-						for(var ringIndex:int = 0;ringIndex < ((geometry1 as Polyline).paths[0] as Array).length; ringIndex++)
+						for(var ringIndexPath:int = 0;ringIndexPath < ((geometry1 as Polyline).paths[0] as Array).length; ringIndexPath++)
 						{
-							var mp1:MapPoint = (geometry1 as Polyline).paths[0][ringIndex];
-							var mp2:MapPoint = (geometry2 as Polyline).paths[0][ringIndex];
-							if(int(mp1.x) != int(mp2.x) || int(mp1.y) != int(mp2.y))
+							var mp1Path:MapPoint = (geometry1 as Polyline).paths[0][ringIndexPath];
+							var mp2Path:MapPoint = (geometry2 as Polyline).paths[0][ringIndexPath];
+							if(int(mp1Path.x) != int(mp2Path.x) || int(mp1Path.y) != int(mp2Path.y))
 							{
 								isEqual = false;
 								break;
@@ -1221,7 +1228,7 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 					index=rank-1;
 
 					var obj1:Object = ObjectUtil.copy(facilityObj);
-					var arr1:Array = new Array();
+
 					var string:String = obj1.Name;
 					var arr1:Array = new Array();
 					arr1 = string.split("-");
@@ -1490,7 +1497,7 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 
 			private function showRoute():void
 			{
-				resizeWidget(240,480,1500);
+				resizeWidget(250,500,1500);
 				currentState = "ClosestFacility";
 			}
 
@@ -1517,7 +1524,7 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 			private function showResults():void
 			{
 				currentState = "resultView";
-
+				var str:String;
 				gridCollection = new ArrayCollection();
 				for(var i:int=0;i<arrayD.length;i++)
 				{
@@ -1525,7 +1532,7 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 					var dfSet:DirectionsFeatureSet = arrayD[i].directionFS as DirectionsFeatureSet;
 					for(var m:int=0;m<arrOutField.length;m++){
 
-						var str:String = arrOutField[m] as String;
+						str = arrOutField[m] as String;
 						if(str!=FieldType)
 							_objTemp[str] =  dfSet[str];
 					}
@@ -1554,7 +1561,7 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 				for(var k:int=0;k<arrOutField.length;k++)
 				{
 					var str1:String = arrOutFieldAlias[k] as String;
-					var str:String=arrOutField[k] as String
+					str=arrOutField[k] as String
 					var dataGridColumn:DataGridColumn = new DataGridColumn(str);
 
 					dataGridColumn.minWidth=columnWidth[k];
@@ -1697,15 +1704,15 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 					}
 					else if(strDirection == "direction")
 					{
-						for(var j:Number = 0; j < arrayD.length; j++)
+						for(var k:Number = 0; k < arrayD.length; k++)
 						{
-							if((Number(facilityObj.Total_Kilometers).toPrecision(2) == Number(arrayD[j].directionFS.totalLength).toPrecision(2))&&(facilityObj.Name == arrayD[j].directionFS.routeName))
+							if((Number(facilityObj.Total_Kilometers).toPrecision(2) == Number(arrayD[k].directionFS.totalLength).toPrecision(2))&&(facilityObj.Name == arrayD[k].directionFS.routeName))
 							{
-								directionSet = arrayD[j].directionFS;
+								directionSet = arrayD[k].directionFS;
 							}
-							else if(((facilityObj.geometry[0] as Graphic).geometry as MapPoint).x==((arrayD[j].geometry[0] as Graphic).geometry as MapPoint).x&&((facilityObj.geometry[0] as Graphic).geometry as MapPoint).y==((arrayD[j].geometry[0] as Graphic).geometry as MapPoint).y&&(facilityObj.Name == arrayD[j].directionFS.routeName))
+							else if(((facilityObj.geometry[0] as Graphic).geometry as MapPoint).x==((arrayD[k].geometry[0] as Graphic).geometry as MapPoint).x&&((facilityObj.geometry[0] as Graphic).geometry as MapPoint).y==((arrayD[k].geometry[0] as Graphic).geometry as MapPoint).y&&(facilityObj.Name == arrayD[k].directionFS.routeName))
 							{
-								directionSet = arrayD[j].directionFS;
+								directionSet = arrayD[k].directionFS;
 							}
 
 						}
@@ -2462,7 +2469,7 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 
 
 	<viewer:WidgetTemplate id="wTemplate" color="0xFFFFFF"
-						   minWidth="500" width="500" minHeight="240" height="240"
+						   minWidth="500" width="500" minHeight="250" height="250"
 						   open="wTemplate_openHandler()"
 						   closed="wTemplate_closedHandler(event)">
 
@@ -2643,6 +2650,9 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 										outputLines="esriNAOutputLineTrueShape"
 										returnFacilities="true"
 										/>
+		<!--<local:ExtendPolylineEffect id="fxExtendLines" duration="4000" />-->
+
+			<!--<extendPolylineEffect:ExtendPolylineEffect id="fxExtendLines" duration="{configXML.symbology.animateRoutesDuration}"/>-->
 	</fx:Declarations>
 
 

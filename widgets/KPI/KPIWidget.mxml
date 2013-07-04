@@ -119,6 +119,7 @@
 			private var _refreshLayerReturnGeometry:Boolean;
 			private var _refreshLayerUseAMF:Boolean;
 
+			private var _isDefaultQuery:Boolean = false;
 
 			private var _refreshFieldWhere:String;
 			private var _refreshFieldOutField:Array;
@@ -200,6 +201,8 @@
 					_refreshLayerUseAMF = false;
 
 					_strFieldType = _kpiParserUtil.defaultFieldType.type;
+
+					_isDefaultQuery = true;
 
 					queryOnFieldExecute(_refreshLayerURL, _refreshLayerWhere,_refreshLayerOutField, _refreshLayerReturnGeometry, _refreshLayerUseAMF);
 
@@ -486,9 +489,19 @@
 			{
 				cursorManager.removeBusyCursor();
 				if(timer)
+				{
 					timer.stop();
-				Alert.show(_kpiParserUtil.alertQueryFaultMessage, _kpiParserUtil.alertQueryFaultHeader
-					, mx.controls.Alert.OK, null, startTimer, null, mx.controls.Alert.OK);
+				}
+				if(_isDefaultQuery)
+				{
+					Alert.show(_kpiParserUtil.alertDefaultQueryFailMessage, _kpiParserUtil.alertDefaultQueryFailHeader
+						, mx.controls.Alert.OK, null, startTimer, null, mx.controls.Alert.OK);
+				}
+				else
+				{
+					Alert.show(_kpiParserUtil.alertQueryFaultMessage, _kpiParserUtil.alertQueryFaultHeader
+						, mx.controls.Alert.OK, null, startTimer, null, mx.controls.Alert.OK);
+				}
 			}
 
 
@@ -589,6 +602,22 @@
 						}
 					}
 				}
+
+				if(attributeType == _kpiParserUtil.fieldAttribute && arrCollection.length > 0 && _kpiParserUtil.arrExcludeFields.length > 0)
+				{
+					for(i = 0; i < _kpiParserUtil.arrExcludeFields.length; i++)
+					{
+						for(var j:int = 0; j < arrCollection.length; j++)
+						{
+							if(_kpiParserUtil.arrExcludeFields[i] == arrCollection[j].name)
+							{
+								arrCollection.removeItemAt(j);
+								break;
+							}
+						}
+					}
+				}
+
 				return {dataProvider:arrCollection, notPresent:arrNotPresent};
 			}
 
@@ -896,6 +925,8 @@
 								timer.start();
 							}
 
+							_isDefaultQuery = false;
+
 							queryOnFieldExecute(_refreshLayerURL, _refreshLayerWhere, _refreshLayerOutField, _refreshLayerReturnGeometry, _refreshLayerUseAMF);
 						}
 						else
@@ -929,6 +960,8 @@
 				_refreshLayerOutField = _kpiParserUtil.defaultField;
 				_refreshLayerReturnGeometry = false;
 				_refreshLayerUseAMF = false;
+
+				_isDefaultQuery = true;
 
 				queryOnFieldExecute(_refreshLayerURL, _refreshLayerWhere,_refreshLayerOutField, _refreshLayerReturnGeometry, _refreshLayerUseAMF)
 

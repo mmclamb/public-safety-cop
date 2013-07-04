@@ -1190,7 +1190,8 @@
 	<fx:Declarations>
 		<esri:Locator id="locator"
 					  outSpatialReference="{map.spatialReference}"
-					  url="http://tasks.arcgisonline.com/ArcGIS/rest/services/Locators/TA_Streets_US_10/GeocodeServer"/>
+					  url="http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer"/>
+
 		<esri:SimpleLineSymbol id="slsFind1"
 							   width="3"
 							   alpha="0.9"

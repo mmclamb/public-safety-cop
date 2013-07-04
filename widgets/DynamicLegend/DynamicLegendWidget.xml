@@ -31,7 +31,7 @@
 	<!-- <alerts>:  tag specifies alert messages. -->
 	<alerts>
 		<noResultFound alertheader="Alert"
-			alertmessage="Please change map extent to view legend for "/>
+			alertmessage="Please zoom out to the state or national scale to see better results for"/>
 		<faultError alertheader="Alert"
 			alertmessage="Unable to perform query for a layer"/>
 	</alerts>

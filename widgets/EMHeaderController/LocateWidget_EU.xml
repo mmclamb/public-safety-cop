@@ -16,7 +16,7 @@
  | limitations under the License.
 -->
 <configuration label="European Geocoding">
-    <locator>http://tasks.arcgisonline.com/ArcGIS/rest/services/Locators/TA_Address_EU/GeocodeServer</locator>
+    <locator>http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer</locator>
     <minscore>40</minscore>
     <!-- by default every locator field is a text box, you can change one field to a dropdown
          by specifying it as a <listfield> and adding its values in <listvalues> -->

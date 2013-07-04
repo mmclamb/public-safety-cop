@@ -15,81 +15,72 @@
  | See the License for the specific language governing permissions and
  | limitations under the License.
 -->
-
-<!-- NOTE:This new Identify Widget by default takes all the layers and all the fields. It works with Multiple Layers
-     // This works with ArcGIS Server 10.01 and above //-->
+<!-- NOTE:This new Identify Widget by default takes all the layers and all the fields. It works with Multiple Layers // This works with ArcGIS Server 10.01 and above //-->
+ <!--
+     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+     //
+     // Developed initially by esri and continually enhanced by Robert Scheitlin. Further enhancements done in current version by ESRI.
+     //
+     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ -->
 <configuration>
 
 	<betareturngeometryfix>true</betareturngeometryfix>
 
-
-<!-- 	<identifylayeroption>: The “identifylayeroption” specifies which method to use when using Identify. -->
-<!--     •	"top": Only the topmost visible layer is identified (for the whole map, not each map service as in previous versions). -->
-<!--     •	"visible": All visible layers are identified. -->
-<!--     •	"all": All layers are identified, even if they are not visible. -->
-
-
+   <!-- 	<identifylayeroption>: The “identifylayeroption” specifies which method to use when using Identify. -->
+   <!--     •	"top": Only the topmost visible layer is identified (for the whole map, not each map service as in previous versions). -->
+   <!--     •	"visible": All visible layers are identified. -->
+   <!--     •	"all": All layers are identified, even if they are not visible. -->
 	<identifylayeroption>visible</identifylayeroption>
 
-<!--  <identifytolerance>: The “identifytolerance” specifies the distance in screen pixels from the specified geometry within which the identify should be performed. -->
-
+   <!--  <identifytolerance>: The “identifytolerance” specifies the distance in screen pixels from the specified geometry within which the identify should be performed. -->
 	<identifytolerance>5</identifytolerance>
-<!-- <defaultzoomscale>: The “defaultzoomscale” specifies the zoom scale that will be applied when clicking on the widget results if the specific layer does not have a zoomscale specified. -->
-	<defaultzoomscale>5000</defaultzoomscale>
 
-<!-- <keepidentifyactive>: The “keepidentifyactive” specifies whether or not the identify tool stays active after a mouse click on the map or reverts back to navigation after the map click. -->
+   <!-- 	<defaultzoomscale>: The “defaultzoomscale” specifies the zoom scale that will be applied when clicking on the widget results if the specific layer does not have a zoomscale specified. -->
+   <defaultzoomscale>5000</defaultzoomscale>
 
-	<keepidentifyactive>true</keepidentifyactive>
+   <!-- 	<keepidentifyactive>: The “keepidentifyactive” specifies whether or not the identify tool stays active after a mouse click on the map or reverts back to navigation after the map click. -->
+   <keepidentifyactive>true</keepidentifyactive>
 
-<!-- <returngeometryforzoom>: The “returngeometryforzoom” specifies whether or not the identify tool returns the geometry for the identified feature(s) to use for zooming. -->
+   <!-- 	<returngeometryforzoom>: The “returngeometryforzoom” specifies whether or not the identify tool returns the geometry for the identified feature(s) to use for zooming. -->
+   <returngeometryforzoom>true</returngeometryforzoom>
 
-	<returngeometryforzoom>true</returngeometryforzoom>
+   <!-- 	<enablelineselect>: The “enablelineselect” specifies whether or not the line select tool is visible and enabled in the identify widgets UI. -->
+   <enablelineselect>true</enablelineselect>
 
-<!-- <enablelineselect>: The “enablelineselect” specifies whether or not the line select tool is visible and enabled in the identify widgets UI. -->
+   <!-- 	<enableextentselect>: The “enableextentselect” specifies whether or not the extent select tool is visible and enabled in the identify widgets UI. -->
+   <enableextentselect>true</enableextentselect>
 
-	<enablelineselect>true</enablelineselect>
+   <!-- 	<enablepolyselect>: The “enablepolyselect” specifies whether or not the polygon select tool is visible and enabled in the identify widgets UI. -->
+   <enablepolyselect>true</enablepolyselect>
 
-<!-- <enableextentselect>: The “enableextentselect” specifies whether or not the extent select tool is visible and enabled in the identify widgets UI. -->
+   <!-- 	<enablemouseovergraphicsinfo>: The “enablemouseovergraphicsinfo” specifies whether or not hovering over a result graphic on the map will display the map info window. -->
+   <enablemouseovergraphicsinfo>true</enablemouseovergraphicsinfo>
 
-	<enableextentselect>true</enableextentselect>
+   <!-- 	<enablemouseoverrecordinfo>: The “enablemouseoverrecordinfo” specifies whether or not hovering over a result record in the widget will display the map info window. -->
+   <enablemouseoverrecordinfo>true</enablemouseoverrecordinfo>
 
-<!-- <enablepolyselect>: The “enablepolyselect” specifies whether or not the polygon select tool is visible and enabled in the identify widgets UI. -->
+   <!-- <usemaptime>: The “usemaptime” specifies whether or not to take into account the maps time extent when identifying features.	 -->
+   <usemaptime>false</usemaptime>
 
-	<enablepolyselect>true</enablepolyselect>
+   <!-- 	<infoautoclosemilliseconds>: The “infoautoclosemilliseconds” specifies the number of milliseconds that the map info window stays open before closing when it or the id results item looses focus. -->
+   <infoautoclosemilliseconds>2000</infoautoclosemilliseconds><!-- 2 seconds -->
 
-<!-- <enablemouseovergraphicsinfo>: The “enablemouseovergraphicsinfo” specifies whether or not hovering over a result graphic on the map will display the map info window. -->
+   <!-- <autoactivatedtool>: The “autoactivatedtool” option specifies that the identify tool will automatically activate upon widget activation using the provided geometry type. The default for this element is blank. Possible values are extent or polygon or mappoint or polyline or nothing. -->
+   <autoactivatedtool>mappoint</autoactivatedtool><!-- possible values are extent or polygon or mappoint or polyline or nothing -->
 
-	<enablemouseovergraphicsinfo>true</enablemouseovergraphicsinfo>
+   <!-- 	<excludebasemaps>: The “excludebasemaps” specifies if all the basemaps in your map will be excluded from the identify widgets results. The default is false unless this tag is included and set to true. -->
+   <excludebasemaps>true</excludebasemaps>
 
-<!-- <enablemouseoverrecordinfo>: The “enablemouseoverrecordinfo” specifies whether or not hovering over a result record in the widget will display the map info window. -->
+   <!-- 	<disablepopuplinks>: The “disablepopuplinks” specifies if url links will be added to the identify popups or not. -->
+   <disablepopuplinks>true</disablepopuplinks>
 
-	<enablemouseoverrecordinfo>true</enablemouseoverrecordinfo>
-<!-- <usemaptime>: The “usemaptime” specifies whether or not to take into account the maps time extent when identifying features.	 -->
-
-	<usemaptime>false</usemaptime>
-
-<!-- <infoautoclosemilliseconds>: The “infoautoclosemilliseconds” specifies the number of milliseconds that the map info window stays open before closing when it or the id results item looses focus. -->
-
-	<infoautoclosemilliseconds>2000</infoautoclosemilliseconds><!-- 2 seconds -->
-
-<!-- <autoactivatedtool>: The “autoactivatedtool” option specifies that the identify tool will automatically activate upon widget activation using the provided geometry type. The default for this element is blank. Possible values are extent or polygon or mappoint or polyline or nothing. -->
-
-	<autoactivatedtool>mappoint</autoactivatedtool><!-- possible values are extent or polygon or mappoint or polyline or nothing -->
-
-<!-- <excludebasemaps>: The “excludebasemaps” specifies if all the basemaps in your map will be excluded from the identify widgets results. The default is false unless this tag is included and set to true. -->
-
-	<excludebasemaps>true</excludebasemaps>
-
-<!-- <disablepopuplinks>: The “disablepopuplinks” specifies if url links will be added to the identify popups or not. -->
-
-	<disablepopuplinks>true</disablepopuplinks>
-
-<!-- <linkicon>: The “linkicon” is icon for result if there is any url image and required only if “allfields” attribute value false in layer tag. -->
-
+   <!-- 	<linkicon>: The “linkicon” is icon for result if there is any url image and required only if “allfields” attribute value false in layer tag. -->
 	<linkicon>http://help.arcgis.com/en/webapps/flexviewer/live/assets/images/i_camera.png</linkicon>
+
 	<zoomscale>15000</zoomscale>
 
-<!-- label tags -->
+   <!-- 	label tags -->
 	<labels>
 		<zoom2message>Click to Zoom to Point</zoom2message>
 		<identifylabel>Identify</identifylabel>
@@ -108,14 +99,10 @@
 		<resulttype>Type</resulttype>
 		<resultdescription>Description</resultdescription>
 	</labels>
-	<useproxy>
-		<!-- Enter the label of the MapService from the main config.xml -->
+	<useproxy><!-- Enter the label of the MapService from the main config.xml -->
 		<!--<proxymapservice label="Imagery" />
 		<proxymapservice label="Streets" />-->
 	</useproxy>
-
-	<!-- allfields = "false" specifies fields from layer
-	"true" specifies fields from xml -->
 
 	<layers  >
 		<!-- <excludelayer name="Zoning"/Optional > -->

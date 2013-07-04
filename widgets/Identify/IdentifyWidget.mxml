@@ -15,15 +15,12 @@
  | See the License for the specific language governing permissions and
  | limitations under the License.
 -->
-
-<!-- NOTE:This new Identify Widget by default takes all the layers and all the fields. It works with Multiple Layers
-     // This works with ArcGIS Server 10.01 and above //-->
 <!--
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//
-	// Developed initially by esri and continually enhanced by Robert Scheitlin. Further enhancements done in current version by ESRI.
-	//
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+     //
+     // Developed initially by esri and continually enhanced by Robert Scheitlin. Further enhancements done in current version by ESRI.
+     //
+     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 -->
 <viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
 				   xmlns:s="library://ns.adobe.com/flex/spark"
@@ -43,7 +40,7 @@
 					  strength="2"/>
 		<esri:GeometryService id="geometryService"
 							  fault="geometryService_faultHandler(event)"
-							  url="http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer"/>
+							  url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"/>
 	</fx:Declarations>
 
 	<viewer:states>
@@ -492,13 +489,13 @@
 						{
 							if(!isNaN(inconlythisid) && lDetails.id == inconlythisid)
 							{
-								var layName:Object = {
+								var layerName:Object = {
 									lname: lname,
 									id: lDetails.id,
 										label: lDetails.name
 								}
-								arrLayerData.push(layName);
-								layerData.addItem(layName);
+								arrLayerData.push(layerName);
+								layerData.addItem(layerName);
 							}
 						}
 						if(!isNaN(inconlythisid) && lDetails.layerId != inconlythisid)
@@ -1036,7 +1033,7 @@
 						/////////////////////
 					var link:String="";
 
-						var lyrIdLinks:Array = new Array();
+						 lyrIdLinks= new Array();
 						link = ""
 						for (var str:String in obj){
 
@@ -1804,7 +1801,7 @@
 								/////////////////////
 							var link:String="";
 
-								var lyrIdLinks:Array = new Array();
+								 lyrIdLinks = new Array();
 								link = ""
 								for (var str:String in obj){
 

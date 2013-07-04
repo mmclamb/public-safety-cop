@@ -358,31 +358,31 @@
 
 									else if(mydata.drawingInfo.renderer.type == "simple")
 									{
-										for each(var legend:Object in legendObj.legend)
+										for each(var legendSimple:Object in legendObj.legend)
 										{
-											legend.id = mydata.id;
-											legend.label = mydata.name;
-											legend.value = 999;
-											legend.rendererType = mydata.drawingInfo.renderer.type;
-											fieldsArrList.addItem(legend);
+											legendSimple.id = mydata.id;
+											legendSimple.label = mydata.name;
+											legendSimple.value = 999;
+											legendSimple.rendererType = mydata.drawingInfo.renderer.type;
+											fieldsArrList.addItem(legendSimple);
 										}
 									}
 									else if(mydata.drawingInfo.renderer.type == "classBreaks")
 									{
-										for each(var obj:Object in mydata.drawingInfo.renderer.classBreakInfos)
+										for each(var objNew:Object in mydata.drawingInfo.renderer.classBreakInfos)
 										{
-											for each(var legend:Object in legendObj.legend)
+											for each(var legendNew:Object in legendObj.legend)
 											{
-												if(legend.label == obj.label)
+												if(legendNew.label == objNew.label)
 												{
-													var str:String = obj.label;
+													var str:String = objNew.label;
 													var arrValue:Array = str.split("-");
-													legend.minValue = arrValue[0];
-													legend.maxValue = arrValue[1];
-													legend.id = mydata.id;
-													legend.value = obj.label;
-													legend.rendererType = mydata.drawingInfo.renderer.type;
-													fieldsArrList.addItem(legend);
+													legendNew.minValue = arrValue[0];
+													legendNew.maxValue = arrValue[1];
+													legendNew.id = mydata.id;
+													legendNew.value = objNew.label;
+													legendNew.rendererType = mydata.drawingInfo.renderer.type;
+													fieldsArrList.addItem(legendNew);
 													break;
 												}
 											}
@@ -712,7 +712,7 @@
 
 				}
 			}
-			 var isResultDataClicked:Boolean=new Boolean();
+			private var isResultDataClicked:Boolean=new Boolean();
 
 
 			protected function resultData_itemClickHandler(event:ListEvent):void
@@ -799,7 +799,7 @@
 				_legendQueryDetails.addEventListener(LegendEvent.NO_RESULT_FOUND,onNoResultFoundHandler)
 
 
-				ViewerContainer.addEventListener(LegendEvent.CHECK_BOX_SELECTED,onCheckBoxSelection)
+				AppEvent.addListener(LegendEvent.CHECK_BOX_SELECTED,onCheckBoxSelection)
 
 
 
@@ -849,6 +849,7 @@
 			{
 				try
 				{
+					var h:int;
 					if(_newDynamicLegendUtil.legendIndex==0 &&_newDynamicLegendUtil.isFault==true)
 					{
 						_newDynamicLegendUtil.isFault=false;
@@ -870,7 +871,7 @@
 				{
 					if(legendDataGroup.dataProvider != null)
 					{
-						var h:int = 0;
+						 h = 0;
 						while (h < (legendDataGroup.dataProvider as ArrayCollection).length)
 						{
 							if((legendDataGroup.dataProvider as ArrayCollection)[h].id == _legendData.data.id && (legendDataGroup.dataProvider as ArrayCollection)[h].imageData != null)
@@ -890,7 +891,7 @@
 				{
 					if(legendDataGroup.dataProvider != null)
 					{
-						var h:int = 0;
+						 h = 0;
 						while (h < (legendDataGroup.dataProvider as ArrayCollection).length)
 						{
 							if((legendDataGroup.dataProvider as ArrayCollection)[h].id == _legendData.data.id)
@@ -973,10 +974,10 @@
 						{
 							if(legendDataGroup.dataProvider[i].label  == _legendData.selectedName)
 							{
-								for(var k:Number = 0; k < _legendData.legendCollection.length; k++)
+								for(var l:Number = 0; l < _legendData.legendCollection.length; l++)
 								{
-									var j:Number = i+1;
-									(legendDataGroup.dataProvider as ArrayCollection).addItemAt(_legendData.legendCollection[k],j);
+									var m:Number = i+1;
+									(legendDataGroup.dataProvider as ArrayCollection).addItemAt(_legendData.legendCollection[l],m);
 									i++;
 								}
 							}
@@ -1306,13 +1307,13 @@
 						}
 						else
 						{
-							for each(var allObj:Object in newlegendAC)
+							for each(var Obj:Object in newlegendAC)
 							{
-								if(allObj.selected == true)
+								if(Obj.selected == true)
 								{
 									_newDynamicLegendUtil.legendIndex++;
 									_newDynamicLegendUtil.arrColl =  new ArrayCollection();
-									_legendQueryDetails.doLegendQuery(allObj,map,"all");
+									_legendQueryDetails.doLegendQuery(Obj,map,"all");
 
 								}
 								else

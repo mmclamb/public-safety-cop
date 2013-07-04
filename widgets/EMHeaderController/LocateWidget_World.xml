@@ -16,7 +16,7 @@
  | limitations under the License.
 -->
 <configuration label="World Geocoding">
-    <locator>http://tasks.arcgis.com/ArcGIS/rest/services/WorldLocator/GeocodeServer</locator>
+    <locator>http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer</locator>
     <minscore>40</minscore>
     <zoomscale>10000</zoomscale>
 </configuration>

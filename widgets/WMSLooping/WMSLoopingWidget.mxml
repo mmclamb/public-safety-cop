@@ -191,7 +191,7 @@
 
 	<fx:Declarations>
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
-		<esri:WMSLayer id="wmsLyr" disableClientCaching="true" alpha="{trkOpacity.value}" url="{m_cfg.url}" version="{m_cfg.version}" imageFormat="{m_cfg.imgFormat}" visibleLayers="{visibleLayers( m_iTimerTicks )}"/>
+		<esri:WMSLayer id="wmsLyr" name="WMSLayer" disableClientCaching="true" alpha="{trkOpacity.value}" url="{m_cfg.url}" version="{m_cfg.version}" imageFormat="{m_cfg.imgFormat}" visibleLayers="{visibleLayers( m_iTimerTicks )}"/>
 
 		<mx:DateFormatter id="dfQueryDate" formatString="{m_cfg.dateFormatString}"/>
 	</fx:Declarations>

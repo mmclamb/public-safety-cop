@@ -18,20 +18,28 @@
 <configuration>
 <!--	<gpERGChemical>specifies ERG Chemical Url-->
   <gpERGChemical>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EMModels/GPServer/ERG%20By%20Chemical</gpERGChemical>
+
   <!--	<gpERGPlacard>specifies ERG Placard Url-->
   <gpERGPlacard>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EMModels/GPServer/ERG%20By%20Placard</gpERGPlacard>
-    <!--	<ergGuideURL>specifies ERG Help Guide Url-->
+
+  <!--	<ergGuideURL>specifies ERG Help Guide Url-->
   <ergGuideURL>http://wwwapps.tc.gc.ca/saf-sec-sur/3/erg-gmu/erg/guidepage.aspx?guide=</ergGuideURL>
-    <!--	<demographicLayer>specifies ERG Demographics Url-->
+
+   <!--	<demographicLayer>specifies ERG Demographics Url-->
   <demographicLayer>http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Demographics/ESRI_Census_USA/MapServer/1</demographicLayer>
-    <!--	<demoFields>specifies ERG Demographics Layer OutFields-->
-  <demoFields>POP2000,MALES,FEMALES,AGE_UNDER5,AGE_5_17,AGE_18_21,AGE_22_29,AGE_30_39,AGE_40_49,AGE_50_64,AGE_65_UP</demoFields>
-  <!--	<summaryfield> specifies  Demographics Layer summaryfield in chart-->
-  <summaryfield>POP2000</summaryfield>
-  <info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+
+   <!--	<demoFields>specifies ERG Demographics Layer OutFields-->
+   <demoFields>POP2000,MALES,FEMALES,AGE_UNDER5,AGE_5_17,AGE_18_21,AGE_22_29,AGE_30_39,AGE_40_49,AGE_50_64,AGE_65_UP</demoFields>
+
+   <!--	<summaryfield> specifies  Demographics Layer summaryfield in chart-->
+   <summaryfield>POP2000</summaryfield>
+
+   <info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+
    <!--	<findclosestWS> specifies the layer to find the closest WeatherStation-->
- <findclosestWS>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/FindNearestWS/GPServer/FindNearestWS</findclosestWS>
- <!--	<chart> specifies the Chart Configuration fields-->
+   <findclosestWS>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/FindNearestWS/GPServer/FindNearestWS</findclosestWS>
+
+  <!--	<chart> specifies the Chart Configuration fields-->
   <chart>
     <series>AGE_UNDER5,AGE_5_17,AGE_18_21,AGE_22_29,AGE_30_39,AGE_40_49,AGE_50_64,AGE_65_UP</series>
     <seriesAlias>Age Under 5,Age 5-17,Age 18-21,Age 22-29,Age 30-39,Age 40-49,Age 50-64,Age 65-Up</seriesAlias>
@@ -72,7 +80,7 @@
     <descriptionlabel>Draw a spill location:</descriptionlabel>
     <chemicalOrPlacardLabel>Calculate by:</chemicalOrPlacardLabel>
     <chemicalOrPlacardTypeLabel>Material:</chemicalOrPlacardTypeLabel>
-    <spillSizeLabel>Spill `	:</spillSizeLabel>
+    <spillSizeLabel>Spill Size:</spillSizeLabel>
     <timeOfSpillLabel>Time of Spill:</timeOfSpillLabel>
     <windDirectionLabel>Wind Direction (blowing to):</windDirectionLabel>
     <loadinglabel>Loading...</loadinglabel>

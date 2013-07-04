@@ -38,7 +38,6 @@
        <dateField value="all_time" label="All Times"/>
     </youTubeDateFields>
 
-
 <!-- < twitterDateFields > Specifies DateField For twitter Search -->
 
     <twitterDateFields>

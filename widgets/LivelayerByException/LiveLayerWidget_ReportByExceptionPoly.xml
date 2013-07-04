@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.2
+ | Copyright 2013 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<configuration>
+
+<!--Polygon layer-->
+<!-- <layer> specifies the layer url it has one attribute “layertype” which specifies whether it is point layer or polygon layer. -->
+<!-- <layer layertype="polygon">Evacuation Area</layer> -->
+  <layer layertype="polygon">http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer/1</layer>
+
+<!--   <info> specifies the swf of info pop up window. -->
+  <info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+<!--   Tags for  query on layer -->
+  <query/>
+  <outFields fields="INCIDENTID,EVACID"/>
+  <fields>INCIDENTID,EVACID</fields>
+  <titlefield>INCIDENTID</titlefield>
+  <queryFieldName>INCIDENTID</queryFieldName>
+  <queryFieldValue>1</queryFieldValue>
+  <filterfield>
+    <name/>
+    <alias/>
+  </filterfield>
+  <linkfield></linkfield>
+  <refreshrate/>
+
+  <!--   This tag specifies zoomscale -->
+  <zoomscale>15000</zoomscale>
+
+<!--   <geometryserviceurl> specifies the geometry service url. -->
+
+  <geometryserviceurl>http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer</geometryserviceurl>
+
+<!--  <reportByExceptionLayers> specifies the report by exception layers. -->
+
+<reportByExceptionLayers>
+    <reportByExceptionLayer>
+      <rbeRESTURL>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/5</rbeRESTURL>
+      <rbeLayerName>Shelters</rbeLayerName>
+      <rbeIcon>widgets/LivelayerByException/assets/images/i_roof_point.png</rbeIcon>
+      <rbeTitleField>FACTYPE</rbeTitleField>
+      <rbeLinkField>test</rbeLinkField>
+      <rbeFields>CAPACITY,HOURSOPER,DAYSOPER,OPSSTATUS</rbeFields>
+    </reportByExceptionLayer>
+
+	<reportByExceptionLayer>
+		<rbeRESTURL>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/7</rbeRESTURL>
+		<rbeLayerName>Resources</rbeLayerName>
+		<rbeIcon>widgets/LivelayerByException/assets/images/resources.png</rbeIcon>
+		<rbeTitleField>Category</rbeTitleField>
+		<rbeLinkField>test</rbeLinkField>
+		<rbeFields>FCODE,AVAILABLE,NUMAVAIL</rbeFields>
+	</reportByExceptionLayer>
+
+</reportByExceptionLayers>
+
+<!-- <rbeSearchRadiusMiles>specifies the search radius in miles. -->
+
+  <rbeSearchRadiusMiles>2</rbeSearchRadiusMiles>
+
+<!-- specifies the search radius time in minutes. -->
+
+  <rbeSearchRadiusMinutes>2</rbeSearchRadiusMinutes>
+
+<!--   <rbeDriveTimeGPService> specifies the drive time service url. -->
+
+  <rbeDriveTimeGPService>http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Network/ESRI_DriveTime_US/GPServer/CreateDriveTimePolygons</rbeDriveTimeGPService>
+
+<!--   <showPopulationCount>specifies the Boolean value for population display. -->
+
+  <showPopulationCount>true</showPopulationCount>
+  <rbeDynamicallyAddedLayerInfoContents>DECRIP</rbeDynamicallyAddedLayerInfoContents>
+  <rbedefaultDynamicLinkField>URL</rbedefaultDynamicLinkField>
+  <rbedefaultRESTURL>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer/4</rbedefaultRESTURL>
+  <rbedefaultRESTLayerName>New Exception</rbedefaultRESTLayerName>
+
+<!--    <alertmessages> tag specifies Error Messages for appropriate method  -->
+<!--      •	The property ‘alertheader’ specifies a title for error window to display. -->
+<!--      •	The property ‘alertmessage’ specifies the Error message to display. -->
+
+  <alertmessages>
+		<queryFeatures alertheader="Error"
+			alertmessage="An Unexpected error occurred while attempting to find Features "/>
+		<noMapPointError alertheader="Error"
+			alertmessage="No Map Point is specified." />
+		<driveTimeError alertheader="Error"
+			alertmessage="A problem occured while attempting drive Time." />
+			<invalidDriveTimeError alertheader="Error"
+			alertmessage="Not a Valid Value. Please Enter Valid Drive time." />
+		<calcPopulationStatisticsError alertheader="Error"
+			alertmessage="Could Not Calculate Population tatistics" />
+		<invalidSimpleBufferError alertheader="Error"
+			alertmessage="Not a Valid Value. Please Enter Valid Simple Buffer distance ." />
+		<invalidUrlName alertheader="Error"
+        alertmessage="Invalid url or layer name"/>
+
+  </alertmessages>
+<!--   // use this tag to specify color in hex of buffer drawn -->
+  <bufferColor>0xFFFFFF</bufferColor>
+<!--   //use this tag to specify opacity of buffer drawn -->
+  <bufferOpacity>0.8</bufferOpacity>
+<!--   <polygonIcon>:This tag specifies path for polygon image -->
+  <polygonIcon>widgets/LivelayerByException/assets/images/polygon.png</polygonIcon>
+<!--   <pointIcon>:This tag specifies path for point image -->
+  <pointIcon>widgets/LivelayerByException/assets/images/pointIcon.png</pointIcon>
+</configuration>

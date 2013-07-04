@@ -22,7 +22,6 @@
 <!-- <line> Specify the color of line, alpha between(0-1),width, dash array of the graticule line (this allows you to create any type dashed line) . -->
 <!-- <text> Specify the text color, size, alpha, background color to be visible. -->
 
-
 	<graticule>
 		<numberOfGrids>4</numberOfGrids>
 		<line>
@@ -49,7 +48,6 @@
 <!-- The minScale specify the minimum scale at which to show the large UTM grids and MGRS grid.	 -->
 <!-- The line Specify the color of line, alpha between(0-1),width, dash array of the graticule line (this 	allows you to create any type dashed line) . -->
 <!-- The text Specify the text color, size, alpha, background color to be visible. -->
-
 
 	<mgrsLayer>
 		<utm>
@@ -102,4 +100,3 @@
 		</mgrsFineGrid>
 	</mgrsLayer>
 </configuration>
-

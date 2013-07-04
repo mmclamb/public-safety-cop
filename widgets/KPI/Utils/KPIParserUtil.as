@@ -32,6 +32,7 @@ package widgets.KPI.Utils
 
 		public var arrLayers:Array;
 		public var arrFields:Array;
+		public var arrExcludeFields:Array;
 		public var includeAllLayers:Boolean;
 		public var includeAllFields:Boolean;
 		public var layerAttribute:String;
@@ -185,9 +186,6 @@ package widgets.KPI.Utils
 			glowStrength = configXML.glowColor.@strength || 10;
 
 			//Alerts
-			alertConfigLoadFailHeader = configXML.alerts.configLoadError.@header || "Alert";
-			alertConfigLoadFailMessage = configXML.alerts.configLoadError.@message || "";
-
 			alertDefaultQueryFailHeader = configXML.alerts.defaultQueryAlert.@header || "Alert";
 			alertDefaultQueryFailMessage = configXML.alerts.defaultQueryAlert.@message || "";
 
@@ -242,6 +240,13 @@ package widgets.KPI.Utils
 			}
 
 			fieldAttribute = configXML.layers.mapServerLayer.includeFields.@fieldAttribute || "fields";
+
+			var strExcludeFields:String = configXML.layers.mapServerLayer.excludeFields.@fieldName.toString() || "";
+			arrExcludeFields = strExcludeFields.split(",");
+			if(arrExcludeFields.length > 0)
+			{
+				arrExcludeFields = removeWhiteSpace(arrExcludeFields);
+			}
 		}
 
 		private function removeWhiteSpace(records:Array):Array

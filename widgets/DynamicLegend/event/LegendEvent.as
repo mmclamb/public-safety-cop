@@ -28,7 +28,7 @@ package widgets.DynamicLegend.event
 
 		public static const DATAGRID_UPDATE:String = "datagridUpdate";
 
-		public static const DATAGRID_UPDATE_FAULT="dataGridUpdateFault"
+		public static const DATAGRID_UPDATE_FAULT:String="dataGridUpdateFault"
 
 		public static const CHECK_BOX_SELECTED:String = "onCheckBoxSelected";
 

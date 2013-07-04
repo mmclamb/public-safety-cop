@@ -17,8 +17,7 @@
 -->
 <!--
 //	ESRI Sample Geometry Services
-// 	http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer
-//      http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer
+//  http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer
 //
 //  Find the list of WKID values here:
 //	http://resources.esri.com/help/9.3/arcgisserver/apis/rest/pcs.html
@@ -51,9 +50,7 @@
 ////////////////////////////////////////////////////////////////////////
 -->
 <configuration>
-<!--
-widgets/ReportByException/rss.xml
-http://publicsafetytemplates.esri.com/GeoRSS/PlannedEvents.xml  -->
+
   <source>http://localgovtemplates.esri.com/GeoRSS/NapervillePlannedEvents.xml</source>
   <query/>
   <info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
@@ -64,7 +61,7 @@ http://publicsafetytemplates.esri.com/GeoRSS/PlannedEvents.xml  -->
   <zoomscale>15000</zoomscale>
   <proxy>false</proxy>
   <UseGeometryServiceToProjectGeoRSS>FALSE</UseGeometryServiceToProjectGeoRSS>
-  <geometryserviceurl>http://localgovtemplates.esri.com/ArcGIS/rest/services/Geometry/GeometryServer</geometryserviceurl>
+  <geometryserviceurl>http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer</geometryserviceurl>
   <coordswap>false</coordswap>
   <inwkid>2239</inwkid>
   <outwkid>4326</outwkid>
@@ -110,9 +107,6 @@ http://publicsafetytemplates.esri.com/GeoRSS/PlannedEvents.xml  -->
 			alertmessage="Not a Valid Value. Please Enter Valid Simple Buffer distance ." />
 		<calcPopulationStatisticsError alertheader="Error"
 			alertmessage="Could Not Calculate Population tatistics" />
-
-
-
   </alertmessages>
 
 </configuration>

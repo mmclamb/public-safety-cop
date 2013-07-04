@@ -20,14 +20,13 @@
 -->
 <configuration>
 	<layer>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer/0</layer>
-	<geometryserviceURL>http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer</geometryserviceURL>
+	<geometryserviceURL>http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer</geometryserviceURL>
 	<featureselectioncolor>FF9191</featureselectioncolor>
 	<featureovercolor>202020</featureovercolor>
 
 	<fields>SUBTYPEFIELD</fields>
 <!--	<summaryfield>710,720,730,740,750,760,780,790,800,810,820,830,840,850,880</summaryfield>-->
 <!--	<Xcolumnfield>Industry,Commercial and Retail,Education,Emergency Response and Law Enforcement,Energy, Banking and Finance,Mail and Shipping,Building General,Health and Medical,Transportation Facilities,Public Attractions and Landmark Buildings,Government and Military,Weather,Water Supply and Treatment,Information and Communication </Xcolumnfield>-->
-
 
 	<chart>
 <!--		<series>700,710,720,730,740,750,760,780,790,800,810,820,830,840,850,880</series>-->

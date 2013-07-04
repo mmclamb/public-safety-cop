@@ -30,7 +30,7 @@
  -->
  <title>Select threat type and click on map</title>
     <bombThreats>
-    	<type name='Pipe Bomb' icon='pipebomb.png' unit='meter' mandatoryEvacuationDistance='21' preferredEvacuationDistance='363' >
+    	<type name='Pipe Bomb' icon='PipeBomb.png' unit='meter' mandatoryEvacuationDistance='21' preferredEvacuationDistance='366' >
     		<inforpopup>
     				<mandatiorydescription>
     					<![CDATA[All personnel must evacuate (both inside of buildings and out).]]>
@@ -41,7 +41,7 @@
     		</inforpopup>
     	</type>
 
-    	<type name='Suicide Vest' icon='suicide_vest.png' unit='meter' mandatoryEvacuationDistance='34' preferredEvacuationDistance='518' >
+    	<type name='Suicide Vest' icon='vest-back-trans.png' unit='meter' mandatoryEvacuationDistance='34' preferredEvacuationDistance='518' >
     	<inforpopup>
 
     				<mandatiorydescription>
@@ -53,7 +53,7 @@
 
     		</inforpopup>
     	</type>
-    	<type name='Briefcase / Suitcase Bomb' icon='briefcase.png' unit='meter' mandatoryEvacuationDistance='46' preferredEvacuationDistance='564' >
+    	<type name='Briefcase / Suitcase Bomb' icon='BriefCase.png' unit='meter' mandatoryEvacuationDistance='46' preferredEvacuationDistance='564' >
     		<inforpopup>
 
     				<mandatiorydescription>
@@ -65,7 +65,7 @@
 
     		</inforpopup>
     	</type>
-    	<type name='Sedan' icon='sedan.png' unit='meter' mandatoryEvacuationDistance='98' preferredEvacuationDistance='580' >
+    	<type name='Sedan' icon='CompactSedan.png' unit='meter' mandatoryEvacuationDistance='98' preferredEvacuationDistance='580' >
     	<inforpopup>
 
     				<mandatiorydescription>
@@ -77,7 +77,7 @@
 
     		</inforpopup>
     	</type>
-    	<type name='SUV / Van' icon='suv_van.png' unit='meter'  mandatoryEvacuationDistance='122' preferredEvacuationDistance='732' >
+    	<type name='SUV / Van' icon='CargoVan.png' unit='meter'  mandatoryEvacuationDistance='122' preferredEvacuationDistance='732' >
     		<inforpopup>
     					<mandatiorydescription>
     					<![CDATA[All personnel must evacuate (both inside of buildings and out).]]>
@@ -87,7 +87,7 @@
     				</preferreddecription>
     		</inforpopup>
     	</type>
-    	<type name='Small Delivery Truck' icon='delivery_truck.png' unit='meter' mandatoryEvacuationDistance='195' preferredEvacuationDistance='1159' >
+    	<type name='Small Delivery Truck' icon='SmallMovingVan.png' unit='meter' mandatoryEvacuationDistance='195' preferredEvacuationDistance='1159' >
     	<inforpopup>
 
     				<mandatiorydescription>
@@ -99,9 +99,7 @@
 
     		</inforpopup>
     	</type>
-
-
-    	<type name='Container / Water Truck' icon='water_truck.png' unit='meter'  mandatoryEvacuationDistance='479' preferredEvacuationDistance='2835' >
+    	<type name='Container / Water Truck' icon='MovingVan.png' unit='meter'  mandatoryEvacuationDistance='263' preferredEvacuationDistance='1,555' >
     		<inforpopup>
     					<mandatiorydescription>
     					<![CDATA[All personnel must evacuate (both inside of buildings and out).]]>
@@ -111,8 +109,7 @@
     				</preferreddecription>
     		</inforpopup>
     	</type>
-
-    	<type name='Semi-Trailer' icon='semi_trailer.png' unit='meter' mandatoryEvacuationDistance='263' preferredEvacuationDistance='1555' >
+    	<type name='Semi-Trailer' icon='SemiTrailer.png' unit='meter' mandatoryEvacuationDistance='479' preferredEvacuationDistance='2835' >
     		<inforpopup>
 
     				<mandatiorydescription>
@@ -124,11 +121,10 @@
 
     		</inforpopup>
     	</type>
-
 
     </bombThreats>
-
     <mandatorybuffercolor>C4D1E2</mandatorybuffercolor>
     <prefferedbuffercolor>014B7C</prefferedbuffercolor>
+
  </configuration>
 

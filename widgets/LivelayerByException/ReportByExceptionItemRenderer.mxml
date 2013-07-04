@@ -20,7 +20,7 @@
                 xmlns:mx="library://ns.adobe.com/flex/mx"
                 autoDrawBackground="false"
                 click="itemrenderer_clickHandler(event)"
-                dataChange="itemrenderer_dataChangeHandler(event)"
+
                 minHeight="30"
                 mouseOut="itemrenderer1_mouseOutHandler(event)"
                 mouseOver="itemrenderer1_mouseOverHandler(event)"
@@ -29,7 +29,7 @@
     <fx:Script>
         <![CDATA[
             import mx.events.FlexEvent;
-			import widgets.LivelayerByException.ReportByExceptionFeed;
+
 
 
             private const RBE_CLICK:String = "rbeClick";
@@ -39,13 +39,7 @@
             [Bindable]
             private var geoRSSFeed:ReportByExceptionFeed;
 
-            private function itemrenderer_dataChangeHandler(event:FlexEvent):void
-            {
-                //geoRSSFeed = data as ReportByExceptionFeed;
 
-                // associating link with the icon;
-                //feedLink.name = data.link;
-            }
 
             private function itemrenderer_clickHandler(event:MouseEvent):void
             {
@@ -64,7 +58,7 @@
 
             private function showLink(event:MouseEvent):void
             {
-//                event.stopImmediatePropagation();
+
                 navigateToURL(new URLRequest(event.currentTarget.name));
             }
         ]]>
@@ -95,7 +89,7 @@
     </s:Rect>
 
     <s:HGroup verticalAlign="middle" minHeight="80" paddingBottom="5" paddingTop="5"
-             width="100%" gap="8">
+             width="100%" gap="8" paddingLeft="5">
         <mx:Image left="5"
                   maxHeight="20"
                   maxWidth="20"
