@@ -15,9 +15,11 @@
  | See the License for the specific language governing permissions and
  | limitations under the License.
 -->
+<!--Credits: 	Environment Canterbury; New Zealand GIS Consortium-->
+
 <configuration>
     <!-- Map and geometry service settings -->
-    <geometryservice>http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer</geometryservice>
+    <geometryservice>http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer</geometryservice>
     <spatialref>2193</spatialref>
 
     <!-- If utilising an arcgis server version 10 or higher for queries, etc, the following setting should be set to true.  If utilising an ArcGIS 9.3x server, set to false -->
