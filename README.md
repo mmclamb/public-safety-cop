@@ -61,7 +61,7 @@ Show me a list of other [Local Government GitHub repositories](http://esri.githu
 Additional [information and sample data](http://www.arcgis.com/home/item.html?id=4d5a8964c9c54b07af7317b9c9ac86fd)
 are available for the application.
 
-This application uses the 3.3 version of
+This application uses the 3.4 version of
 [Esri's ArcGIS API for Flex](https://developers.arcgis.com/en/flex/)
 and the 4.6 version of [Adobe's Flex SDK](http://www.adobe.com/devnet/flex/flex-sdk-download.html)
 in conjunction with the 10.1.1 version of ArcGIS.

@@ -16,7 +16,7 @@
  | limitations under the License.
 -->
 <project name="Flash" default="build" basedir=".">
-    <property name="flexviewer" value="__arcgis-viewer-flex-3.3-src" />
+    <property name="flexviewer" value="__arcgis-viewer-flex-3.4-src" />
     <property name="widgets" value="widgets" />
     <property name="distrib" value="__distrib" />
 

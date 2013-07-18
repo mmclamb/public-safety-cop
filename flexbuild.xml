@@ -17,6 +17,6 @@
 -->
 <project default="main">
     <target name="main">
-        <fb.exportReleaseBuild project="__arcgis-viewer-flex-3.3-src" />
+        <fb.exportReleaseBuild project="__arcgis-viewer-flex-3.4-src" />
     </target>
 </project>
