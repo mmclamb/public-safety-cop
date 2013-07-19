@@ -16,6 +16,10 @@
  | limitations under the License.
 -->
 <!--
+    This widget requires an info popup widget; it defaults to "widgets/InfoTemplates/InfoPopupWidget.swf"
+    if a widget is not specified in the <info> tag below.
+-->
+<!--
 //	ESRI Sample Geometry Services
 //  http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer
 //

@@ -15,6 +15,10 @@
  | See the License for the specific language governing permissions and
  | limitations under the License.
 -->
+<!--
+    This widget requires an info popup widget; it defaults to "widgets/InfoTemplates/InfoPopupWidget.swf"
+    if a widget is not specified in the <info> tag below.
+-->
 <configuration>
 
 <!--Polygon layer-->
