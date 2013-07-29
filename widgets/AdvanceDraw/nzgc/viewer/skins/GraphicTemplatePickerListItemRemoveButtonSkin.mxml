@@ -116,7 +116,7 @@
 	<s:BitmapImage id="img"
 				   left="0" right="0" top="0" bottom="0"
 				   horizontalCenter="0"
-				   source="@Embed('/assets/images/w_close_red.png')"
+				   source="@Embed('widgets/AdvanceDraw/assets/images/w_close_red.png')"
 				   verticalCenter="0" />
 
 </s:SparkSkin>

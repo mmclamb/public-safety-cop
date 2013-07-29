@@ -1,4 +1,4 @@
-1. The widget is compiled with the Flex Viewer 3.3.
+1. The widget is compiled with the Flex Viewer 3.4.
 
 
 
@@ -7,5 +7,5 @@ must customize it if you prefer searching around a fixed point.
 
 
 
-3. If the base map’s spatial reference is not 4326 or Mercator, you must customize the code and project the result points using a geometry service.
+3. If the base mapâ€™s spatial reference is not 4326 or Mercator, you must customize the code and project the result points using a geometry service.
 

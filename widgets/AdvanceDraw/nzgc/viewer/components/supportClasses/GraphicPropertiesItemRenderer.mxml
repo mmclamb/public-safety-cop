@@ -538,7 +538,7 @@
 
 		<mx:Image click="deleteGraphic(event)"
 				  height="20"
-				  source="assets/images/w_close_red.png"
+				  source="widgets/AdvanceDraw/assets/images/w_close_red.png"
 				  toolTip="Click to delete this graphic"
 				  verticalCenter="0"
 				  width="20"/>

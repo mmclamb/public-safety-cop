@@ -33,7 +33,7 @@
             <esri:SimpleLineSymbol color="0x000000"/>
         </esri:SimpleMarkerSymbol>
 
-        <esri:SimpleFillSymbol id="sfs" color="0xFF0000" alpha=".1">
+        <esri:SimpleFillSymbol id="sfs" color="{bufferColor}" alpha=".1">        
             <esri:SimpleLineSymbol color="0x000000"/>
         </esri:SimpleFillSymbol>
 
@@ -262,6 +262,7 @@
 			/*  ** buffer variable ****  */
 
 			private var bufferOpacity:Number;
+			[Bindable]
 			private var bufferColor:uint;
 
 			/* ******************************** */
@@ -306,7 +307,7 @@
                 wTemplate.addTitlebarButton(cICON_URL + "w_addstart_border.png", "User Defined Location", rbeUserClick);
                 wTemplate.addTitlebarButton(cICON_URL + "RBE_addButton.png", "Add New Report by Exception", rbeNewLayer);
                 wTemplate.addTitlebarButton(cICON_URL + "i_piechart.png", "RBE Summary Chart", rbeResultChart);
-				wTemplate.addTitlebarButton(cICON_URL + "edit-clear.png", "Clear", clearFeatures);
+		wTemplate.addTitlebarButton(cICON_URL + "edit-clear.png", "Clear", clearFeatures);
 
                 infoUrl = configXML.info || "widgets/InfoTemplates/InfoPopupWidget.swf";
                 var data:Object = {
@@ -962,10 +963,7 @@
 				var tempGraphics:Graphic = new Graphic();
 				tempGraphics.geometry = _lastListClickeddata.geometry as Geometry;
 				}
-				/* if(bufferGraphicsLayer)
-				{
-					bufferGraphicsLayer.clear();
-				} */
+				
 				if (bufferType == "simple"){
 					bufferValue = frmBufferMiles.text;
 					if(_strLayerType == "polygon")
@@ -1309,8 +1307,8 @@
                 };
 
 
-                gpDrivetime.execute(params1, new AsyncResponder(rbeDTResult, onFault, "singleRing"));
-                gpDrivetime.execute(params, new AsyncResponder(rbeDTResult,onFault, "multipleRing"));
+                gpDrivetime.execute(params1, new AsyncResponder(rbeDTResult, geometryService_faultHandler, "singleRing"));
+                gpDrivetime.execute(params, new AsyncResponder(rbeDTResult,geometryService_faultHandler, "multipleRing"));
 
                 //anonymous function, due to closure it has access to vars defined in this method/context
                 // Display Drive Time and pass shape to REST Query for Report By Exception Results
@@ -1727,11 +1725,23 @@
 				clearMessage();
 			}
 
-			protected function geometryService_faultHandler(event:FaultEvent=null):void
+			protected function geometryService_faultHandler( info:Object=null, token:Object = null,event:FaultEvent=null):void
 			{
-				Alert.show(alertMsg.invalidDriveTimeError.alertmessage.toString(),alertMsg.invalidDriveTimeError.alertheader);
+				clearFeatures();
+				if(info)
+				{
+					Alert.show("HTTP request error","Error")
+				}
+				else if (bufferType =="simple")
+				{
+					Alert.show(alertMsg.invalidUrlName.alertmessage.toString(),alertMsg.invalidUrlName.alertheader);
 			}
-
+				else
+				{
+					Alert.show(alertMsg.invalidUrlName.alertmessage.toString(),alertMsg.invalidUrlName.alertheader);
+				}
+			}
+			
             //mouse over graphic
             private function mouseOverGraphic(event:MouseEvent):void
             {
@@ -1894,15 +1904,9 @@
 
 
             private function listRecords():void
-            {	/*
-				if(_legendData is LegendData && isBackClicked==false)
 				{
-					this.currentState="gridState";
-				}
-				else
-				{ */
                 	this.currentState="rbeList";
-				/* } */
+				
             }
 
             private function rbeUserClick():void
@@ -2045,6 +2049,7 @@
 
 			private function bufferFault(error:Fault =null, token:Object = null):void
 			{
+				clearFeatures();
 				if (bufferType =="simple")
 				{
 					Alert.show(alertMsg.invalidSimpleBufferError.alertmessage.toString(),alertMsg.invalidSimpleBufferError.alertheader);
@@ -2069,7 +2074,7 @@
                            open="widgetOpenedHandler(event)"
                            minimized="widgetMinimizedHandler(event)"
                            width="460" height="230"
-						   minHeight="220" minWidth="460">
+						   minHeight="230" minWidth="460">
 
         <!--Exceptions Report List!-->
         <s:Group id="rbeList"
@@ -2186,13 +2191,13 @@
                 </mx:FormItem>
                 <mx:FormItem textAlign="left" fontSize="12" fontWeight="bold" labelStyleName="Left" label="Icon: ">
                     <s:HGroup width="100%">
-                        <s:DropDownList id="iconList" selectedIndex="0" height="25" fontWeight="normal">
+                        <s:ComboBox id="iconList" selectedIndex="0" height="25" fontWeight="normal">
                             <s:ArrayCollection>
                                 <fx:String>Blue Pushpin</fx:String>
                                 <fx:String>Green Pushpin</fx:String>
                                 <fx:String>Red Pushpin</fx:String>
                             </s:ArrayCollection>
-                        </s:DropDownList>
+                        </s:ComboBox>
                         <s:Button name="btnNewRBE" click="newRbeLayer()" height="25" label="Add New"/>
                     </s:HGroup>
                 </mx:FormItem>

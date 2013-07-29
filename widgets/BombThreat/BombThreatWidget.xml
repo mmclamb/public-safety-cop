@@ -32,6 +32,8 @@
 			following buffer distance help to draw the two different type buffer which help to analysis the effected area .
 
  -->
+ <info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+ 
  <title>Select threat type and click on map</title>
     <bombThreats>
     	<type name='Pipe Bomb' icon='PipeBomb.png' unit='meter' mandatoryEvacuationDistance='21' preferredEvacuationDistance='366' >
