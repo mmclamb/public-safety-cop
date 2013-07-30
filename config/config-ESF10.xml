@@ -74,7 +74,7 @@
                 <sublayer id="2" popupconfig="popups/PopUp_Wind24hr.xml"/>
                 <sublayer id="3" popupconfig="popups/PopUp_TornadoWeek.xml"/>
             </layer>
-            <layer type="dynamic" label="Emergency Operations" alpha="0.5" imageformat="png8" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer" visible="false" visiblelayers="1,3,4,5"/>
+            <layer type="dynamic" label="Emergency Operations" alpha="0.5" imageformat="png8" url="http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer" visible="true" visiblelayers="1,3,4,5"/>
             <layer type="feature" label="Incident Point" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/0" popupconfig="popups/PopUp_EMIncidentPoints.xml" visible="true"/>
             <layer type="feature" label="Incident Line" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/1" popupconfig="popups/PopUp_EMIncidentLines.xml" visible="true"/>
             <layer type="feature" label="Incident Area" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/2" popupconfig="popups/PopUp_EMIncidentArea.xml" visible="true"/>
@@ -110,8 +110,8 @@
 
         	<widget label="LiveLayer By Exception" left="100" top="90"
 			     	icon="widgets/LivelayerByException/assets/images/polygon.png"
-				    config="widgets/LivelayerByException/LiveLayerWidget_ReportByExceptionPoint.xml"
-				    url="widgets/LivelayerByException/LiveLayerWidget_ReportByExceptionWidget.swf"/>
+				    config="widgets/LivelayerByException/LiveLayerWidget_ReportByExceptionPoly.xml"
+				    url="widgets/LivelayerByException/LivelayerByExceptionWidget.swf"/>
      </widgetgroup>
 
            <widget label="Legend" left="80" bottom="80"

@@ -53,7 +53,7 @@
 			<id>0</id>
 			<title>PDC Integrated Hazards</title>
 			<visible>true</visible>
-			<fields>HAZARD_NAME,TYPE,STATUS,SEVERITY,CATEGORY,SNC_URL,CHARTER_URL</fields>
+			<fields>HAZARD_NAME,TYPE,STATUS,SEVERITY_ID,SNC_URL,CHARTER_URI</fields>
 			<legend>
 				<description><![CDATA[Current incidents which have been designated<br>potentially hazardous to people, property, or assets]]></description>
 				<metadataID>125</metadataID>

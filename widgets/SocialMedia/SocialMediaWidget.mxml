@@ -1168,12 +1168,12 @@
 				<s:Button id="Statesbtn" label="Back" toolTip="Back To Initial State" visible="false" click="States_clickHandler(event)" />
 				<s:Button id="btnSeatchMedia" label="Search" toolTip="Search" click="startSearchMedia()" enabled="true"></s:Button>
 				<s:Button id="btnClearGraphics" label="Clear" toolTip="Clear " click="clearGraphics()"></s:Button>
-				<s:BorderContainer id="loadingFlag" visible="false" includeInLayout="false" cornerRadius="5" width="20" height="20">
-					<s:backgroundFill>
-						<s:SolidColor color="0x660000" alpha="1"/>
-					</s:backgroundFill>
-					<mx:SWFLoader source="widgets/SocialMedia/assets/images/loader.gif" autoLoad="true" width="18" height="18" horizontalAlign="center" verticalAlign="middle" />
-				</s:BorderContainer>
+				<s:HGroup id="loadingFlag" visible="false" paddingTop="2" includeInLayout="false"  width="20" height="20">
+					<!--<s:backgroundFill>
+						<s:SolidColor  alpha="1"/>
+					</s:backgroundFill>-->
+					<mx:SWFLoader source="widgets/SocialMedia/assets/images/loader.swf" autoLoad="true" width="18" height="18" horizontalAlign="center" verticalAlign="middle" />
+				</s:HGroup>
 			</s:HGroup>
 		</s:VGroup>
 		<mx:DateChooser id="dateChooser" visible="false" focusEnabled="false" change="DateChooser_ChangeHandler(event)"

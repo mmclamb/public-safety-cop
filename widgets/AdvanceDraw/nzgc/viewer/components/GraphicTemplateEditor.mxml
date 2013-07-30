@@ -446,7 +446,6 @@
 
 				// Raise the save event - calling application will take care of updating the template.
 				dispatchEvent(new Event("graphicTemplateEditor_Save"));
-				AppEvent.dispatch("reloadGraphicTemplateEditor");
 			}
 
 			/**

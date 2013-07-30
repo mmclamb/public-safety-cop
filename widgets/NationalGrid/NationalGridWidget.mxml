@@ -430,6 +430,14 @@
 
 
 
+			protected function usngGoTo_focusOutHandler(event:FocusEvent):void
+			{
+				if( usngGoTo.text=="")
+				{
+				usngGoTo.text="Enter USNG / MGRS Coordinates"
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	<fx:Declarations>
@@ -492,7 +500,7 @@
 			<s:Label color="0xffffff" id="mgrsLabel" text="USNG / MGRS: {mgrs}" visible="true"/>
 			<s:HGroup paddingTop="15">
 				<s:Button label="Go to (USNG / MGRS)" click="goTo(event)"/>
-				<s:TextInput height="24" width="200" maxChars="15"  id="usngGoTo"  click="if (usngGoTo.text=='Enter USNG / MGRS Coordinates') usngGoTo.text=''"
+				<s:TextInput height="24" width="200" maxChars="15"  id="usngGoTo"  click="if (usngGoTo.text=='Enter USNG / MGRS Coordinates') usngGoTo.text=''" focusOut="usngGoTo_focusOutHandler(event)"
 							 text="Enter USNG / MGRS Coordinates"  enter="goTo2()"/>
 			</s:HGroup>
 			<s:Label color="0xffffff" text="Try 18SUJ23480647 for the Washington Monument."/>

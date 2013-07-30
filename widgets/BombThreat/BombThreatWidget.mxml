@@ -134,7 +134,7 @@
 					Alert.show('Config not found');
 				}
 
-				var infoUrl:String =  "widgets/InfoTemplates/InfoPopupWidget.swf";
+				var infoUrl:String = configXML.info || "widgets/InfoTemplates/InfoPopupWidget.swf";
 				var data:Object = {
 					id: String(this.widgetId),
 					url: infoUrl,

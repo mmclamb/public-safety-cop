@@ -514,7 +514,11 @@
 				 ddMapService.width = determineDropDownWidth(arrLayerData);
 				ddlAllLayer.width=determineDropDownWidth(arrLayerData);
 				ddMapService.dataProvider = _arrColl;
+				
+				if(ddMapService.selectedIndex  < 0)
+				{
 				ddMapService.selectedIndex = 0;
+				}
 				ddlAllLayer.dataProvider=_arrColl;
 				ddlAllLayer.selectedIndex = 0;
 				if(ddMapService.width + (idfromlbl.measureText(idFromLabel).width + 37) > (wTemplate.width - 57)){

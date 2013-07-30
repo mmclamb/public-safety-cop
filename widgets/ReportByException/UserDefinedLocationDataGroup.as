@@ -27,8 +27,11 @@ package widgets.ReportByException
         public function UserDefinedLocationDataGroup()
         {
             super();
-
-            this.itemRenderer = new ClassFactory(UserDefinedLocationItemRenderer);
+		if(this.parent)
+		{
+			this.height=this.parent.height;
+		}
+		this.itemRenderer = new ClassFactory(UserDefinedLocationItemRenderer);
         }
     }
 }

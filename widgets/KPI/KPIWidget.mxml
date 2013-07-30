@@ -1001,7 +1001,7 @@
 				<mx:Label fontWeight="bold"
 							 text=" Refresh in: {timerCount} sec" visible="{_kpiParserUtil.refreshEnabled}"/>
 			</mx:VBox>
-			<mx:PieChart id="pieChart" width="400" height="300"
+			<mx:PieChart id="pieChart" width="400" height="290"
 						 dataProvider="{pieChartDataProvider}"
 						 dataTipFunction="dataTipPieChart"
 						 selectionMode="none"
