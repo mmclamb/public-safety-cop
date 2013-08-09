@@ -25,18 +25,17 @@
 
 		]]>
 	</fx:Script>
-	<s:BorderContainer width="100%" height="97" backgroundColor="#708090">
+	<s:BorderContainer width="100%" height="80" backgroundColor="#708090">
 		<mx:VBox width="100%" height="90" verticalGap="3" paddingTop="10" verticalScrollPolicy="off" >
 			<mx:HBox paddingLeft="5" width="100%">
 				<mx:Image id="TweetImage" source="{data.photo}" width="50" height="50" />
 				<mx:VBox verticalGap="2" width="100%" >
-					<mx:Label id="titlelbl" text="Title:{data.title}" toolTip="{titlelbl.text}" textDecoration="underline" minWidth="200" width="100%"  selectable="false"  buttonMode="true" useHandCursor="true" mouseChildren="false" />
+					<mx:Label id="titlelbl" text="{data.title}" toolTip="{titlelbl.text}" textDecoration="underline" minWidth="200" width="100%"  selectable="false"  buttonMode="true" useHandCursor="true" mouseChildren="false" />
 
-					<mx:Label id="contentlbl" htmlText="Content:{data.content}" toolTip="{contentlbl.text}" textDecoration="underline" minWidth="200" width="100%"  selectable="false"  buttonMode="true" useHandCursor="true" mouseChildren="false" />
+					
 
 				</mx:VBox>
 			</mx:HBox>
-			<s:Spacer  height="3" />
 
 			<mx:HBox paddingLeft="5"  paddingTop="5"  >
 				<s:Label text="PublishDate:{data.date}" fontSize="10" fontWeight="bold" fontStyle="normal"  />

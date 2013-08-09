@@ -325,6 +325,7 @@
 
 			}
 			private var twRadius:Number=new Number();
+			private var sinceTwitter:Date;
 			protected function startSearchMedia():void
 			{
 
@@ -357,21 +358,22 @@
 				else if (tabSocialMedias.selectedIndex == 2  && StringUtil.trim(txtTwitterKeyword.text).length > 0)  // Search Twitter
 				{
 					var today:Date = new Date();
-					var since:Date = new Date();
+					sinceTwitter = new Date();
 					var twDays:Number = dropDownTwitterTime.selectedItem.value;
 					var hh:Number = today.getHours();
 					if (hh > 12 && twDays == 5) twDays = 4;
-					since.setTime(today.getTime() - twDays * 24 * 60 * 60 *1000);
+					  sinceTwitter.setTime(today.getTime() - twDays * 24 * 60 * 60 *1000);  
 
 					var dateFormatter:DateFormatter = new DateFormatter();
 					dateFormatter.formatString = "YYYY-MM-DD";
+					dateFormatter.format(sinceTwitter)
 
 					var twKw:String = StringUtil.trim(txtTwitterKeyword.text);
 					var twRd:Number = Math.round(sliderTwitterDistance.value*1.60934);
 
 
 
-					SearchTwitter(location, twKw, dateFormatter.format(since), twRd);
+					SearchTwitter(location, twKw, dateFormatter.format(today), twRd);
 				}
 				else
 				{
@@ -593,26 +595,31 @@
 							tweetarrResult=new ArrayCollection();
 							for each (var tweet:TweetItem in event.Results)
 							{
-								if (tweet.point != null  && (bufferGeo as Polygon).contains(tweet.point as MapPoint))
-								{
-									var tweetobj:Object=new Object();
-									tweetobj.title=tweet.title;
-									tweetobj.content=tweet.content;
-									tweetobj.photo=tweet.authorPhoto;
-
-									var newdate:Date = new Date(tweet.publishDate);
-
-									tweetobj.date=""+getMonthByName(newdate.getMonth() as Number)+","+newdate.date+" "+newdate.fullYear+" @ "+newdate.hours+":"+newdate.minutes+":"+newdate.seconds;
-									tweetobj.authorUri=tweet.authorUri;
-									tweetobj.author=tweet.authorName;
-									tweetobj.point=tweet.point;
-									tweetobj.screenName=tweet.screenName;
-									tweetarrResult.addItem(tweetobj);
-
-									graphic = new Graphic(tweet.point);
-									graphic.attributes = {"type": SocialMediaType.Tweet, "title": tweet.title, "content":tweet.content, "published": tweet.publishDate, "photo": tweet.authorPhoto, "author": tweet.authorName, "authorUri": tweet.authorUri,"screenName":tweet.screenName};
-									graphic.addEventListener(MouseEvent.CLICK, SocialMediaGraphic_ClickHandler);
-									twitterGraphics.add(graphic);
+								var tempDate:Date=new Date(tweet.publishDate);
+								
+								if(sinceTwitter.time<=tempDate.time)
+								{  
+									if (tweet.point != null  && (bufferGeo as Polygon).contains(tweet.point as MapPoint))
+									{
+										var tweetobj:Object=new Object();
+										tweetobj.title=tweet.title;
+										tweetobj.content=tweet.content;
+										tweetobj.photo=tweet.authorPhoto;
+										
+										var newdate:Date = new Date(tweet.publishDate);
+										
+										tweetobj.date=""+getMonthByName(newdate.getMonth() as Number)+","+newdate.date+" "+newdate.fullYear+" @ "+newdate.hours+":"+newdate.minutes+":"+newdate.seconds;
+										tweetobj.authorUri=tweet.authorUri;
+										tweetobj.author=tweet.authorName;
+										tweetobj.point=tweet.point;
+										tweetobj.screenName=tweet.screenName;
+										tweetarrResult.addItem(tweetobj);
+										
+										graphic = new Graphic(tweet.point);
+										graphic.attributes = {"type": SocialMediaType.Tweet, "title": tweet.title, "content":tweet.content, "published": tweet.publishDate, "photo": tweet.authorPhoto, "author": tweet.authorName, "authorUri": tweet.authorUri,"screenName":tweet.screenName};
+										graphic.addEventListener(MouseEvent.CLICK, SocialMediaGraphic_ClickHandler);
+										twitterGraphics.add(graphic);
+									}
 								}
 							}
 							this.currentState="resultState";
@@ -1160,7 +1167,7 @@
 					</mx:Form>
 					<mx:VBox id="mybox2" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off"  label="TweetSearch Data" includeIn="resultState">
 						<mx:Label text="Search Results :{tweetarrResult.length}"/>
-						<mx:List id="tweetlist" width="100%" height="100%" verticalScrollPolicy="auto" dataProvider="{tweetarrResult}" borderVisible="false" itemRenderer="widgets.SocialMedia.tweetItemRenderer" showDataTips="true"  itemClick="tweetSearchListData(event)" />
+						<mx:List id="tweetlist" width="100%" height="100%"  dataProvider="{tweetarrResult}" borderVisible="false" itemRenderer="widgets.SocialMedia.tweetItemRenderer" showDataTips="true"  itemClick="tweetSearchListData(event)" />
 					</mx:VBox>
 				</mx:VBox>
 			</mx:TabNavigator>

@@ -69,7 +69,7 @@ package widgets.SocialMedia.Tools
 		public function Search(keyword:String, since:String, location:MapPoint, radius:Number, units:String, numPerPage:Number=500, page:Number=1):void
 		{
 			var tweetUrl:String = "https://api.twitter.com/1.1/search/tweets.json?";
-			tweetUrl += "q=" + keyword + "&untill="+ since  + "&count=" + numPerPage;
+			tweetUrl += "q=" + keyword + "&until="+ since  + "&count=" + numPerPage;
 			tweetUrl += "&geocode=" + location.y + "%2C" + location.x + "%2C" + radius + "km";
 			tweetUrl += "&result_type=mixed";
  			var tweetService:HTTPService = new HTTPService();
