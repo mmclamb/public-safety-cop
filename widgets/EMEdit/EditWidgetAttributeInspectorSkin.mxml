@@ -20,8 +20,8 @@
 -->
 <s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009"
              xmlns:mx="library://ns.adobe.com/flex/mx"
-             xmlns:s="library://ns.adobe.com/flex/spark">
-	     xmlns:fieldClasses="com.esri.ags.skins.fieldClasses.*">
+             xmlns:s="library://ns.adobe.com/flex/spark"
+	     	 xmlns:fieldClasses="com.esri.ags.skins.fieldClasses.*">
 
     <fx:Metadata>
         /**
