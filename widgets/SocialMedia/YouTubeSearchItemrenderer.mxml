@@ -42,7 +42,7 @@
 		<mx:HBox width="100%" height="100%" paddingLeft="5" >
 					<mx:Image id="YouImage" source="{data.image}" width="50" height="50"   />
 			<mx:VBox width="100%">
-				   <mx:Label id="lbltitle" text="Title:{data.title}" toolTip="{lbltitle.text}" textDecoration="underline" minWidth="200" width="100%" buttonMode="true" useHandCursor="true" mouseChildren="false"/>
+				   <mx:Label id="lbltitle" text="{data.title}" toolTip="{lbltitle.text}" textDecoration="underline" minWidth="200" width="100%" buttonMode="true" useHandCursor="true" mouseChildren="false"/>
 
 			</mx:VBox>
 		</mx:HBox>

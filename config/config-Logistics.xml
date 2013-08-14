@@ -108,10 +108,10 @@
 				config="widgets/ClosestFacility/ClosestFacilityWidget.xml"
 				url="widgets/ClosestFacility/ClosestFacilityWidget.swf" />
 
-		<widget label="Edit" left="100" top="90"
-		        icon="assets/images/i_scissors.png"
-		        config="widgets/Edit/EM_EditWidget.xml"
-		        url="widgets/Edit/EditWidget.swf" />
+		<widget label="EMEdit" left="100" top="90"
+                    icon="assets/images/i_scissors.png"
+                    config="widgets/EMEdit/EMEditWidget.xml"
+                    url="widgets/EMEdit/EMEditWidget.swf" />
 
 		<widgetgroup label="Tools">
 

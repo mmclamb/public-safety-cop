@@ -777,7 +777,9 @@
 				currentState="sttOption";
 				_newDynamicLegendUtil.graphicLayer.clear();
 				_newDynamicLegendUtil.graphicSelectionLayer.clear();
-				_legendData.resultDataGrid = new ArrayCollection();
+				if(_legendData)
+					_legendData.resultDataGrid = new ArrayCollection();
+				
 				map.infoWindow.hide();
 
 				if(resultData != null)

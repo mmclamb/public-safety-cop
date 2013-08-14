@@ -43,8 +43,8 @@
     <twitterDateFields>
        <dateField value="1" label="1 Day"/>
        <dateField value="2" label="2 Days"/>
-       <dateField value="3" label="3 Days"/>
-       <dateField value="4" label="4 Days"/>
-       <dateField value="5" label="5 Days"/>
+       <dateField value="30" label="30 Days"/>
+       <dateField value="60" label="60 Days"/>
+       <dateField value="90" label="90 Days"/>
     </twitterDateFields>
 </configuration>

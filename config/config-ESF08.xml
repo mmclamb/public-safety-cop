@@ -95,10 +95,10 @@
 	<!-- supported layout property options: horizontal(default)|float|vertical|fix -->
 
   <widgetcontainer layout="float">
-        <widget label="Edit" left="100" top="90"
-				icon="assets/images/i_scissors.png"
-				config="widgets/Edit/EM_EditWidget.xml"
-				url="widgets/Edit/EditWidget.swf"/>
+        <widget label="EMEdit" left="100" top="90"
+                    icon="assets/images/i_scissors.png"
+                    config="widgets/EMEdit/EMEditWidget.xml"
+                    url="widgets/EMEdit/EMEditWidget.swf" />
 
         <widget label="Identify" left="100" top="90"
 				icon="assets/images/i_info.png"

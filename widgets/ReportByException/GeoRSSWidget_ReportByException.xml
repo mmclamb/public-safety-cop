@@ -105,12 +105,14 @@
 			alertmessage="No Map Point is specified." />
 		<driveTimeError alertheader="Error"
 			alertmessage="A problem occured while attempting drive Time." />
-			<invalidDriveTimeError alertheader="Error"
+		<invalidDriveTimeError alertheader="Error"
 			alertmessage="Not a Valid Value. Please Enter Valid Drive time." />
-			<invalidSimpleBufferError alertheader="Error"
+		<invalidSimpleBufferError alertheader="Error"
 			alertmessage="Not a Valid Value. Please Enter Valid Simple Buffer distance ." />
 		<calcPopulationStatisticsError alertheader="Error"
 			alertmessage="Could Not Calculate Population tatistics" />
+		<invalidUrlName alertheader="Error"
+            alertmessage="Invalid url or layer name"/>
   </alertmessages>
 
 </configuration>
