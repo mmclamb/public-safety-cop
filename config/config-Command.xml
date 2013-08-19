@@ -100,19 +100,19 @@
     <widgetcontainer layout="float">
 
 		<widget label="Identify" left="100" top="90"
-			icon="assets/images/i_info.png"
-			config="widgets/Identify/IdentifyWidget.xml"
-			url="widgets/Identify/IdentifyWidget.swf"/>
+		        icon="assets/images/i_info.png"
+			      config="widgets/Identify/IdentifyWidget.xml"
+			      url="widgets/Identify/IdentifyWidget.swf"/>
 
 		<widget label="Legend" left="80" bottom="80"
-			icon="Widgets/DynamicLegend/assets/images/legend.png"
-			config="widgets/DynamicLegend/DynamicLegendWidget.xml"
-			url="widgets/DynamicLegend/DynamicLegendWidget.swf"/>
+			      icon="Widgets/DynamicLegend/assets/images/legend.png"
+			      config="widgets/DynamicLegend/DynamicLegendWidget.xml"
+			      url="widgets/DynamicLegend/DynamicLegendWidget.swf"/>
 
 		<widget label="WMS Weather Looping"  left="100" top="90"
 		        icon="widgets/WMSLooping/assets/images/weather-radar.png"
-			config="widgets/WMSLooping/WMSLoopingWidget.xml"
-			url="widgets/WMSLooping/WMSLoopingWidget.swf"/>
+			      config="widgets/WMSLooping/WMSLoopingWidget.xml"
+			      url="widgets/WMSLooping/WMSLoopingWidget.swf"/>
 
 		<widget label="Query" left="100" top="90"
 		        icon="assets/images/i_policestation.png"
