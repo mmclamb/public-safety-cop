@@ -114,7 +114,7 @@
 
 		<widgetgroup label="Tools">
             <widget label="ERG" left="100" top="90"
-					icon="widgets/ERGChemical/assets/images/HAZMAT_ICON.png"
+		    icon="widgets/ERGChemical/assets/images/HAZMAT_ICON.png"
                     config="widgets/ERGChemical/ERGChemicalWidget.xml"
                     url="widgets/ERGChemical/ERGChemicalWidget.swf" />
 
