@@ -16,32 +16,32 @@
  | limitations under the License.
 -->
 <configuration>
-	<title>Situational Awareness Viewer</title>
-    	<subtitle>ESF #15 – External Affairs</subtitle>
-    	<logo>assets/images/em_logo.png</logo>
-	<style>
-		<colors>0xFFFFFF,0x333333,0x101010,0x000000,0xFFFFFF</colors>
-		<alpha>0.8</alpha>
-	</style>
-	<!-- replace the following url with your own geometryservice -->
-	<geometryservice url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"/>
-	<!-- UI elements -->
+    <title>Situational Awareness Viewer</title>
+        <subtitle>ESF #15 – External Affairs</subtitle>
+        <logo>assets/images/em_logo.png</logo>
+    <style>
+        <colors>0xFFFFFF,0x333333,0x101010,0x000000,0xFFFFFF</colors>
+        <alpha>0.8</alpha>
+    </style>
+    <!-- replace the following url with your own geometryservice -->
+    <geometryservice url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"/>
+    <!-- UI elements -->
     <!-- removed splash -->
-	<widget left="10" top="50"  config="widgets/Navigation/NavigationWidget.xml" url="widgets/Navigation/NavigationWidget.swf" />
-	<widget right="0" bottom="0" config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf" />
-	<widget right="20" top="55" config="widgets/MapSwitcher/EM_MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf" />
-	<!--Header Widget is integrated with Search widget functionality -->
-	<widget left="0" top="0" config="widgets/EMHeaderController/EMHeaderControllerWidget.xml" url="widgets/EMHeaderController/EMHeaderControllerWidget.swf" />
-	<widget left="3" bottom="1" config="widgets/Coordinate/CoordinateWidget.xml" url="widgets/Coordinate/CoordinateWidget.swf" />
+    <widget left="10" top="50"  config="widgets/Navigation/NavigationWidget.xml" url="widgets/Navigation/NavigationWidget.swf" />
+    <widget right="0" bottom="0" config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf" />
+    <widget right="20" top="55" config="widgets/MapSwitcher/EM_MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf" />
+    <!--Header Widget is integrated with Search widget functionality -->
+    <widget left="0" top="0" config="widgets/EMHeaderController/EMHeaderControllerWidget.xml" url="widgets/EMHeaderController/EMHeaderControllerWidget.swf" />
+    <widget left="3" bottom="1" config="widgets/Coordinate/CoordinateWidget.xml" url="widgets/Coordinate/CoordinateWidget.swf" />
 
-	<map wraparound180="true" initialextent="-9816800 5121400 -9805200 5128100" fullextent="-9816800 5121400 -9805200 5128100" top="40">
-		<basemaps>
-			<layer label="Topographic" type="tiled" visible="true" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer" icon="assets/images/basemap_imagery.jpg"/>
-			<layer label="Imagery" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" icon="assets/images/basemap_imagery_with_labels.png"/>
-			<layer label="Public Safety" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer" icon="assets/images/basemap_topographic.jpg"/>
-			<layer label="Public Safety" type="tiled" visible="false" url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafety/MapServer"/>
-		</basemaps>
-	<operationallayers>
+    <map wraparound180="true" initialextent="-9816800 5121400 -9805200 5128100" fullextent="-9816800 5121400 -9805200 5128100" top="40">
+        <basemaps>
+            <layer label="Topographic" type="tiled" visible="true" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer" icon="assets/images/basemap_imagery.jpg"/>
+            <layer label="Imagery" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" icon="assets/images/basemap_imagery_with_labels.png"/>
+            <layer label="Public Safety" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer" icon="assets/images/basemap_topographic.jpg"/>
+            <layer label="Public Safety" type="tiled" visible="false" url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafety/MapServer"/>
+        </basemaps>
+    <operationallayers>
        <layer type="dynamic" label="Wildfires" imageformat="png8" url="http://rmgsc.cr.usgs.gov/ArcGIS/rest/services/nhss_haz/MapServer" visible="false" visiblelayers="5,6">
                 <sublayer id="0" popupconfig="popups/PopUp_USGS_NHSS_Floods.xml"/>
                 <sublayer id="3" popupconfig="popups/PopUp_USGS_NHSS_Earthquakes.xml"/>
@@ -90,32 +90,32 @@
 
     </operationallayers>
 
-	</map>
+    </map>
 
-	<!-- widgets organized into widget containers that manage close/open etc -->
-	<!-- supported layout property options: horizontal(default)|float|vertical|fix -->
+    <!-- widgets organized into widget containers that manage close/open etc -->
+    <!-- supported layout property options: horizontal(default)|float|vertical|fix -->
 
   <widgetcontainer layout="float">
 
         <widget label="Legend" left="80" bottom="80"
-				icon="Widgets/DynamicLegend/assets/images/legend.png"
-				config="widgets/DynamicLegend/DynamicLegendWidget.xml"
-				url="widgets/DynamicLegend/DynamicLegendWidget.swf"/>
+                icon="Widgets/DynamicLegend/assets/images/legend.png"
+                config="widgets/DynamicLegend/DynamicLegendWidget.xml"
+                url="widgets/DynamicLegend/DynamicLegendWidget.swf"/>
 
         <widget label="Identify" left="100" top="90"
-				icon="assets/images/i_info.png"
-				config="widgets/Identify/IdentifyWidget.xml"
-				url="widgets/Identify/IdentifyWidget.swf"/>
+                icon="assets/images/i_info.png"
+                config="widgets/Identify/IdentifyWidget.xml"
+                url="widgets/Identify/IdentifyWidget.swf"/>
 
-	    <widget label="Ushahidi" left="100" top="90"
+        <widget label="Ushahidi" left="100" top="90"
                 icon="widgets/Ushahidi/assets/images/ushahidi.png"
-				config="widgets/Ushahidi/UshahidiWidget.xml"
+                config="widgets/Ushahidi/UshahidiWidget.xml"
                 url="widgets/Ushahidi/UshahidiWidget.swf"/>
 
         <widget label="Social Media" left="80" top="280"
                 icon="widgets/SocialMedia/assets/images/i_socialMedia.png"
                 config="widgets/SocialMedia/SocialMediaWidget.xml"
-				url="widgets/SocialMedia/SocialMediaWidget.swf"/>
+                url="widgets/SocialMedia/SocialMediaWidget.swf"/>
 
  </widgetcontainer>
 
