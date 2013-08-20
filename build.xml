@@ -32,7 +32,6 @@
         <mkdir dir="${distrib}"/>
 
         <!-- Insert widget sources -->
-        <antcall target="-addWidgetSource"><param name="widget" value="AdvanceDraw" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="BombThreat" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="CI" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="ClosestFacility" /></antcall>
@@ -96,7 +95,6 @@
         </exec>
 
         <!-- Retrieve results -->
-        <antcall target="-getWidgetResults"><param name="widget" value="AdvanceDraw" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="BombThreat" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="CI" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="ClosestFacility" /></antcall>
