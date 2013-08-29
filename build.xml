@@ -36,6 +36,7 @@
         <antcall target="-addWidgetSource"><param name="widget" value="CI" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="ClosestFacility" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="DynamicLegend" /></antcall>
+        <antcall target="-addWidgetSource"><param name="widget" value="EMCoordinate" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="EMGeoRSS" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="EMHeaderController" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="EMSearch" /></antcall>
@@ -99,6 +100,7 @@
         <antcall target="-getWidgetResults"><param name="widget" value="CI" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="ClosestFacility" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="DynamicLegend" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="EMCoordinate" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="EMGeoRSS" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="EMHeaderController" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="EMSearch" /></antcall>
