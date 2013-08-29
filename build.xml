@@ -42,6 +42,8 @@
         <antcall target="-addWidgetSource"><param name="widget" value="EMSplash" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="ERGChemical" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="Identify" /></antcall>
+        <antcall target="-registerAdditionalWidgetSource"><param name="widget" value="InfoTemplates" /><param name="addon" value="InfoPopup" /></antcall>
+        <antcall target="-registerAdditionalWidgetSource"><param name="widget" value="InfoTemplates" /><param name="addon" value="SimpleInfoWin" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="KPI" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="LivelayerByException" /></antcall>
         <antcall target="-addWidgetSource"><param name="widget" value="NationalGrid" /></antcall>
@@ -105,6 +107,7 @@
         <antcall target="-getWidgetResults"><param name="widget" value="EMSplash" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="ERGChemical" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="Identify" /></antcall>
+        <antcall target="-getWidgetResults"><param name="widget" value="InfoTemplates" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="KPI" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="LivelayerByException" /></antcall>
         <antcall target="-getWidgetResults"><param name="widget" value="NationalGrid" /></antcall>
