@@ -30,7 +30,7 @@
 	<noResultsFound alertheader="Error" alertmessage="No results found." />
 </alerts>
 
-<!-- <proxyUrl>: tag specifies proxy url --> <!--The below proxy URL is temporary for testing, refer the document for setting up proxy in your server-->
+<!-- <proxyUrl>: tag specifies proxy url --> <!--The below proxy URL is temporary for testing-->
 <proxyUrl>http://203.199.47.152/Hawk testing/commonproxy/proxy.ashx</proxyUrl>
 
 <!-- <apiUrl>: tag specifies development url -->

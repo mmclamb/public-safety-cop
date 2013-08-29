@@ -187,7 +187,7 @@ package widgets.PDC.utils {
 					};
 				break;
 
-				case 3:
+				case 6:
 					tooltip =	"ACTIVE VOLCANOES" + "\n\n" +
 								"NAME		" + hazardInfo.NAME + "\n" +
 								"REGION	" + hazardInfo.REGION + "\n" +
@@ -196,7 +196,7 @@ package widgets.PDC.utils {
 					return {icon:(hazardInfo.ACTIVITY == "Ongoing Activity" ? volcano_0 : volcano_1), tooltip:tooltip};
 				break;
 
-				case 4:
+				case 7:
 					tooltip =	"RECENT EARTHQUAKES" + "\n\n" +
 								"DATE_TIME	" + hazardInfo.DATE_TIME + "\n" +
 								"MAGNITUDE	" + parseInt(hazardInfo.MAGNITUDE).toFixed(3) + "\n" +
@@ -207,28 +207,28 @@ package widgets.PDC.utils {
 				break;
 
 
-				case 2:
+				case 5:
 					tooltip =	"GLIDE EVENTS" + "\n\n" +
-								"EVENT_DATE		" + DateParser.parseToString(hazardInfo.EVENT_DATE);
+								"EVENT_DATE		" + DateParser.parseToString(hazardInfo.event_date);
 					return {icon:glide, tooltip:tooltip};
 				break;
 
-				case 1:
+				case 4:
 					tooltip =	"INT'L CHARTER ACTIVATIONS" + "\n\n" +
 								"EVENT_NAME			" + hazardInfo.EVENT_NAME + "\n" +
 								"HAZARD_TYPE		" + hazardInfo.HAZARD_TYPE + "\n" +
-								"ACTIVATION_DATE	" + DateParser.parseToString(hazardInfo.ACTIVATION_DATE);
+								"ACTIVATION_DATE	" + DateParser.parseToString(hazardInfo.activation);
 					return {icon:intl_charter, tooltip:tooltip};
 				break;
 
-				case 6:
+				case 3:
 					tooltip =	"TSUNAMI TRAVEL TIME CONTOURS" + "\n\n" +
 								"CONTOUR_TYPE		" + hazardInfo.CONTOUR_TYPE + "\n" +
 								"HOURS_TO_ARRIVAL	" + hazardInfo.HOURS_TO_ARRIVAL;
 					return {icon:tsunami_contour, tooltip:tooltip};
 				break;
 
-				case 7:
+				case 10:
 					var prefix:String = hazardInfo.SYMBOL_CODE.charAt(0);
 						prefix = prefix == "F" ? "FORECAST " : (prefix == "C" ? "CURRENT " : "PREVIOUS ");
 					tooltip =	prefix + "STORM POSITION" + "\n\n" +
@@ -252,7 +252,7 @@ package widgets.PDC.utils {
 					};
 				break;
 
-				case 5:
+				case 8:
 					tooltip =	"RECENT HOTSPOTS" + "\n\n" +
 								"DESCRIPTION		" + hazardInfo.description + "\n" +
 								"DATE OF FIRST OBS	" + hazardInfo.date_of_first_obs + "\n" +

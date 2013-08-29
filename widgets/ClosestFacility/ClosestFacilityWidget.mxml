@@ -153,7 +153,6 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 
 			[Bindable] private var savePdfBtnLbl:String;
 
-			[Bindable] private var pdfGenerationWarningLbl:String;
 
 			[Bindable]
 			private var LayerLabel:String;
@@ -347,10 +346,9 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 
 					arrBarrier = new ArrayCollection();
 					var LayerXmlList:XMLList = configXML..layer
+					var facilitiesList:XMLList=configXML.facilities.layer;
 					var obj:Object;
 					var hashTable:Hashtable= new Hashtable();
-					configureField = configXML.configureField;
-					arrconfigureField=configureField.split(",");
 					FieldType = configXML.configureFieldType;
 					strOutField = configXML.outFields.@fieldTypes;
 					arrOutField=strOutField.split(",");
@@ -373,7 +371,6 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 					savePdfBtnLbl = configXML.exportpdfbtnlabel || "Save Map to PDF";
 					includeMapLbl = configXML.includemaplabel || "Include Map";
 					printMapBtnLbl = configXML.printmapbtnlabel || "Print Map";
-					pdfGenerationWarningLbl = configXML.pdfgenerationwarning || "If you choose to save a PDF then please be patient.&lt;br /&gt;A save dialog will open once the PDF has been generated.";
 					genPDF = configXML.genpdf || "Generating PDF...";
 					layerId.text= configXML.layerLabel[0].@label;
 					label1.text=configXML.fieldLabel[0].@label;
@@ -401,23 +398,23 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 					m_nLoadOperationsInProcess--;
 					fieldType= configXML.fieldtype;
 					fieldAliastype= configXML.fieldAliastype;
-					arrFieldType = fieldType.split(",");
-					arrFieldAliastype=fieldAliastype.split(",");
-					for each(var obj1:Object in configData.opLayers)
+					arrFieldType = new Array();
+					arrFieldAliastype=new Array();
+					for each(var obj1:Object in LayerXmlList)
 					{
-						if(obj1.type=="feature")
-						{
+						
 							obj=new Object();
-							obj.label = obj1.label;
-							obj.url =obj1.url;
-							hashTable.add(obj1.label,obj);
+							obj.label = obj1.@label.toString();
+							obj.url =obj1.@url.toString();
+							hashTable.add(obj1.@label.toString(),obj);
 							arr1.push(obj)
-							for(var i:int=0;i<arrFieldAliastype.length;i++)
-							{
-								if (obj1.label==arrFieldAliastype[i])
-									arrFacilityLayers.addItem(obj);
-							}
-						}
+							arrFacilityLayers.addItem(obj);
+							
+							arrFieldType.push(obj1.@fieldtype.toString());
+							arrFieldAliastype.push(obj1.@label.toString());
+							arrconfigureField.push(obj1.@configureField.toString());
+							
+							
 					}
 					for each (var item:XML in LayerXmlList)
 					{
@@ -426,8 +423,9 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 						if(hoObject == null)
 						{
 							obj=new Object();
-							obj.label = item.@label[0];
-							obj.url =item.toString();
+							obj.label = item.@label.toString();
+							obj.url =item.@url.toString();
+							hashTable.add(item.@label.toString(),obj);
 							arrFacilityLayers.addItem(obj);
 							arr1.push(obj)
 						}
@@ -520,68 +518,50 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 			private function queryTask():void
 			{
 				cursorManager.setBusyCursor();
-				var query:HTTPService= new HTTPService();
-				query.method="Post";
-				query.url = cmdfacilityLayers.selectedItem.url +"?f=json&pretty=true";
-			    query.send();
-				query.addEventListener(ResultEvent.RESULT,onQuerySuccess1);
-				query.addEventListener(FaultEvent.FAULT, function onFoult():void{
-					cursorManager.removeBusyCursor()});
+				var qryTask:QueryTask=new QueryTask(cmdfacilityLayers.selectedItem.url);
+				qryTask.method=URLRequestMethod.POST;
+				qryTask.useAMF=false;
+				var query:Query=new Query();
+				query.outFields=[arrFieldType[cmdfacilityLayers.selectedIndex-1].toString()];
+				query.where="1=1";
+				qryTask.execute(query,new AsyncResponder(onQuerySuccessHandler,function onFault():void{
+				cursorManager.removeBusyCursor()}));
+				
 			}
 			private var isCoded:Boolean= false;
-			private function onQuerySuccess1(event:ResultEvent):void
+			private function onQuerySuccessHandler(event:Object,token:Object=null):void
 			{
 
-				var rawData:String = event.result as String;
-
-
-				var attributes:Object = JSONUtil.decode(rawData);
 				var array:Array = new Array();
-				array=attributes.fields;
+				array=event.attributes;
+				
 				if(array.length > 0)
 				{
+					isCoded=true;
+					arrColl= new ArrayCollection();
+					var obj1:Object=new Object();
+					obj1.label = 'Select Type';
+					obj1.url ='';
+					arrColl.addItem(obj1);
 					for each(var obj:Object in array)
 					{
-						if(obj.name == arrFieldType[cmdfacilityLayers.selectedIndex-1])
+						
+						var obj2:Object = new Object();
+						obj2.id=arrFieldType[cmdfacilityLayers.selectedIndex-1];
+						obj2.label=obj[arrFieldType[cmdfacilityLayers.selectedIndex-1].toString()];
+						obj2.alias=arrFieldAliastype[cmdfacilityLayers.selectedIndex-1];
+						obj2.url =cmdfacilityLayers.selectedItem.url;
+						for(var j:int=0;j<arrColl.length;j++)
 						{
-							var arr:Array= new Array();
-							if(obj.domain!=null)
-							{
-								isCoded=true;
-								arr= obj.domain.codedValues;
-								arrColl= new ArrayCollection();
-								var obj1:Object=new Object();
-								obj1.label = 'Select Type';
-								obj1.url ='';
-								arrColl.addItem(obj1);
-								for each(var objNew:Object in arr)
-								{
-									var obj2:Object = new Object();
-									obj2.id=arrFieldType[cmdfacilityLayers.selectedIndex-1];
-									obj2.label= objNew.name;
-									obj2.alias=arrFieldAliastype[cmdfacilityLayers.selectedIndex-1];
-									obj2.url =cmdfacilityLayers.selectedItem.url;
-									arrColl.addItem(obj2);
-								}
-								trace(arrColl);
-								cmdfacilityLayers1.dataProvider = arrColl;
-								featuresShowOnMap()
-							}
-							else
-							{
-								isCoded=false;
-								featuresShowOnMap();
-
-								var queryTask:QueryTask = new QueryTask();
-								queryTask.url =  cmdfacilityLayers.selectedItem.url;
-								var query:Query = new Query();
-								query.where = "1=1";
-								query.returnGeometry = false;
-								query.outFields = [arrFieldType[cmdfacilityLayers.selectedIndex-1]];
-								queryTask.execute(query,new AsyncResponder(onQueryResultHandler,onqueryFaultHandler));
-							}
-
+						 if((obj2.label!=arrColl[j].label)&&j==(arrColl.length-1))
+						{ 
+						    arrColl.addItem(obj2);
+							
 						}
+						}
+						cmdfacilityLayers1.dataProvider = arrColl;
+						featuresShowOnMap()
+						
 					}
 				}
 				else
@@ -1503,10 +1483,6 @@ AlivePDF.swc: Used to generate PDF. Add to libs folder in application.
 
 			private function showDirections():void
 			{
-				if(directionsFS)
-				{
-					resizeWidget(300,600,1500);
-				}
 				currentState = "Dirctions";
 				wTemplate.selectedTitlebarButtonIndex = 2;
 			}

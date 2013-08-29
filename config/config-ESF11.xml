@@ -32,7 +32,7 @@
     <widget right="20" top="55" config="widgets/MapSwitcher/EM_MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf" />
     <!--Header Widget is integrated with Search widget functionality -->
     <widget left="0" top="0" config="widgets/EMHeaderController/EMHeaderControllerWidget.xml" url="widgets/EMHeaderController/EMHeaderControllerWidget.swf" />
-    <widget left="3" bottom="1" config="widgets/Coordinate/CoordinateWidget.xml" url="widgets/Coordinate/CoordinateWidget.swf" />
+    <widget left="3" bottom="1" config="widgets/EMCoordinate/EMCoordinateWidget.xml" url="widgets/EMCoordinate/EMCoordinateWidget.swf" />
 
     <map wraparound180="true" initialextent="-9816800 5121400 -9805200 5128100" fullextent="-9816800 5121400 -9805200 5128100" top="40">
     <basemaps>

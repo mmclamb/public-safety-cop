@@ -23,7 +23,7 @@
 	 -->
 
 	<!--New PDC Map service accessible as PDC registered user @http://www.pdc.org/iweb/pdcregistration.html. -->
-	<mapservice  mode="dynamic">http://agstest.pdc.org/rest/services/global/pdc_active_hazards/MapServer/</mapservice>
+	<mapservice  mode="dynamic">http://ags.pdc.org/rest/services/global/pdc_active_hazards/MapServer/</mapservice>
 
 	<metadata url="http://www.pdc.org" />
 	<geometryservice url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"/>
@@ -66,15 +66,15 @@
 					<fieldname label='Type' displaytype='string'>TYPE</fieldname>
 					<fieldname label='Status' displaytype='string'>STATUS</fieldname>
 					<fieldname label='SNC URL' displaytype='hyperlink'>SNC_URL</fieldname>
-					<fieldname label='CHARTER URL' displaytype='hyperlink'>CHARTER_UR</fieldname>
+					<fieldname label='CHARTER URL' displaytype='hyperlink'>CHARTER_URI</fieldname>
 				</fields>
 			</Infopopup>
 		</layer>
 		<layer>
-			<id>4</id>
+			<id>7</id>
 			<title>Recent Earthquakes</title>
 			<visible>false</visible>
-			<fields>DATE_TIME,MAGNITUDE,DEPTH,REGION</fields>
+			<fields>DATE_TIME,MAGNITUDE,DEPTH,REGION,LINK</fields>
 			<legend>
 				<description><![CDATA[Earthquakes from the past 48 hours]]></description>
 				<metadataID>1</metadataID>
@@ -93,10 +93,10 @@
 			</Infopopup>
 		</layer>
 		 <layer>
-			<id>3</id>
+			<id>6</id>
 			<title>Active Volcanoes</title>
 			<visible>false</visible>
-			<fields>NAME,REGION,ACTIVITY</fields>
+			<fields>NAME,REGION,ACTIVITY,PRIMARY_OBSERVATORY,MORE_INFORMATION,LAST_UPDATED</fields>
 			<legend>
 				<description><![CDATA[Active volcanoes from the<br>Smithsonian's Global Volcanism Program (GVP)<br>and USGS' Volcano Hazards Program]]></description>
 				<metadataID>2</metadataID>
@@ -109,16 +109,16 @@
 					<fieldname label='Activity' displaytype='string'>ACTIVITY</fieldname>
 					<fieldname label='Primary Observatory' displaytype='string'>PRIMARY_OBSERVATORY</fieldname>
 					<fieldname label='More Information' displaytype='hyperlink'>MORE_INFORMATION</fieldname>
-					<fieldname label= 'Last Updated' displaytype='string'> LAST_UPDATED</fieldname>
+					<fieldname label= 'Last Updated' displaytype='string'>LAST_UPDATED</fieldname>
 				</fields>
 			</Infopopup>
 		</layer>
 
 		<layer>
-			<id>5</id>
+			<id>8</id>
 			<title>Recent Hotspots</title>
 			<visible>false</visible>
-			<fields>description,date_of_first_obs,date_of_last_obs</fields>
+			<fields>description,dtg_first_obs,dtg_last_obs</fields>
 			<legend>
 				<description><![CDATA[Wildfires for the past week (MODIS)]]></description>
 				<metadataID>3</metadataID>
@@ -128,17 +128,17 @@
 				<titlefield>RECENT HOTSPOTS</titlefield>
 				<fields>
 					<fieldname label='Description' displaytype='string'>description</fieldname>
-					<fieldname label='First Observed On' displaytype='string'>date_of_first_obs</fieldname>
-					<fieldname label='Last Observed On' displaytype='string'>date_of_last_obs</fieldname>
+					<fieldname label='First Observed On' displaytype='string'>dtg_first_obs</fieldname>
+					<fieldname label='Last Observed On' displaytype='string'>dtg_last_obs</fieldname>
 				</fields>
 			</Infopopup>
 
 		</layer>
 	 	<layer>
-			<id>2</id>
+			<id>5</id>
 			<title>GLIDE Events</title>
 			<visible>false</visible>
-			<fields>EVENT_DATE,EVENT_TYPE,GLIDE_NUMBER,COUNTRY,HYPERLINK</fields>
+			<fields>event_date,country_code,event,event_number,uri</fields>
 			<legend>
 				<description><![CDATA[Globally common Unique ID code for disasters]]></description>
 				<metadataID>127</metadataID>
@@ -147,19 +147,19 @@
 			<Infopopup>
 				<titlefield>GLIDE EVENTS</titlefield>
 				<fields>
-					<fieldname label='Event Type' displaytype='string'>EVENT_TYPE</fieldname>
-					<fieldname label='Glide Number' displaytype='string'>GLIDE_NUMBER</fieldname>
-					<fieldname label='Country' displaytype='string'>COUNTRY</fieldname>
-					<fieldname label='URL' displaytype='hyperlink'>HYPERLINK </fieldname>
+					<fieldname label='Event Type' displaytype='string'>event</fieldname>
+					<fieldname label='Glide Number' displaytype='string'>event_number</fieldname>
+					<fieldname label='Country' displaytype='string'>country_code</fieldname>
+					<fieldname label='URL' displaytype='hyperlink'>uri</fieldname>
 				</fields>
 			</Infopopup>
 
 		</layer>
 	<layer>
-			<id>1</id>
+			<id>4</id>
 			<title>International Charter</title>
 			<visible>false</visible>
-			<fields>EVENT_NAME,HAZARD_TYPE,ACTIVATION_DATE</fields>
+			<fields>event,hazard_code,activation</fields>
 			<legend>
 				<description><![CDATA[International Charter Activations]]></description>
 				<metadataID>126</metadataID>
@@ -168,15 +168,15 @@
 			<Infopopup>
 				<titlefield>International Charter</titlefield>
 				<fields>
-					<fieldname label='Event Name' displaytype='string'>EVENT_NAME</fieldname>
-					<fieldname label='Hazard Type' displaytype='string'>HAZARD_TYPE</fieldname>
-					<fieldname label='ACTIVATION_DATE' displaytype='string'>ACTIVATION_DATE</fieldname>
+					<fieldname label='Event Name' displaytype='string'>event</fieldname>
+					<fieldname label='Hazard Type' displaytype='string'>hazard_code</fieldname>
+					<fieldname label='ACTIVATION_DATE' displaytype='string'>activation</fieldname>
 
 				</fields>
 			</Infopopup>
 		</layer>
 		<layer>
-			<id>7</id>
+			<id>10</id>
 			<title>Storm Positions</title>
 			<visible>false</visible>
 			<fields>HAZARD_NAME,STORM_NAME,ADVISORY_TIME,ADVISORY_DATE,SYMBOL_CODE</fields>
@@ -198,13 +198,13 @@
 
 		</layer>
 		<layer>
-		 <id>8</id>
+		 <id>11</id>
 			<title>Storm Segments</title>
 			<visible>false</visible>
 			<fields>HAZARD_ID,ADVISORY,WIND_KT,SYMBOL_CODE</fields>
 			<legend>
 				<description><![CDATA[Storm Segments Layer Description]]></description>
-				<metadataID>6</metadataID>
+				<metadataID>4</metadataID>
 				<items><![CDATA[Segments - Forecast Hurricane/Super Typhoon,Segments - Forecast Hurricane/Typhoon,Segments - Forecast Tropical Storm,Segments - Forecast Tropical Depression,Segments - Previous Hurricane/Super Typhoon,Segments - Previous Hurricane/Typhoon,Segments - Previous Tropical Storm,Segments - Previous Tropical Depression]]></items>
 			</legend>
 			<maptip>
@@ -226,27 +226,27 @@
 		</layer>
 
 		<layer>
-			<id>9</id>
+			<id>13</id>
 			<title>Storm Winds</title>
 			<visible>false</visible>
 			<fields>HAZARD_NAME,STORM_NAME,ADVISORY_DATE,SYMBOL_CODE</fields>
 			<legend>
 				<description><![CDATA[Storm Winds Layer Description]]></description>
-				<metadataID>4</metadataID>
+				<metadataID>7</metadataID>
 				<items><![CDATA[Hurricane/Typhoon,Tropical Storm,Tropical Depression]]></items>
 			</legend>
 
 			<Infopopup>
 				<titlefield>STORM WINDS</titlefield>
 				<fields>
-					<fieldname label='Hazard ID' displaytype='string'>Storm Name</fieldname>
+					<fieldname label='Hazard ID' displaytype='string'>Storm_Name</fieldname>
 					<fieldname label='Advisory Date' displaytype='string'>ADVISORY_DATE</fieldname>
 
 				</fields>
 			</Infopopup>
 		</layer>
 		<layer>
-			<id>10</id>
+			<id>14</id>
 			<title>Potential Track Area</title>
 			<visible>false</visible>
 			<fields>HAZARD_NAME,STORM_NAME,ADVISORY_NUMBER,SEVERITY,HAZARD_ID</fields>

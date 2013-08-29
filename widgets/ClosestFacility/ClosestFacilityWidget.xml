@@ -18,7 +18,10 @@
 <configuration>
 	<facilities>
 		<!-- Specify the facility Layer to find closest facility,label :specify
-			the name of layer,url: specify the feature layer url -->
+			the name of layer,field type,configure Field,url: specify the feature layer url -->
+		<!--"fieldtype"      : specifies the out field of layer used for querying, data of this field is displayed in facility drop down  -->
+		<!--"configureField" : Specifies Configured Field Type From Map Service which will be displayed in Grid -->
+			<layer  label="Resource"  fieldtype="FCODE"  configureField="CATEGORY" url="http://services.arcgis.com/b6gLrKHqgkQb393u/ArcGIS/rest/services/IncidentCommandTryItLive/FeatureServer/7"/>
 	</facilities>
 
     <!--<layerLabel> tag Specifies Configurable Labels for Drop Down Lists.-->
@@ -29,17 +32,6 @@
 		<!-- These are incidents to route to nearest facilities: a map or feature
 			service. The user can draw new ones, so leave blank if desired -->
 	</incidents>
-	<!-- <fieldtype> specifies the type of you want to select -->
-	<fieldtype>FCODE</fieldtype>
-
-    <!--<fieldAliastype> : specifies Layer label to be displayed in the Select Facility Layer dropdown -->
-    <!--NOTE:  Layer label (from Main Config) and fieldAliastype must be same.  Like: ‘Hospital’. -->
-
-	<fieldAliastype>Resource</fieldAliastype>
-
-    <!--<configureField> : Specifies Configured Field Type From Map Service -->
-
-	<configureField>CATEGORY</configureField>
 
 	<!--<closestFacilitySvc>Specifies the service for Closest Facility.-->
 	<closestFacilitySvc>
@@ -48,12 +40,12 @@
 
     <!--fieldTypes :specifies the configurable columns to show in the result view-->
     <!--fieldAlias: specifies the configurable column header text in the result view-->
-	<outFields fieldTypes="routeName,routeName,Resource Type,routeId,totalTime,totalLength" fieldAlias="From,To,Resource Type,Rank,Total Time,Distance"/>
+	<outFields fieldTypes="routeName,routeName,Category Type,routeId,totalTime,totalLength" fieldAlias="From,To,Category Type,Rank,Total Time,Distance"/>
 	<ColumnWidth>100,100,200,50,100,100</ColumnWidth>
     <!--<configureField> :specifies Configured Field Type From Map Service-->
 
     <!--<configureFieldType> :specifies Header of Configured Label in Grid View .-->
-	<configureFieldType>Resource Type</configureFieldType>
+	<configureFieldType>Category Type</configureFieldType>
 
     <!--<barrier>:Specifies the barrier layer for Closest Facility.-->
     <!--label: Specifies the name of barrier layer.-->
@@ -119,10 +111,7 @@
 	<printmapbtnlabel>Print</printmapbtnlabel>
 
     <!--	<pdfgenerationwarning>: Specifies the message generated for user before opening save dialog box.-->
-	<pdfgenerationwarning>If you choose to save a PDF then please be
-		patient.&lt;br /&gt;A save dialog will open once the PDF has been
-		generated.</pdfgenerationwarning>
-
+	
     <!--		<genpdf>: Specifies to the message shown while system prepare PDF file.-->
 	<genpdf>Generating PDF...</genpdf>
 
