@@ -65,6 +65,11 @@
 			private var mapDLat:String = "0";
 
 			[Bindable]
+			private var mapDMLon:String = "0";
+			[Bindable]
+			private var mapDMLat:String = "0";
+
+			[Bindable]
 			private var mapNorth:String = "0";
 			[Bindable]
 			private var mapEast:String = "0";
@@ -94,6 +99,8 @@
 					mapLon = Utilities.radiansToDMSString(pt.x*Math.PI/180);
 					mapLat = Utilities.radiansToDMSString(pt.y*Math.PI/180);
 					const geo:MapPoint = WebMercatorUtil.webMercatorToGeographic(mapPoint) as MapPoint;
+					mapDMLon=formatDMM(geo.x);
+					mapDMLat=formatDMM(geo.y);
 					var str:String= StringUtil.substitute("{0} {1}",numberFormatter.format(geo.x),numberFormatter.format(geo.y));
 					numberFormatter.precision =  "6";
 					mapDLat=StringUtil.substitute("{1}",numberFormatter.format(geo.x),numberFormatter.format(geo.y));
@@ -101,6 +108,32 @@
 				}
 			}
 
+			/**
+			 *  @private
+			 *  Conversion of lat long to DDMMmm.
+			 */
+			private static function formatDMM(decDeg:Number):String
+			{
+				var d:Number = Math.abs(decDeg);
+				var deg:Number = Math.floor(d);
+				d = d - deg;
+				var min:Number = new Number((d * 60).toPrecision(4));
+				
+				if (min == 60)
+				{
+					deg++;
+					min = 0;
+				}
+				var smin:String = min < 10 ? "0" + min + "' " : min + "' ";
+				if(decDeg<0)
+				{
+					return "-"+deg + "\xB0 " + smin;
+				}
+				else
+				{
+					return deg + "\xB0 " + smin;
+				}
+			}
 			private function init():void
 			{
 				m_geogToProg = new CoordinateTransformation();
@@ -373,6 +406,8 @@
 					contentUi.east=mapEast;
 					contentUi.mapLatDeg=mapDLat;
 					contentUi.mapLngDeg=mapDLon;
+					contentUi.mapLatDegMin=mapDMLat;
+					contentUi.mapLngDegMin=mapDMLon; 
 					contentUi.mgrs=mgrs;
 					map.infoWindow.label='';
 					map.infoWindow.labelVisible=false;
@@ -443,7 +478,7 @@
 	<fx:Declarations>
 		<mx:NumberFormatter id="numberFormatter"/>
 	</fx:Declarations>
-	<viewer:WidgetTemplate id="wTemplate" width="420" minWidth="420" height="260"  minHeight="260" minimized="widgettemplate1_minimizedHandler(event)" open="widgettemplate1_openHandler(event)" closed="widgettemplate1_closedHandler(event)">
+	<viewer:WidgetTemplate id="wTemplate" width="420" minWidth="420" height="275"  minHeight="275" minimized="widgettemplate1_minimizedHandler(event)" open="widgettemplate1_openHandler(event)" closed="widgettemplate1_closedHandler(event)">
 		<s:VGroup width="100%" paddingTop="15">
 			<s:HGroup>
 				<mx:CheckBox id="graticuleLayerCB" label="Show Lat / Long Grid" change="changeGraticuleLayer()" selected="{graticuleLayer.visible}"/>
@@ -478,6 +513,20 @@
 						</mx:GridItem>
 						<mx:GridItem >
 							<s:Label color="0xffffff" id="lonDLabel" text="{mapDLon.toString()}" visible = "true"/>
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow>
+						<mx:GridItem >
+							<s:Label color="0xffffff" text="Latitude(DMM):" visible="true"/>
+						</mx:GridItem>
+						<mx:GridItem >
+							<s:Label color="0xffffff" id="latDMLabel" text="{mapDMLat.toString()}" visible="true"/>
+						</mx:GridItem>
+						<mx:GridItem >
+							<s:Label color="0xffffff" text="Longitude(DMM):" visible="true"/>
+						</mx:GridItem>
+						<mx:GridItem >
+							<s:Label color="0xffffff" id="lonDMLabel" text="{mapDMLon.toString()}" visible = "true"/>
 						</mx:GridItem>
 					</mx:GridRow>
 					<mx:GridRow>

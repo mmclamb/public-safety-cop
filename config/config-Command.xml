@@ -35,7 +35,7 @@
     <widget right="20" top="55" config="widgets/MapSwitcher/EM_MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf" />
     <!--Header Widget is integrated with Search widget functionality -->
     <widget left="0" top="0" config="widgets/EMHeaderController/EMHeaderControllerWidget.xml" url="widgets/EMHeaderController/EMHeaderControllerWidget.swf" />
-    <widget left="3" bottom="1" config="widgets/Coordinate/CoordinateWidget.xml" url="widgets/Coordinate/CoordinateWidget.swf" />
+    <widget left="3" bottom="1" config="widgets/EMCoordinate/EMCoordinateWidget.xml" url="widgets/EMCoordinate/EMCoordinateWidget.swf" />
 
     <map attributionvisible="true" esrilogovisible="true" openhandcursorvisible="false" scalebarvisible="true" scalebar="default" zoomslidervisible="false" wraparound180="false" addarcgisbasemaps="false" initialextent="-9818997.224084323 5120335.761616537 -9803002.775915677 5129164.238383463" fullextent="-9816800 5121400 -9805200 5128100" wkid="102100" top="40" portalurl="https://www.arcgis.com">
         <basemaps>

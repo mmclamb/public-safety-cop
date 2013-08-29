@@ -71,12 +71,12 @@
   <outwkid>4326</outwkid>
   <reportByExceptionLayers>
     <reportByExceptionLayer>
-      <rbeRESTURL>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/MapServer/3</rbeRESTURL>
-      <rbeLayerName>Road Blocks</rbeLayerName>
-      <rbeIcon>widgets/ReportByException/assets/images/i_camera.png</rbeIcon>
-      <rbeTitleField>NAME</rbeTitleField>
-      <rbeLinkField></rbeLinkField>
-      <rbeFields>FULLADD</rbeFields>
+      <rbeRESTURL>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/IncidentCommand/FeatureServer/5</rbeRESTURL>
+      <rbeLayerName>Shelters</rbeLayerName>
+      <rbeIcon>widgets/ReportByException/assets/images/i_roof_point.png</rbeIcon>
+      <rbeTitleField>FACTYPE</rbeTitleField>
+      <rbeLinkField>test</rbeLinkField>
+      <rbeFields>CAPACITY,HOURSOPER,DAYSOPER,OPSSTATUS</rbeFields>
     </reportByExceptionLayer>
   </reportByExceptionLayers>
   <rbeSearchRadiusMiles>2</rbeSearchRadiusMiles>
@@ -110,7 +110,7 @@
 		<invalidSimpleBufferError alertheader="Error"
 			alertmessage="Not a Valid Value. Please Enter Valid Simple Buffer distance ." />
 		<calcPopulationStatisticsError alertheader="Error"
-			alertmessage="Could Not Calculate Population tatistics" />
+			alertmessage="Could Not Calculate Population Statistics" />
 		<invalidUrlName alertheader="Error"
             alertmessage="Invalid url or layer name"/>
   </alertmessages>

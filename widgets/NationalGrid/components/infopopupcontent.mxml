@@ -53,6 +53,16 @@
 				System.setClipboard(maplngdeg.text);
 			}
 
+			protected function imgLatDMM_clickHandler(event:MouseEvent):void
+			{
+				System.setClipboard(lbMaplatdegMin.text);
+			}
+			
+			protected function imgLonDMM_clickHandler(event:MouseEvent):void
+			{
+				System.setClipboard(lbMaplngdegMin.text);
+			} 
+			
 			protected function imgNorthing_clickHandler(event:MouseEvent):void
 			{
 
@@ -86,6 +96,8 @@
 			[Bindable] public var mapLng:String;
 			[Bindable] public var mapLatDeg:String;
 			[Bindable] public var mapLngDeg:String;
+			[Bindable] public var mapLatDegMin:String;
+			[Bindable] public var mapLngDegMin:String
 			[Bindable] public var north:String;
 			[Bindable] public var east:String;
 			[Bindable] public var mgrs:String;
@@ -171,8 +183,39 @@
 							 toolTip="Click to copy the Longitude(DD) value" click="imgLonDD_clickHandler(event)"/>
 				</mx:GridItem>
 			</mx:GridRow>
-
-
+			
+			<mx:GridRow paddingBottom="5">
+				<mx:GridItem >
+					<s:Label text="Latitude(DMM)" textAlign="left"  width="100%" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label text=":" textAlign="center" />
+				</mx:GridItem>
+				<mx:GridItem  >
+					<s:Label id="lbMaplatdegMin"  text="{mapLatDegMin}" textAlign="left"  width="100%" />
+				</mx:GridItem>
+				<mx:GridItem>
+					<mx:Image id="imgLatDMM" width="15" height="15" source="widgets/NationalGrid/assets/images/Clipboard2.png"
+							  toolTip="Click to copy the Latitude(DD) value" click="imgLatDMM_clickHandler(event)"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			
+			<mx:GridRow paddingBottom="5">
+				<mx:GridItem >
+					<s:Label text="Longitude(DMM)" textAlign="left"  width="100%" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label text=":" textAlign="center" />
+				</mx:GridItem>
+				<mx:GridItem >
+					<s:Label id="lbMaplngdegMin"  text="{mapLngDegMin}"  textAlign="left" width="100%" />
+				</mx:GridItem>
+				<mx:GridItem>
+					<mx:Image id="ImgLonDMM" width="15" height="15" source="widgets/NationalGrid/assets/images/Clipboard2.png"
+							  toolTip="Click to copy the Longitude(DD) value" click="imgLonDMM_clickHandler(event)"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			
 			<mx:GridRow paddingBottom="5" >
 				<mx:GridItem >
 					<s:Label text="Northing" textAlign="left"  width="100%" />
