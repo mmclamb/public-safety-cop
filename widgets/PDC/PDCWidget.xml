@@ -25,7 +25,7 @@
 	<!--New PDC Map service accessible as PDC registered user @http://www.pdc.org/iweb/pdcregistration.html. -->
 	<mapservice  mode="dynamic">http://ags.pdc.org/rest/services/global/pdc_active_hazards/MapServer/</mapservice>
 
-	<metadata url="http://www.pdc.org" />
+	<metadata url="http://www.pdc.org/atlas/metadata_abstracts/metadata_summary_ims_mde.jsp?metadata=" />
 	<geometryservice url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"/>
 
 	<!--
