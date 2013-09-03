@@ -175,7 +175,7 @@
 
 
 						legendInfo[layersXML[i].title] = {	description	: layersXML[i].legend.description,
-							metadataURL	: configXML.metadata.@url.toString() +"/atlas/metadata_abstracts/metadata_summary_ims_mde.jsp?metadata="+ layersXML[i].legend.metadataID.toString(),
+							metadataURL	: configXML.metadata.@url.toString() + layersXML[i].legend.metadataID.toString(),
 							items		: layersXML[i].legend.items.split(",")};
 
 						layers.push({	title	: layersXML[i].title,
