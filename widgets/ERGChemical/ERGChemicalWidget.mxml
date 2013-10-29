@@ -316,7 +316,7 @@
                 var type:Object;
                 for (var i:Number = 0; i < _chemicalOrPlacardParams.length; i++)
                 {
-                    if(_chemicalOrPlacardParams[i].name == "Material_Type")
+                    if(_chemicalOrPlacardParams[i].name == "material_type")
                     {
                         if (_chemicalOrPlacardParams[i].choiceList)
                         {
@@ -353,7 +353,7 @@
                 _placardIDAC = new ArrayCollection();
                 for (var i:Number = 0; i < _chemicalOrPlacardParams.length; i++)
                 {
-                    if(_chemicalOrPlacardParams[i].name == "Placard_ID")
+                    if(_chemicalOrPlacardParams[i].name == "placard_id")
                     {
                         if (_chemicalOrPlacardParams[i].choiceList)
                         {
@@ -615,7 +615,7 @@
                         for (var i:int = 0; i < _arrChemicalGPParameters.length; i++)
                         {
                             paramName = _arrChemicalGPParameters[i];
-                            if (paramName.toUpperCase().indexOf("POINT") != -1 || paramName.toUpperCase().indexOf("LOCATION") != -1)
+                            if (paramName.toUpperCase().indexOf("FEATURES") != -1 || paramName.toUpperCase().indexOf("LOCATION") != -1)
                             {
                                 incidentPoint = _arrChemicalGPParameters[i];
                                 params[incidentPoint] = myFeatureSet;
@@ -659,7 +659,7 @@
                         for (var l:int = 0; l < _arrPlacardGPParameters.length; l++)
                         {
                             paramName = _arrPlacardGPParameters[l];
-                            if (paramName.toUpperCase().indexOf("POINT") != -1 || paramName.toUpperCase().indexOf("LOCATION") != -1)
+                            if (paramName.toUpperCase().indexOf("FEATURES") != -1 || paramName.toUpperCase().indexOf("LOCATION") != -1)
                             {
                                 incidentPoint = _arrPlacardGPParameters[l];
                                 placardParams[incidentPoint] = myFeatureSet;
@@ -740,13 +740,13 @@
                     _guideNum = graphic.attributes["GuideNum"];
                     switch (graphic.attributes["ERGZone"])
                     {
-                        case 1:
+                        case "Initial Isolation Zone":
                             graphic.symbol = sfsZone1;
                             break;
-                        case 2:
+                        case "Protective Action Zone":
                             graphic.symbol = sfsZone2;
                             break;
-                        case 3:
+                        case "Combined Zone":
                             graphic.symbol = sfsZone3;
                             sharedPolygon = graphic.geometry as Polygon;
                             sharedPolygon.spatialReference.wkid=102100; // for backwards compatibility
@@ -817,13 +817,13 @@
                     _guideNum = graphic.attributes["GuideNum"];
                     switch (graphic.attributes["ERGZone"])
                     {
-                        case 1:
+                        case "Initial Isolation Zone":
                             graphic.symbol = sfsZone1;
                             break;
-                        case 2:
+                        case "Protective Action Zone":
                             graphic.symbol = sfsZone2;
                             break;
-                        case 3:
+                        case "Combined Zone":
                             graphic.symbol = sfsZone3;
                             sharedPolygon = graphic.geometry as Polygon;
                             sharedPolygon.spatialReference.wkid=102100; // for backwards compatibility

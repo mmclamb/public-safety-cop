@@ -21,10 +21,10 @@
 -->
 <configuration>
 <!--	<gpERGChemical>specifies ERG Chemical Url-->
-  <gpERGChemical>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EMModels/GPServer/ERG%20By%20Chemical</gpERGChemical>
+  <gpERGChemical>http://arcgis-emergencymanagement-2057568539.us-east-1.elb.amazonaws.com/arcgis/rest/services/ERG/ERGByChemical/GPServer/ERG%20By%20Chemical</gpERGChemical>
 
   <!--	<gpERGPlacard>specifies ERG Placard Url-->
-  <gpERGPlacard>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EMModels/GPServer/ERG%20By%20Placard</gpERGPlacard>
+  <gpERGPlacard>http://arcgis-emergencymanagement-2057568539.us-east-1.elb.amazonaws.com/arcgis/rest/services/ERG/ERGByPlacard/GPServer/ERG%20By%20Placard</gpERGPlacard>
 
   <!--	<ergGuideURL>specifies ERG Help Guide Url-->
   <ergGuideURL>http://wwwapps.tc.gc.ca/saf-sec-sur/3/erg-gmu/erg/guidepage.aspx?guide=</ergGuideURL>
@@ -60,16 +60,16 @@
   </winddirectiondisplayfields>
 
 <!-- chemical GP parameter names-->
-<chemicalGPParameters>Incident_Point,Material_Type,Wind_Bearing__direction_blowing_to__0_-_360_,Day_or_Night_incident,Large_or_Small_spill</chemicalGPParameters>
+<chemicalGPParameters>in_features,material_type,wind_bearing,time_of_day,spill_size</chemicalGPParameters>
 
 <!-- chemical GP Job parameter name -->
-<chemicalGPJobParameter>outerg</chemicalGPJobParameter>
+<chemicalGPJobParameter>output_areas</chemicalGPJobParameter>
 
 <!-- Placard GP parameter names-->
-<placardGPParameters>Incident_Point,Placard_ID,Wind_Bearing__direction_blowing_to__0_-_360_,Day_or_Night_incident,Large_or_Small_spill</placardGPParameters>
+<placardGPParameters>in_features,placard_id,wind_bearing,time_of_day,spill_size</placardGPParameters>
 
 <!-- Placard GP Job parameter name -->
-<placardGPJobParameter>outergPlacard</placardGPJobParameter>
+<placardGPJobParameter>output_areas</placardGPJobParameter>
 
 <!--<InfrastructureLayer>specifies infrastructure layer-->
   <InfrastructureLayer>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer/0</InfrastructureLayer>
