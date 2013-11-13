@@ -41,6 +41,8 @@
         <esri:SimpleFillSymbol id="sfsZone1" color="#FFCCFF" style="solid" alpha="0.5"/>
         <esri:SimpleFillSymbol id="sfsZone2" color="#FF0000" style="solid" alpha="0.5"/>
         <esri:SimpleFillSymbol id="sfsZone3" style="null" alpha="0"/>
+	  <esri:SimpleLineSymbol id="slsSolid" style="solid"/>
+	  <esri:SimpleLineSymbol id="slsDash" style="dash"/>
         <esri:PictureMarkerSymbol id="spillSymbol" source="{ICON_URL}HAZMAT_Icon.png" height="30" width="30"/>
         <esri:PictureMarkerSymbol id="facilitiesSymbol" source="{ICON_URL}i_facilities.png" height="30" width="30"/>
     </fx:Declarations>
@@ -181,7 +183,9 @@
             private var spillLocationGLayer: GraphicsLayer;
 
 			private var _chemicalGPJobParameter:String = "";
+	    	private var _chemicalGPJobLineParameter:String="";
 			private var _placardGPJobParameter:String = "";
+	    	private var _placardGPJobLineParameter:String="";
 
 
             //http://forums.adobe.com/message/4143789
@@ -204,8 +208,9 @@
                     _gpERGPlacard = configXML.gpERGPlacard;
 
 					_chemicalGPJobParameter = configXML.chemicalGPJobParameter.toString();
+					_chemicalGPJobLineParameter=configXML.chemicalGPJobLineParameter.toString();
 					_placardGPJobParameter = configXML.placardGPJobParameter.toString();
-
+					_placardGPJobLineParameter=configXML.placardGPJobLineParameter.toString();
                     //Call gpService to get chemical names
                     gpChemicalService.url = _gpERGChemical + "?f=json";
                     gpChemicalService.send();
@@ -316,7 +321,7 @@
                 var type:Object;
                 for (var i:Number = 0; i < _chemicalOrPlacardParams.length; i++)
                 {
-                    if(_chemicalOrPlacardParams[i].name == "Material_Type")
+                    if(_chemicalOrPlacardParams[i].name == "material_type")
                     {
                         if (_chemicalOrPlacardParams[i].choiceList)
                         {
@@ -353,7 +358,7 @@
                 _placardIDAC = new ArrayCollection();
                 for (var i:Number = 0; i < _chemicalOrPlacardParams.length; i++)
                 {
-                    if(_chemicalOrPlacardParams[i].name == "Placard_ID")
+                    if(_chemicalOrPlacardParams[i].name == "placard_id")
                     {
                         if (_chemicalOrPlacardParams[i].choiceList)
                         {
@@ -615,7 +620,7 @@
                         for (var i:int = 0; i < _arrChemicalGPParameters.length; i++)
                         {
                             paramName = _arrChemicalGPParameters[i];
-                            if (paramName.toUpperCase().indexOf("POINT") != -1 || paramName.toUpperCase().indexOf("LOCATION") != -1)
+                            if (paramName.toUpperCase().indexOf("FEATURES") != -1 || paramName.toUpperCase().indexOf("LOCATION") != -1)
                             {
                                 incidentPoint = _arrChemicalGPParameters[i];
                                 params[incidentPoint] = myFeatureSet;
@@ -643,6 +648,8 @@
                         }
 
 
+			  glinfrastructure.clear();
+			  graphicsLayer.clear();
                         gp.addEventListener(GeoprocessorEvent.JOB_COMPLETE,onChemicalSpillResult);
                         gp.addEventListener(FaultEvent.FAULT, ergFaultHandler);
                         gp.submitJob(params);
@@ -659,7 +666,7 @@
                         for (var l:int = 0; l < _arrPlacardGPParameters.length; l++)
                         {
                             paramName = _arrPlacardGPParameters[l];
-                            if (paramName.toUpperCase().indexOf("POINT") != -1 || paramName.toUpperCase().indexOf("LOCATION") != -1)
+                            if (paramName.toUpperCase().indexOf("FEATURES") != -1 || paramName.toUpperCase().indexOf("LOCATION") != -1)
                             {
                                 incidentPoint = _arrPlacardGPParameters[l];
                                 placardParams[incidentPoint] = myFeatureSet;
@@ -688,6 +695,8 @@
 
 
 
+			  glinfrastructure.clear();
+			  graphicsLayer.clear();
                         gp.addEventListener(GeoprocessorEvent.JOB_COMPLETE,onPlacardSpillResult);
                         gp.addEventListener(FaultEvent.FAULT, ergFaultHandler);
                         gp.submitJob(placardParams);
@@ -717,13 +726,12 @@
             {
                 gp.addEventListener(GeoprocessorEvent.GET_RESULT_DATA_COMPLETE,onGetChemicalResult);
                 gp.getResultData(gpResult.jobInfo.jobId,_chemicalGPJobParameter);
+		  gp.getResultData(gpResult.jobInfo.jobId,_chemicalGPJobLineParameter)
             }
 
             private function onGetChemicalResult(gpResult:GeoprocessorEvent,token:Object = null):void
             {
-                glinfrastructure.clear();
-                graphicsLayer.clear();
-
+              
                 var sharedPolygon:Polygon;
 
                 chartStatistics.dataProvider = null;
@@ -740,26 +748,38 @@
                     _guideNum = graphic.attributes["GuideNum"];
                     switch (graphic.attributes["ERGZone"])
                     {
-                        case 1:
+                        case "Initial Isolation Zone":
                             graphic.symbol = sfsZone1;
                             break;
-                        case 2:
+                        case "Protective Action Zone":
                             graphic.symbol = sfsZone2;
                             break;
-                        case 3:
+                        case "Combined Zone":
                             graphic.symbol = sfsZone3;
                             sharedPolygon = graphic.geometry as Polygon;
                             sharedPolygon.spatialReference.wkid=102100; // for backwards compatibility
                             break;
+			default:
+			{
+				if(graphic.attributes["LineType"]=="Arc")
+				{
+					graphic.symbol=slsSolid;
+				}
+				else
+				{
+					graphic.symbol=slsDash;
+				}
+			}
                     }
                     graphicsLayer.add(graphic);
                 }
 
-                if (cbZoomTo.selected){
+                if (cbZoomTo.selected&&sharedPolygon!=null){
                     map.extent = sharedPolygon.extent;
+		      map.zoomOut();
 
 				}
-                if (cbDemographics.selected)
+                if (cbDemographics.selected&&sharedPolygon!=null)
                 {
                     queryFeatures(sharedPolygon);
                     this.currentState="ergDemographics";
@@ -769,7 +789,7 @@
 				{
 					txtMessage.text="";
 				}
-                if(cbInfrastructure.selected)
+                if(cbInfrastructure.selected&&sharedPolygon!=null)
                 {
 
                     queryInfrastructure(sharedPolygon);
@@ -793,14 +813,14 @@
             {
                 gp.addEventListener(GeoprocessorEvent.GET_RESULT_DATA_COMPLETE,onGetPlacardResult);
                 gp.getResultData(gpResult.jobInfo.jobId,_placardGPJobParameter);
+		gp.getResultData(gpResult.jobInfo.jobId,_placardGPJobLineParameter);
+				
             }
 
             private function onGetPlacardResult(gpResult:GeoprocessorEvent,token:Object = null):void
             {
-                glinfrastructure.clear();
-                graphicsLayer.clear();
-
-                var sharedPolygon:Polygon=new Polygon();
+   
+                var sharedPolygon:Polygon;
 
                 chartStatistics.dataProvider = null;
                 chartStatisticsInfra.dataProvider = null;
@@ -817,32 +837,44 @@
                     _guideNum = graphic.attributes["GuideNum"];
                     switch (graphic.attributes["ERGZone"])
                     {
-                        case 1:
+                        case "Initial Isolation Zone":
                             graphic.symbol = sfsZone1;
                             break;
-                        case 2:
+                        case "Protective Action Zone":
                             graphic.symbol = sfsZone2;
                             break;
-                        case 3:
+                        case "Combined Zone":
                             graphic.symbol = sfsZone3;
                             sharedPolygon = graphic.geometry as Polygon;
                             sharedPolygon.spatialReference.wkid=102100; // for backwards compatibility
                             break;
+			default:
+			{
+				if(graphic.attributes["LineType"]=="Arc")
+				{
+					graphic.symbol=slsSolid;
+				}
+				else
+				{
+					graphic.symbol=slsDash;
+				}
+			}
                     }
                     graphicsLayer.add(graphic);
                 }
 
-                if (cbDemographics.selected)
+                if (cbDemographics.selected && sharedPolygon!=null)
                 {
                     queryFeatures(sharedPolygon);
                     this.currentState="ergDemographics";
                     wTemplate.selectedTitlebarButtonIndex = 1;
                 }
-				if (cbZoomTo.selected){
+				if (cbZoomTo.selected&&sharedPolygon!=null){
 					map.extent = sharedPolygon.extent;
+					map.zoomOut();
 
 				}
-                if(cbInfrastructure.selected)
+                if(cbInfrastructure.selected&&sharedPolygon!=null)
                 {
                     queryInfrastructure(sharedPolygon);
                     if (!cbDemographics.selected)
