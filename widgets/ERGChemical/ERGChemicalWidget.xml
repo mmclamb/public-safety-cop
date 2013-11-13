@@ -41,7 +41,7 @@
    <info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
 
    <!--	<findclosestWS> specifies the layer to find the closest WeatherStation-->
-   <findclosestWS>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/FindNearestWS/GPServer/FindNearestWS</findclosestWS>
+   <findclosestWS>http://arcgis-emergencymanagement-2057568539.us-east-1.elb.amazonaws.com/arcgis/rest/services/ERG/FindNearestWS/GPServer/FindNearestWeatherStation</findclosestWS>
 
   <!--	<chart> specifies the Chart Configuration fields-->
   <chart>
@@ -50,7 +50,7 @@
     <series>MALES,FEMALES</series>
     <seriesAlias>Males,Females</seriesAlias>
   </chart>
-  <WeatherStationLayer>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer/11</WeatherStationLayer>
+  <WeatherStationLayer>http://arcgis-emergencymanagement-2057568539.us-east-1.elb.amazonaws.com/arcgis/rest/services/CurrentMETAR/MapServer/0</WeatherStationLayer>
    <!--  <WindDirectionField> USER DEFINED FIELD-->
   <WindDirectionField>StationName,WindDirection,UTC_DateTime</WindDirectionField>
   <winddirectiondisplayfields>
@@ -64,12 +64,14 @@
 
 <!-- chemical GP Job parameter name -->
 <chemicalGPJobParameter>output_areas</chemicalGPJobParameter>
+<chemicalGPJobLineParameter>output_lines</chemicalGPJobLineParameter>
 
 <!-- Placard GP parameter names-->
 <placardGPParameters>in_features,placard_id,wind_bearing,time_of_day,spill_size</placardGPParameters>
 
 <!-- Placard GP Job parameter name -->
 <placardGPJobParameter>output_areas</placardGPJobParameter>
+<placardGPJobLineParameter>output_lines</placardGPJobLineParameter>
 
 <!--<InfrastructureLayer>specifies infrastructure layer-->
   <InfrastructureLayer>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer/0</InfrastructureLayer>
