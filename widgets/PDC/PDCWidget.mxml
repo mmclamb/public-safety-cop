@@ -118,7 +118,7 @@
 
 			private var isFirstOpened:Boolean=false;
 			private var titleField:String=''
-
+			private var strServiceToken:String="";
 
 			private function get activeHighlightLayer():GraphicsLayer
 			{
@@ -142,6 +142,7 @@
 				if(configXML)
 				{
 					activeHazards.REST = configXML.mapservice.toString();
+					strServiceToken=configXML.mapservice.@token.toString();
 					var layers:Array = new Array();
 					var legendInfo:Object = new Object();
 					var layersXML:XMLList = configXML.layers.layer;
@@ -175,7 +176,7 @@
 
 
 						legendInfo[layersXML[i].title] = {	description	: layersXML[i].legend.description,
-							metadataURL	: configXML.metadata.@url.toString() + layersXML[i].legend.metadataID.toString(),
+							metadataURL	: configXML.metadata.@url.toString() +"/atlas/metadata_abstracts/metadata_summary_ims_mde.jsp?metadata="+ layersXML[i].legend.metadataID.toString(),
 							items		: layersXML[i].legend.items.split(",")};
 
 						layers.push({	title	: layersXML[i].title,
@@ -202,6 +203,7 @@
 					query.returnGeometry = true;
 
 					var queryTask:QueryTask = new QueryTask();
+					queryTask.token=strServiceToken;
 					queryTask.url = graphicsLayer.url = activeHazards.REST + activeHazards.layers[i].restId;
 					queryTask.useAMF=false;
 					var layerInfo:Object = {id			: activeHazards.layers[i].restId,

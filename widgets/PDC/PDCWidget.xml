@@ -22,10 +22,20 @@
 		<geometryservice>tag define  the geometry service url
 	 -->
 
-	<!--New PDC Map service accessible as PDC registered user @http://www.pdc.org/iweb/pdcregistration.html. -->
-	<mapservice  mode="dynamic">http://ags.pdc.org/rest/services/global/pdc_active_hazards/MapServer/</mapservice>
+  
+	<!--New PDC Map service accessible as PDC registered user @http://www.pdc.org/iweb/pdcregistration.html. --> 
+    <!--Steps to generate token 
+	 1- Open the URL "http://agstest.pdc.org/arcgis/tokens/" in a web browser
+	 2- Enter valid Username and Password
+	 3- Select "HTTP Referer" in "Client"
+	 4- URL of the page from which the request is made to the ArcGIS resource in "HTTP Referer" textbox
+	 5- In Expiration drop down, select the time period for which generated token will be valid in Expiration drop down
+	 6- Select HTML from the "Format" drop down
+	 7- Click on Generate Token and copy the generated token in the token tag below -->
+	
+	<mapservice  mode="dynamic" token="8IMkMAX70kCz-PUZ397RopyF0tM9wwbwRMOI85Mr6cZagzw1-8DRlIZFHzGeyWqpeVSvTmoHHBCbpuJ_e4Z-3w..">http://agstest.pdc.org/arcgis/rest/services/global/pdc_active_hazards/MapServer/</mapservice>
 
-	<metadata url="http://www.pdc.org/atlas/metadata_abstracts/metadata_summary_ims_mde.jsp?metadata=" />
+	<metadata url="http://www.pdc.org" />
 	<geometryservice url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"/>
 
 	<!--
@@ -74,7 +84,7 @@
 			<id>7</id>
 			<title>Recent Earthquakes</title>
 			<visible>false</visible>
-			<fields>DATE_TIME,MAGNITUDE,DEPTH,REGION,LINK</fields>
+			<fields>MAGNITUDE,DEPTH_KM,REGION,INCIDENT_TIME</fields>
 			<legend>
 				<description><![CDATA[Earthquakes from the past 48 hours]]></description>
 				<metadataID>1</metadataID>
@@ -84,10 +94,10 @@
 				<titlefield>Recent Earthquakes</titlefield>
 				<fields>
 					<fieldname label='Magnitude' displaytype='string'>MAGNITUDE </fieldname>
-					<fieldname label='Depth' displaytype='string'>DEPTH </fieldname>
+					<fieldname label='Depth' displaytype='string'>DEPTH_KM</fieldname>
 					<fieldname label='Region' displaytype='string'>REGION </fieldname>
-					<fieldname label='DATE TIME' displaytype='date' dateFormat='MM/DD/YYYY'>DATE_TIME</fieldname>
-					<fieldname label='Link' displaytype='hyperlink'>LINK</fieldname>
+					<fieldname label='DATE TIME' displaytype='date' dateFormat='MM/DD/YYYY'>INCIDENT_TIME</fieldname>
+					
 
 				</fields>
 			</Infopopup>
@@ -138,7 +148,7 @@
 			<id>5</id>
 			<title>GLIDE Events</title>
 			<visible>false</visible>
-			<fields>event_date,country_code,event,event_number,uri</fields>
+			<fields>event_date,event,event_number,country_name,uri</fields>
 			<legend>
 				<description><![CDATA[Globally common Unique ID code for disasters]]></description>
 				<metadataID>127</metadataID>
@@ -149,7 +159,7 @@
 				<fields>
 					<fieldname label='Event Type' displaytype='string'>event</fieldname>
 					<fieldname label='Glide Number' displaytype='string'>event_number</fieldname>
-					<fieldname label='Country' displaytype='string'>country_code</fieldname>
+					<fieldname label='Country' displaytype='string'>country_name</fieldname>
 					<fieldname label='URL' displaytype='hyperlink'>uri</fieldname>
 				</fields>
 			</Infopopup>
@@ -204,7 +214,7 @@
 			<fields>HAZARD_ID,ADVISORY,WIND_KT,SYMBOL_CODE</fields>
 			<legend>
 				<description><![CDATA[Storm Segments Layer Description]]></description>
-				<metadataID>4</metadataID>
+				<metadataID>6</metadataID>
 				<items><![CDATA[Segments - Forecast Hurricane/Super Typhoon,Segments - Forecast Hurricane/Typhoon,Segments - Forecast Tropical Storm,Segments - Forecast Tropical Depression,Segments - Previous Hurricane/Super Typhoon,Segments - Previous Hurricane/Typhoon,Segments - Previous Tropical Storm,Segments - Previous Tropical Depression]]></items>
 			</legend>
 			<maptip>
@@ -229,17 +239,17 @@
 			<id>13</id>
 			<title>Storm Winds</title>
 			<visible>false</visible>
-			<fields>HAZARD_NAME,STORM_NAME,ADVISORY_DATE,SYMBOL_CODE</fields>
+			<fields>HAZARD_NAME,HAZARD_ID,STORM_NAME,ADVISORY_DATE,SYMBOL_CODE</fields>
 			<legend>
 				<description><![CDATA[Storm Winds Layer Description]]></description>
-				<metadataID>7</metadataID>
+				<metadataID>4</metadataID>
 				<items><![CDATA[Hurricane/Typhoon,Tropical Storm,Tropical Depression]]></items>
 			</legend>
 
 			<Infopopup>
 				<titlefield>STORM WINDS</titlefield>
 				<fields>
-					<fieldname label='Hazard ID' displaytype='string'>Storm_Name</fieldname>
+					<fieldname label='Hazard ID' displaytype='string'>HAZARD_ID</fieldname>
 					<fieldname label='Advisory Date' displaytype='string'>ADVISORY_DATE</fieldname>
 
 				</fields>
