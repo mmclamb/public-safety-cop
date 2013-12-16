@@ -732,7 +732,7 @@
             private function onGetChemicalResult(gpResult:GeoprocessorEvent,token:Object = null):void
             {
               
-                var sharedPolygon:Polygon;
+                var sharedPolygon:Polygon=null;
 
                 chartStatistics.dataProvider = null;
                 chartStatisticsInfra.dataProvider = null;
@@ -820,7 +820,7 @@
             private function onGetPlacardResult(gpResult:GeoprocessorEvent,token:Object = null):void
             {
    
-                var sharedPolygon:Polygon;
+                var sharedPolygon:Polygon=null;
 
                 chartStatistics.dataProvider = null;
                 chartStatisticsInfra.dataProvider = null;

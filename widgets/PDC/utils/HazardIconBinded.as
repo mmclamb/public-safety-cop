@@ -221,7 +221,7 @@ package widgets.PDC.utils {
 					return {icon:intl_charter, tooltip:tooltip};
 				break;
 
-				case 3:
+				case 6:
 					tooltip =	"TSUNAMI TRAVEL TIME CONTOURS" + "\n\n" +
 								"CONTOUR_TYPE		" + hazardInfo.CONTOUR_TYPE + "\n" +
 								"HOURS_TO_ARRIVAL	" + hazardInfo.HOURS_TO_ARRIVAL;
@@ -252,7 +252,7 @@ package widgets.PDC.utils {
 					};
 				break;
 
-				case 8:
+				case 11:
 					tooltip =	"RECENT HOTSPOTS" + "\n\n" +
 								"DESCRIPTION		" + hazardInfo.description + "\n" +
 								"DATE OF FIRST OBS	" + hazardInfo.date_of_first_obs + "\n" +
