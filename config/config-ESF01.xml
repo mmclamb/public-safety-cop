@@ -117,11 +117,6 @@
                 config="widgets/Identify/IdentifyWidget.xml"
                 url="widgets/Identify/IdentifyWidget.swf"/>
 
-<!--    <widget label="Directions" left="100" top="90" -->
-<!--    icon="widgets/Directions/assets/images/directionIcon.png"  -->
-<!--    config="widgets/Directions/DirectionsWidget.xml" -->
-<!--    url="widgets/Directions/DirectionsWidget.swf" /> -->
-
       <widgetgroup label="Tools">
         <widget label="ERG" left="100" top="90"
                 icon="widgets/ERGChemical/assets/images/HAZMAT_ICON.png"
