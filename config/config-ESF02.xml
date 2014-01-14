@@ -122,11 +122,6 @@
                 config="widgets/Chart/EM_ChartWidget.xml"
                 url="widgets/Chart/ChartWidget.swf"/>
 
-    <!-- <widget label="Directions" left="100" top="90" -->
-    <!-- icon="widgets/Directions/assets/images/directionIcon.png"  -->
-    <!-- config="widgets/Directions/DirectionsWidget.xml" -->
-    <!-- url="widgets/Directions/DirectionsWidget.swf" /> -->
-
  </widgetcontainer>
 
 </configuration>

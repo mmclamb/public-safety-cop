@@ -114,10 +114,5 @@
                 config="widgets/WMSLooping/WMSLoopingWidget.xml"
                 url="widgets/WMSLooping/WMSLoopingWidget.swf"/>
 
-        <widget label="Query" left="100" top="90"
-                icon="assets/images/i_policestation.png"
-                config="widgets/Query/QueryWidget_Louisville_PoliceStations.xml"
-                url="widgets/Query/QueryWidget.swf"/>
-
     </widgetcontainer>
 </configuration>

@@ -122,11 +122,6 @@
                 config="widgets/DynamicLegend/DynamicLegendWidget.xml"
                 url="widgets/DynamicLegend/DynamicLegendWidget.swf"/>
 
-      <!-- <widget label="Directions" left="100" top="90" -->
-      <!-- icon="widgets/Directions/assets/images/directionIcon.png" -->
-      <!-- config="widgets/Directions/DirectionsWidget.xml" -->
-      <!-- url="widgets/Directions/DirectionsWidget.swf" /> -->
-
         <widget label="Critical Infrastructure"  left="100" top="90"
                 icon="widgets/CI/assets/images/i_statistics.png"
                 config="widgets/CI/CIWidget.xml"
