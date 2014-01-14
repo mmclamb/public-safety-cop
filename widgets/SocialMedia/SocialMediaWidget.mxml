@@ -112,12 +112,13 @@
 			private var flickrSymbol:PictureMarkerSymbol = new PictureMarkerSymbol(flickrIcon, 20, 20);
 			private var twitterSymbol:PictureMarkerSymbol = new PictureMarkerSymbol(twitterIcon, 20, 20);
 			private var youtubeSymbol:PictureMarkerSymbol = new PictureMarkerSymbol(youtubeIcon, 20, 20);
-
+			private var twitterPage:Number;
 			private function init():void
 			{
 				if (configXML) // checking for valid content in the configuration file
 				{
 
+					twitterPage=new Number(configXML.TwitterNumberOfPage);
 					SocialMediaTemplate.minimizeButton.toolTip="Minimize";
 					SocialMediaTemplate.closeButton.toolTip="Close";
 
@@ -472,7 +473,7 @@
 					{
 
 					}
-					tweetTool.Search(keyword, since, location, distance, "km");
+					tweetTool.Search(keyword, since, location, distance, "km",100,twitterPage);
 
 
 
@@ -501,7 +502,9 @@
 
 			private function SocialResultsReadyHandler(event:ResultsReadyEvent):void
 			{
-
+				flickrGraphics.clear();
+				youtubeGraphics.clear();
+				twitterGraphics.clear();
 
 				SocialMediaTemplate.mouseChildren=true;
 				if(map.infoWindow.visible=true)
@@ -595,6 +598,7 @@
 							tweetarrResult=new ArrayCollection();
 							for each (var tweet:TweetItem in event.Results)
 							{
+
 								var tempDate:Date=new Date(tweet.publishDate);
 								
 								if(sinceTwitter.time<=tempDate.time)

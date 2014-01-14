@@ -66,12 +66,24 @@ package widgets.SocialMedia.Tools
 		private var accessToken:String;
 		private var accessTokenSecret:String;
 		private var customerName:String;
-		public function Search(keyword:String, since:String, location:MapPoint, radius:Number, units:String, numPerPage:Number=500, page:Number=1):void
+		private var numberOfPages:Number;
+		public function Search(keyword:String=null, since:String=null, location:MapPoint=null, radius:Number=NaN, units:String=null, numPerPage:Number=100, page:Number=1, queryString:String=""):void
 		{
-			var tweetUrl:String = "https://api.twitter.com/1.1/search/tweets.json?";
-			tweetUrl += "q=" + keyword + "&until="+ since  + "&count=" + numPerPage;
-			tweetUrl += "&geocode=" + location.y + "%2C" + location.x + "%2C" + radius + "km";
-			tweetUrl += "&result_type=mixed";
+			var tweetUrl:String = "https://api.twitter.com/1.1/search/tweets.json";
+
+			if(queryString=="")
+			{
+				numberOfPages=page;
+				tweets= new ArrayCollection();
+				tweetUrl += "?q=" + keyword + "&until="+ since  + "&count=" + numPerPage;
+				tweetUrl += "&geocode=" + location.y + "%2C" + location.x + "%2C" + radius + "km";
+				tweetUrl += "&result_type=mixed";
+				tweetUrl += "&locale=en";
+			}
+			else
+			{
+				tweetUrl +=queryString;
+			}
  			var tweetService:HTTPService = new HTTPService();
 			tweetService.useProxy = false;
 			if(ProxyUrl!=""){
@@ -87,6 +99,7 @@ package widgets.SocialMedia.Tools
 		//config fault
 		private function HttpServiceFault(event:mx.rpc.events.FaultEvent):void
 		{
+			strQueryString=null;
 			var sInfo:String = "Error: ";
 			sInfo += "Event Target: " + event.target + "\n";
 			sInfo += "Event Type: " + event.type + "\n";
@@ -95,10 +108,13 @@ package widgets.SocialMedia.Tools
 		    dispatchEvent(new ResultsReadyEvent(SocialMediaType.Tweet, null, sInfo));
 		}
 
+		private var strQueryString:String;
+		private var tweets:ArrayCollection = new ArrayCollection();
+
 		//config result
 		private function HttpServiceResult(event:ResultEvent):void
 		{
-			var tweets:ArrayCollection = new ArrayCollection();
+			numberOfPages--;
 
 
 				var xmlResult:XML = XML(event.result);
@@ -110,30 +126,95 @@ package widgets.SocialMedia.Tools
 
 						tweetItem.title =entryObject.text ;
 						tweetItem.content = entryObject.text;
-						tweetItem.publishDate =entryObject.user.created_at;
+						tweetItem.publishDate =entryObject.created_at;
 						tweetItem.authorName =entryObject.user.name;
 						tweetItem.authorUri = entryObject.user.url;
 						tweetItem.screenName=entryObject.user.screen_name;
 						var links:String = entryObject.user.profile_image_url;
 							tweetItem.authorPhoto = links;
 
-
+						var arr:Array=new Array() ;
+						var gmlLat:Number =new Number();
+						var gmlLon:Number =new Number();
 						var geoXML:Object = entryObject.geo;
 						if (geoXML != null )
 						{
-								var arr:Array  = geoXML.coordinates;
-								var gmlLat:Number = Number(arr[0]);
-								var gmlLon:Number = Number(arr[1]);
-								tweetItem.point =(WebMercatorUtil.geographicToWebMercator(new MapPoint(gmlLon,gmlLat,new SpatialReference(102100)) as Geometry) as MapPoint);
-								tweets.addItem(tweetItem);
+							arr = geoXML.coordinates;
+							gmlLat = Number(arr[0]);
+							gmlLon = Number(arr[1]);
+							tweetItem.point =(WebMercatorUtil.geographicToWebMercator(new MapPoint(gmlLon,gmlLat,new SpatialReference(102100)) as Geometry) as MapPoint);
+							tweets.addItem(tweetItem);
 						}
-
+						else
+						{
+							var n:String = (entryObject.user.location as String);
+							if (n)
+							{
+								if (n.indexOf("iPhone:") > -1)
+								{
+									n = n.slice(7);
+									arr = n.split(",");
+									gmlLat = Number(arr[0]);
+									gmlLon = Number(arr[1]);
+									tweetItem.point =(WebMercatorUtil.geographicToWebMercator(new MapPoint(gmlLon,gmlLat,new SpatialReference(102100)) as Geometry) as MapPoint);
+									tweets.addItem(tweetItem);
+								}
+								else if (n.indexOf("ÜT") > -1)
+								{
+									n = n.slice(3);
+									arr = n.split(",");
+									gmlLat = Number(arr[0]);
+									gmlLon= Number(arr[1]);
+									tweetItem.point =(WebMercatorUtil.geographicToWebMercator(new MapPoint(gmlLon,gmlLat,new SpatialReference(102100)) as Geometry) as MapPoint);
+									tweets.addItem(tweetItem);
+								}
+								else if (n.indexOf("T") === 1)
+								{
+									n = n.slice(3);
+									arr = n.split(",");
+									gmlLat = Number(arr[0]);
+									gmlLon = Number(arr[1]);
+									tweetItem.point =(WebMercatorUtil.geographicToWebMercator(new MapPoint(gmlLon,gmlLat,new SpatialReference(102100)) as Geometry) as MapPoint);
+									tweets.addItem(tweetItem);
+								}
+								else if (n.indexOf("Pre:") > -1)
+								{
+									n = n.slice(4);
+									arr = n.split(",");
+									gmlLat = Number(arr[0]);
+									gmlLon = Number(arr[1]);
+									tweetItem.point =(WebMercatorUtil.geographicToWebMercator(new MapPoint(gmlLon,gmlLat,new SpatialReference(102100)) as Geometry) as MapPoint);
+									tweets.addItem(tweetItem);
+								}
+								else if (n.split(",").length === 2)
+								{
+									arr = n.split(",");
+									gmlLat = Number(arr[0]);
+									gmlLon = Number(arr[1]);
+									if(!(gmlLat is Number)&&!(gmlLon is Number))
+									{
+										tweetItem.point =(WebMercatorUtil.geographicToWebMercator(new MapPoint(gmlLon,gmlLat,new SpatialReference(102100)) as Geometry) as MapPoint);
+										tweets.addItem(tweetItem);
+									}
+								}
+							}
+						}
+					}
+					if(numberOfPages>0&&entries.search_metadata.next_results)
+					{
+						strQueryString=entries.search_metadata.next_results;
+						Search(null,null,null,NaN,null,100,1,strQueryString);
+					}
+					else
+					{
+						strQueryString=null;
+						dispatchEvent(new ResultsReadyEvent(SocialMediaType.Tweet, tweets, ""));
 					}
 				}
-
-				dispatchEvent(new ResultsReadyEvent(SocialMediaType.Tweet, tweets, ""));
-
-
+				else
+				{
+					dispatchEvent(new ResultsReadyEvent(SocialMediaType.Tweet, tweets, ""));
+				}
 		}
 
 		// Impements IEventDispatcher

@@ -22,13 +22,14 @@
 <!-- <maximumYouTubeSearchRadius> Specifies maximum You tube Search Radius. -->
 <!-- <maximumTwitterSearchRadius> Specifies maximum Twitter Search Radius. -->
 
-<!--The below proxy URL is temporary for testing-->
+<!--The below proxy URL is temporary for testing. Please refer the document for setting up proxy in your server-->
 
     <socialMediaProxyUrl>http://203.199.47.152/Hawk testing/commonproxy/proxy.ashx</socialMediaProxyUrl>
 	<defaultSearchKeyword>Weather</defaultSearchKeyword>
     <maximumYouTubeSearchRadius>35</maximumYouTubeSearchRadius> <!--Miles-->
     <maximumTwitterSearchRadius>30</maximumTwitterSearchRadius> <!--Miles-->
     <maximumFlickerSearchRadius>15</maximumFlickerSearchRadius> <!--Miles-->
+    <TwitterNumberOfPage>2</TwitterNumberOfPage>
 
 <!-- <youTubeDateFields> Specifies DateField For Youtube Search -->
     <youTubeDateFields>
