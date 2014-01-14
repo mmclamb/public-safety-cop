@@ -17,7 +17,7 @@
 -->
 <configuration>
     <title>Situational Awareness Viewer</title>
-    <subtitle>Emergency Support Function</subtitle>
+    <subtitle>Public Safety COP</subtitle>
     <logo>assets/images/em_logo.png</logo>
     <style>
         <colors>0xffffff,0x333333,0x101010,0x0,0xffffff</colors>
@@ -116,7 +116,7 @@
                     config="widgets/ERGChemical/ERGChemicalWidget.xml"
                     url="widgets/ERGChemical/ERGChemicalWidget.swf" />
 
-            <widget label="National Grid"  left="100" top="90"
+            <widget label="US National Grid"  left="100" top="90"
                     icon="widgets/NationalGrid/assets/images/i_globe.png"
                     config="widgets/NationalGrid/NationalGridWidget.xml"
                     url="widgets/NationalGrid/NationalGridWidget.swf" />
@@ -160,16 +160,6 @@
                     config="widgets/PDC/PDCWidget.xml"
                     url="widgets/PDC/PDCWidget.swf"  />
         </widgetgroup>
-
-            <widget label="Query" left="100" top="90"
-                    icon="assets/images/i_policestation.png"
-                    config="widgets/Query/QueryWidget_Louisville_PoliceStations.xml"
-                    url="widgets/Query/QueryWidget.swf"/>
-
-       <!-- <widget label="Directions" left="100" top="90" -->
-       <!-- icon="widgets/Directions/assets/images/directionIcon.png" -->
-       <!-- config="widgets/Directions/DirectionsWidget.xml" -->
-       <!-- url="widgets/Directions/DirectionsWidget.swf" /> -->
 
              <widget label="Identify" left="100" top="90"
                      icon="assets/images/i_info.png"

@@ -122,14 +122,9 @@
                 config="widgets/KPI/KPIWidget.xml"
                 url="widgets/KPI/KPIWidget.swf"/>
 
-      <!-- <widget label="Directions" left="100" top="90" -->
-      <!-- icon="widgets/Directions/assets/images/directionIcon.png" -->
-      <!-- config="widgets/Directions/DirectionsWidget.xml" -->
-      <!-- url="widgets/Directions/DirectionsWidget.swf" /> -->
-
     <widgetgroup label="Tools">
 
-       <widget label="National Grid"  left="100" top="90" preload="open"
+       <widget label="US National Grid"  left="100" top="90" preload="open"
                icon="widgets/NationalGrid/assets/images/i_globe.png"
                config="widgets/NationalGrid/NationalGridWidget.xml"
                url="widgets/NationalGrid/NationalGridWidget.swf"/>
