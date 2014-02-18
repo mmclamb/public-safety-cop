@@ -214,7 +214,7 @@
 			<fields>HAZARD_ID,ADVISORY,WIND_KT,SYMBOL_CODE</fields>
 			<legend>
 				<description><![CDATA[Storm Segments Layer Description]]></description>
-				<metadataID>6</metadataID>
+				<metadataID>4</metadataID>
 				<items><![CDATA[Segments - Forecast Hurricane/Super Typhoon,Segments - Forecast Hurricane/Typhoon,Segments - Forecast Tropical Storm,Segments - Forecast Tropical Depression,Segments - Previous Hurricane/Super Typhoon,Segments - Previous Hurricane/Typhoon,Segments - Previous Tropical Storm,Segments - Previous Tropical Depression]]></items>
 			</legend>
 			<maptip>
@@ -242,7 +242,7 @@
 			<fields>HAZARD_NAME,HAZARD_ID,STORM_NAME,ADVISORY_DATE,SYMBOL_CODE</fields>
 			<legend>
 				<description><![CDATA[Storm Winds Layer Description]]></description>
-				<metadataID>4</metadataID>
+				<metadataID>7</metadataID>
 				<items><![CDATA[Hurricane/Typhoon,Tropical Storm,Tropical Depression]]></items>
 			</legend>
 
