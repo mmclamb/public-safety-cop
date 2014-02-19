@@ -99,14 +99,17 @@
 			import com.esri.ags.symbols.PictureMarkerSymbol;
 			import com.esri.ags.tasks.QueryTask;
 			import com.esri.ags.tasks.supportClasses.*;
-			import com.esri.ags.tools.DrawTool;
 			import com.esri.ags.tasks.supportClasses.ProjectParameters;
+			import com.esri.ags.tools.DrawTool;
 			import com.esri.ags.utils.WebMercatorUtil;
 			import com.esri.viewer.AppEvent;
 			import com.esri.viewer.IInfowindowTemplate;
 			import com.esri.viewer.ViewerContainer;
 			import com.esri.viewer.utils.*;
 
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.Series;
 			import mx.collections.*;
 			import mx.controls.Alert;
 			import mx.controls.TextArea;
@@ -1186,8 +1189,14 @@
                 var titleField:String = rbeConfig.find("rbeTitleField") as String;
                 var linkField:String = rbeConfig.find("rbeLinkField") as String;
                 var queryFields:String = rbeConfig.find("rbeFields") as String;
-                queryFields = queryFields + "," + linkField; // must add URL field as an "outfield" in result Array
+                if(linkField!="")
+				{
+				queryFields = queryFields + "," + linkField; // must add URL field as an "outfield" in result Array
+				}
+				if(defaultRbeLinkField!="")
+				{
                 queryFields = queryFields + "," + defaultRbeLinkField;
+				}
 
                 var counti:Number=0;// check the polygon count for drive time
 
@@ -1297,8 +1306,11 @@
                         }
                         else
                         {
-                            if (fld.toUpperCase() != titleField.toUpperCase())
-                                content += fldAliases[fld] + ": " + value + "\n";
+				if(!(fld.toLocaleUpperCase()=="OBJECTID"||fld.toLocaleUpperCase()=="SHAPE"))
+				{
+		                        if (fld.toUpperCase() != titleField.toUpperCase())
+		                        content += fldAliases[fld] + ": " + value + "\n";
+				}
                         }
                     }
 
@@ -1795,7 +1807,15 @@
 					Alert.show(alertMsg.invalidDriveTimeError.alertmessage.toString(),alertMsg.invalidDriveTimeError.alertheader);
 				}
 			}
+			private function setCustomLabel(categoryValue:Object, previousCategoryValue:Object, axis:CategoryAxis, categoryItem:Object):String {
+				return categoryItem.layer.toString();
+			}
 
+			private function setCustomChartLabel(hitData:HitData):String
+			{
+				return hitData.item.layer+": "+hitData.item.count;
+			}
+			
         ]]>
     </fx:Script>
 
@@ -1953,13 +1973,13 @@
                 <s:Label id="chartText" text=""/>
                 <s:Label id="population" fontWeight="bold" fontSize="12" text=""/>
             </s:HGroup>
-            <mx:ColumnChart id="chartStatistics" dataProvider="{rbeSummary}" width="330" height="85%" showDataTips="true"
+            <mx:ColumnChart id="chartStatistics" dataProvider="{rbeSummary}" dataTipFunction="setCustomChartLabel" width="330" height="85%" showDataTips="true"
                             color="#FFFFFF" >
                 <mx:horizontalAxis>
-                    <mx:CategoryAxis dataProvider="{rbeSummary}" categoryField="layer"/>
+                    <mx:CategoryAxis dataProvider="{rbeSummary}" categoryField="rbeID" labelFunction="setCustomLabel"  />
                 </mx:horizontalAxis>
                 <mx:series>
-                    <mx:ColumnSeries dataProvider="{rbeSummary}" id="barSeries" yField="count" xField="layer" showDataEffect="slideLeft" hideDataEffect="slideRight" fontSize="10" fontWeight="bold" fontFamily="Arial"/>
+                    <mx:ColumnSeries dataProvider="{rbeSummary}" id="barSeries" yField="count" xField="rbeID"   showDataEffect="slideLeft" hideDataEffect="slideRight" fontSize="10" fontWeight="bold" fontFamily="Arial"/>
                 </mx:series>
             </mx:ColumnChart>
         </s:Group>
