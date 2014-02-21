@@ -40,6 +40,9 @@
 
    <info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
 
+   <!--   <geometryserviceurl> specifies the geometry service url. -->
+   <geometryserviceurl>http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer</geometryserviceurl>
+  
    <!--	<findclosestWS> specifies the layer to find the closest WeatherStation-->
    <findclosestWS>http://arcgis-emergencymanagement-2057568539.us-east-1.elb.amazonaws.com/arcgis/rest/services/ERG/FindNearestWS/GPServer/FindNearestWeatherStation</findclosestWS>
 
