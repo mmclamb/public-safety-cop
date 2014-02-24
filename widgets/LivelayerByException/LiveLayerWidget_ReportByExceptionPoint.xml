@@ -88,8 +88,13 @@
 <!--   <showPopulationCount>specifies the Boolean value for population display. -->
 
   <showPopulationCount>true</showPopulationCount>
-  <rbeDynamicallyAddedLayerInfoContents>DECRIP</rbeDynamicallyAddedLayerInfoContents>
-  <rbedefaultDynamicLinkField>URL</rbedefaultDynamicLinkField>
+<!--    <rbeDynamicallyAddedLayerInfoContents> tag specifies the fields to be configured in Info popup  -->
+<!--      •	Setting its value to * will show all the fields other than ObjectID and Shape  -->
+<!--      •	Setting its value to blank will show the field which is specified as DISPLAY FIELD of the added layer-->
+
+  <rbeDynamicallyAddedLayerInfoContents>*</rbeDynamicallyAddedLayerInfoContents>
+
+  <rbedefaultDynamicLinkField></rbedefaultDynamicLinkField>
   <rbedefaultRESTURL>http://arcgis-localgov-61933129.us-west-1.elb.amazonaws.com/arcgis/rest/services/PublicSafetyCOP/EmergencyOperations/MapServer/4</rbedefaultRESTURL>
   <rbedefaultRESTLayerName>New Exception</rbedefaultRESTLayerName>
 

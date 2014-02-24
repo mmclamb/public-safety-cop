@@ -114,6 +114,7 @@
 
 			import flash.net.drm.VoucherAccessInfo;
 
+			import mx.charts.HitData;
 			import mx.charts.chartClasses.CartesianChart;
 			import mx.charts.chartClasses.ChartBase;
 			import mx.collections.*;
@@ -1411,8 +1412,15 @@
                 var titleField:String = rbeConfig.find("rbeTitleField") as String;
                 var linkField:String = rbeConfig.find("rbeLinkField") as String;
                 var queryFields:String = rbeConfig.find("rbeFields") as String;
-                queryFields = queryFields + "," + linkField; // must add URL field as an "outfield" in result Array
-                queryFields = queryFields + "," + defaultRbeLinkField;
+				
+				if(linkField!="")
+				{
+					queryFields = queryFields + "," + linkField; // must add URL field as an "outfield" in result Array
+				}
+				if(defaultRbeLinkField!="")
+				{
+					queryFields = queryFields + "," + defaultRbeLinkField;
+				}
 
                 //  this loops through the polygon graphics in the array to make sure that it uses the last buffer
                 //	in the arrBuffer. the last buffer contains the largest drivetime polygon
@@ -1525,11 +1533,15 @@
                         }
                         else
                         {
-                            if (layerName!="Traffic Cameras")
-                                {
-                                    if (fld.toUpperCase() != titleField.toUpperCase())
-                                        content += fldAliases[fld] + ": " + value + "\n";
-                                }
+							if (layerName!="Traffic Cameras")
+							{
+								if(!(fld.toLocaleUpperCase()=="OBJECTID"||fld.toLocaleUpperCase()=="SHAPE"))
+								{
+									if (fld.toUpperCase() != titleField.toUpperCase())
+										content += fldAliases[fld] + ": " + value + "\n";
+								}
+								
+							}
                         }
                     }
 
@@ -2065,6 +2077,15 @@
 				isBackClicked=true;
 				setCurrentState("rbeList");
 			}
+			
+			private function setCustomLabel(categoryValue:Object, previousCategoryValue:Object, axis:CategoryAxis, categoryItem:Object):String {
+				return categoryItem.layer.toString();
+			}
+			
+			private function setCustomChartLabel(hitData:HitData):String
+			{
+				return hitData.item.layer+": "+hitData.item.count;
+			}
 
 		]]>
     </fx:Script>
@@ -2218,13 +2239,13 @@
                 <s:Label id="chartText" text=""/>
                 <s:Label id="population" fontWeight="bold" fontSize="12" text=""/>
             </s:HGroup>
-            <mx:ColumnChart id="chartStatistics" dataProvider="{rbeSummary}" width="330" height="85%" showDataTips="true"
+            <mx:ColumnChart id="chartStatistics" dataProvider="{rbeSummary}" dataTipFunction="setCustomChartLabel" width="330" height="85%" showDataTips="true"
                             color="#FFFFFF" >
                 <mx:horizontalAxis>
-                    <mx:CategoryAxis dataProvider="{rbeSummary}" categoryField="layer"/>
+                    <mx:CategoryAxis dataProvider="{rbeSummary}" categoryField="rbeID" labelFunction="setCustomLabel"/>
                 </mx:horizontalAxis>
                 <mx:series>
-                    <mx:ColumnSeries dataProvider="{rbeSummary}" id="barSeries" yField="count" xField="layer" showDataEffect="slideLeft" hideDataEffect="slideRight" fontSize="10" fontWeight="bold" fontFamily="Arial"/>
+                    <mx:ColumnSeries dataProvider="{rbeSummary}" id="barSeries" yField="count" xField="rbeID" showDataEffect="slideLeft" hideDataEffect="slideRight" fontSize="10" fontWeight="bold" fontFamily="Arial"/>
                 </mx:series>
             </mx:ColumnChart>
         </s:Group>
