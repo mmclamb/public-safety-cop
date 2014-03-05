@@ -95,5 +95,5 @@ limitations under the License.
 A copy of the license is available in the repository's
 [LICENSE.txt](LICENSE.txt) file.
 
-[](Esri Tags: Local-Government Local Government Public Safety COP Common-Operational-Picture)
+[](Esri Tags: Local-Government Local Government Public Safety COP Common-Operational-Picture State State-Government)
 [](Esri Language: ActionScript)
